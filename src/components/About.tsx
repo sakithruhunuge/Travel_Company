@@ -13,7 +13,7 @@ export default function About() {
               <div className="space-y-4">
                 <div className="relative rounded-3xl overflow-hidden h-64 shadow-md hover:scale-[1.02] transition-transform duration-300">
                   <Image
-                    src="https://images.unsplash.com/photo-1586861635167-e5223aadc9fe?auto=format&fit=crop&w=600&q=80"
+                    src="/images/sigiriya.png"
                     alt="Sigiriya Rock Fortress"
                     fill
                     className="object-cover"
@@ -22,7 +22,7 @@ export default function About() {
                 </div>
                 <div className="relative rounded-3xl overflow-hidden h-48 shadow-md hover:scale-[1.02] transition-transform duration-300">
                   <Image
-                    src="https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=600&q=80"
+                    src="/images/mirissa.png"
                     alt="Golden Coast Beaches"
                     fill
                     className="object-cover"
@@ -33,7 +33,7 @@ export default function About() {
               <div className="space-y-4 pt-8">
                 <div className="relative rounded-3xl overflow-hidden h-48 shadow-md hover:scale-[1.02] transition-transform duration-300">
                   <Image
-                    src="https://images.unsplash.com/photo-1546708973-b339540b5162?auto=format&fit=crop&w=600&q=80"
+                    src="/images/nine_arch.png"
                     alt="Ella Train Journey"
                     fill
                     className="object-cover"
@@ -42,7 +42,7 @@ export default function About() {
                 </div>
                 <div className="relative rounded-3xl overflow-hidden h-64 shadow-md hover:scale-[1.02] transition-transform duration-300">
                   <Image
-                    src="https://images.unsplash.com/photo-1581888227599-779811939961?auto=format&fit=crop&w=600&q=80"
+                    src="/images/yala.png"
                     alt="Elephant Safari Wildlife"
                     fill
                     className="object-cover"
