@@ -1,0 +1,53 @@
+"use client";
+
+import TravelRequestForm from "./TravelRequestForm";
+
+export default function Contact() {
+  return (
+    <section id="contact" className="py-24 bg-white scroll-mt-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+          {/* Info Side */}
+          <div className="lg:col-span-5 space-y-8 flex flex-col justify-center text-left">
+            <div className="space-y-4">
+              <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">
+                Inquiries
+              </span>
+              <h2 className="text-3xl sm:text-5xl font-black text-brand-dark tracking-tight">
+                Plan Your Journey
+              </h2>
+              <p className="text-base text-slate-500 leading-relaxed">
+                Ready to explore? Drop us a line. Our dedicated travel planners will respond to you within 24 hours to schedule a custom consultation.
+              </p>
+            </div>
+
+            {/* Quick Contact Links */}
+            <div className="space-y-4 pt-4">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-brand-primary/10 flex items-center justify-center text-brand-primary">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                </div>
+                <span className="text-sm font-semibold text-slate-700">+1 (555) 123-4567</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-brand-primary/10 flex items-center justify-center text-brand-primary">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <span className="text-sm font-semibold text-slate-700">hello@horizontravel.com</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Form Side */}
+          <div className="lg:col-span-7">
+            <TravelRequestForm />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
