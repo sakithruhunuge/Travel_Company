@@ -95,6 +95,12 @@ export default function LoginForm() {
           "Sign In with Email"
         )}
       </button>
+
+      <div className="text-center pt-1">
+        <a href="/signup" className="text-sm font-semibold text-brand-primary hover:text-brand-primary/90">
+          Create an account
+        </a>
+      </div>
     </form>
   );
 }
