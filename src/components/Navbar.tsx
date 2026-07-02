@@ -6,12 +6,12 @@ import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 
 const navLinks = [
-  { label: "Home", href: "#home" },
-  { label: "About", href: "#about" },
-  { label: "Destinations", href: "#destinations" },
-  { label: "Packages", href: "#packages" },
-  { label: "Why Choose Us", href: "#why-choose-us" },
-  { label: "Contact", href: "#contact" },
+  { label: "Home", href: "/#home" },
+  { label: "About", href: "/#about" },
+  { label: "Destinations", href: "/#destinations" },
+  { label: "Packages", href: "/#packages" },
+  { label: "Why Choose Us", href: "/#why-choose-us" },
+  { label: "Contact", href: "/#contact" },
 ];
 
 export default function Navbar() {
@@ -34,20 +34,20 @@ export default function Navbar() {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8 items-center">
             {navLinks.map((link) => (
-              <a
+              <Link
                 key={link.label}
                 href={link.href}
                 className="text-sm font-semibold text-slate-600 hover:text-brand-primary transition-all duration-200 hover:translate-y-[-1px]"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
             {session && (
               <Link
-                href="/my-requests"
+                href="/dashboard"
                 className="text-sm font-semibold text-slate-600 hover:text-brand-primary transition-all duration-200 hover:translate-y-[-1px]"
               >
-                My Requests
+                Dashboard
               </Link>
             )}
           </nav>
@@ -117,22 +117,22 @@ export default function Navbar() {
         <div className="md:hidden animate-fade-in-down" id="mobile-menu">
           <div className="px-2 pt-2 pb-4 space-y-1 sm:px-3 bg-white border-b border-slate-100 shadow-xl">
             {navLinks.map((link) => (
-              <a
+              <Link
                 key={link.label}
                 href={link.href}
                 onClick={() => setIsOpen(false)}
                 className="block px-3 py-3 rounded-lg text-base font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-primary transition-colors"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
             {session && (
               <Link
-                href="/my-requests"
+                href="/dashboard"
                 onClick={() => setIsOpen(false)}
                 className="block px-3 py-3 rounded-lg text-base font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-primary transition-colors"
               >
-                My Requests
+                Dashboard
               </Link>
             )}
             <div className="pt-4 pb-2 px-3 border-t border-slate-100 mt-2">

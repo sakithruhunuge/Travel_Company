@@ -56,7 +56,7 @@ export default function SignupForm() {
                 setIsLoading(false);
                 router.push("/login");
             } else {
-                router.push("/");
+                router.push("/dashboard");
                 router.refresh();
             }
         } catch (err) {

@@ -64,7 +64,7 @@ export const authOptions: NextAuthOptions = {
         try {
           await dbConnect();
           const existingUser = await User.findOne({ email: user.email });
-          
+
           if (!existingUser) {
             // Create a new User if it's a first time Google login
             await User.create({
@@ -84,13 +84,13 @@ export const authOptions: NextAuthOptions = {
     },
     async jwt({ token, user, account }) {
       if (account && user) {
-        // Run only on initial sign in
         try {
           await dbConnect();
           const dbUser = await User.findOne({ email: token.email });
           if (dbUser) {
             token.id = dbUser._id.toString();
             token.provider = dbUser.provider;
+            token.createdAt = dbUser.createdAt?.toISOString();
           }
         } catch (error) {
           console.error("Error in NextAuth jwt callback:", error);
@@ -99,10 +99,11 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      const sessionUser = session.user as { id?: string; name?: string | null; email?: string | null; image?: string | null; provider?: string };
+      const sessionUser = session.user as { id?: string; name?: string | null; email?: string | null; image?: string | null; provider?: string; createdAt?: string | null };
       if (sessionUser) {
         sessionUser.id = token.id as string;
         sessionUser.provider = token.provider as string;
+        sessionUser.createdAt = (token.createdAt as string | undefined) || null;
       }
       return session;
     },
