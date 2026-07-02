@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { sriLankaPackages } from "@/data/packages";
 import { useTravelRequest } from "@/context/TravelRequestContext";
+import { useToast } from "@/context/ToastContext";
 import Input from "@/components/ui/Input";
 import DatePicker from "@/components/ui/DatePicker";
 import Select from "@/components/ui/Select";
@@ -50,6 +51,7 @@ export default function TravelRequestWizard({ isModal = false }: TravelRequestWi
     resetForm,
     closeFormModal,
   } = useTravelRequest();
+  const { addToast } = useToast();
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [submitStatus, setSubmitStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -116,8 +118,8 @@ export default function TravelRequestWizard({ isModal = false }: TravelRequestWi
 
       try {
         sessionStorage.setItem("travel_request_draft", JSON.stringify(draftState));
-      } catch (err) {
-        console.error("Failed to save pending form state:", err);
+      } catch {
+        addToast("error", "Failed to save your draft. Please try again.");
       }
 
       // 3. Close the modal so it doesn't cover the page transition
@@ -126,8 +128,8 @@ export default function TravelRequestWizard({ isModal = false }: TravelRequestWi
       // 4. Keep the draft marked as open for restoration after authentication
       try {
         sessionStorage.setItem("travel_request_draft", JSON.stringify({ ...draftState, isFormModalOpen: true }));
-      } catch (err) {
-        console.error("Failed to preserve pending form state after closing modal:", err);
+      } catch {
+        addToast("error", "Failed to preserve your draft. Please try again.");
       }
 
       // 5. Redirect to login
@@ -174,7 +176,7 @@ export default function TravelRequestWizard({ isModal = false }: TravelRequestWi
         router.push("/my-requests");
       }, 3000);
     } catch (err) {
-      console.error(err);
+      addToast("error", "Failed to submit your travel request. Please try again.");
       setSubmitStatus("error");
       setErrorMessage(err instanceof Error ? err.message : "An unexpected error occurred");
     }

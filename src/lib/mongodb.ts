@@ -34,7 +34,6 @@ export async function dbConnect() {
     };
 
     mongooseCache.promise = mongoose.connect(MONGODB_URI!, opts).then((mongooseInstance) => {
-      console.log("Successfully connected to MongoDB via Mongoose");
       return mongooseInstance;
     });
   }

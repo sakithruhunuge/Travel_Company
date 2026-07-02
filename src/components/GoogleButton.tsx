@@ -3,18 +3,20 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
+import { useToast } from "@/context/ToastContext";
 
 export default function GoogleButton() {
   const [isLoading, setIsLoading] = useState(false);
   const searchParams = useSearchParams();
+  const { addToast } = useToast();
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
       const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
       await signIn("google", { callbackUrl });
-    } catch (error) {
-      console.error("Sign-in failed:", error);
+    } catch {
+      addToast("error", "Sign-in failed. Please try again.");
       setIsLoading(false);
     }
   };

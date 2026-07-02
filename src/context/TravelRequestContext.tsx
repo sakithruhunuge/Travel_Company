@@ -84,7 +84,8 @@ export function TravelRequestProvider({ children }: { children: React.ReactNode 
         }
       }
     } catch (e) {
-      console.error("Failed to load travel request draft from sessionStorage:", e);
+      // eslint-disable-next-line no-console
+      console.warn("Failed to load travel request draft from sessionStorage:", e);
     } finally {
       setIsDraftLoaded(true);
     }
@@ -106,7 +107,8 @@ export function TravelRequestProvider({ children }: { children: React.ReactNode 
           }
         }
       } catch (e) {
-        console.error("Failed to restore modal state on path change:", e);
+        // eslint-disable-next-line no-console
+        console.warn("Failed to restore modal state on path change:", e);
       }
     }
   }, [pathname, isDraftLoaded]);
@@ -120,7 +122,8 @@ export function TravelRequestProvider({ children }: { children: React.ReactNode 
         JSON.stringify({ formData, currentStep, isFormModalOpen })
       );
     } catch (e) {
-      console.error("Failed to save travel request draft to sessionStorage:", e);
+      // eslint-disable-next-line no-console
+      console.warn("Failed to save travel request draft to sessionStorage:", e);
     }
   }, [formData, currentStep, isFormModalOpen, isDraftLoaded]);
 
@@ -187,7 +190,8 @@ export function TravelRequestProvider({ children }: { children: React.ReactNode 
     try {
       sessionStorage.removeItem("travel_request_draft");
     } catch (e) {
-      console.error("Failed to clear travel request draft from sessionStorage:", e);
+      // eslint-disable-next-line no-console
+      console.warn("Failed to clear travel request draft from sessionStorage:", e);
     }
   };
 

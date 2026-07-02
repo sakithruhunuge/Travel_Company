@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useToast } from "@/context/ToastContext";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -13,6 +14,7 @@ export default function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const restoreForm = searchParams.get("restoreForm") === "true";
+  const { addToast } = useToast();
 
   const handleCredentialsSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,8 +36,8 @@ export default function LoginForm() {
         router.push(targetUrl);
         router.refresh();
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
+      addToast("error", "An unexpected error occurred. Please try again.");
       setError("An unexpected error occurred. Please try again.");
       setIsLoading(false);
     }

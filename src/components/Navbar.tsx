@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import ProfileDropdown from "@/components/ProfileDropdown";
 
 const navLinks = [
   { label: "Home", href: "/#home" },
@@ -42,45 +42,15 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
-            {session && (
-              <Link
-                href="/dashboard"
-                className="text-sm font-semibold text-slate-600 hover:text-brand-primary transition-all duration-200 hover:translate-y-[-1px]"
-              >
-                Dashboard
-              </Link>
-            )}
           </nav>
 
           {/* Desktop CTA / Auth */}
           <div className="hidden md:flex items-center gap-4">
             {session ? (
-              <div className="flex items-center gap-3">
-                {session.user?.image && (
-                  <div className="relative w-10 h-10 rounded-full overflow-hidden border border-slate-200">
-                    <Image
-                      src={session.user.image}
-                      alt={session.user.name || "User Avatar"}
-                      fill
-                      className="object-cover"
-                      sizes="40px"
-                      referrerPolicy="no-referrer"
-                    />
-                  </div>
-                )}
-                <div className="text-left">
-                  <span className="block text-xs font-bold text-slate-800">{session.user?.name}</span>
-                  <button
-                    onClick={() => signOut()}
-                    className="text-xs font-semibold text-rose-500 hover:text-rose-600 hover:underline cursor-pointer"
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              </div>
+              <ProfileDropdown />
             ) : (
               <Link
-                href="/login"
+                href={`/login`}
                 className="inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-full text-sm font-semibold text-white bg-brand-primary hover:bg-brand-primary/95 hover:shadow-lg hover:shadow-brand-primary/25 hover:translate-y-[-2px] transition-all duration-200"
               >
                 Login
@@ -126,42 +96,10 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
-            {session && (
-              <Link
-                href="/dashboard"
-                onClick={() => setIsOpen(false)}
-                className="block px-3 py-3 rounded-lg text-base font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-primary transition-colors"
-              >
-                Dashboard
-              </Link>
-            )}
             <div className="pt-4 pb-2 px-3 border-t border-slate-100 mt-2">
               {session ? (
                 <div className="flex items-center gap-3 animate-fade-in">
-                  {session.user?.image && (
-                    <div className="relative w-10 h-10 rounded-full overflow-hidden border border-slate-200">
-                      <Image
-                        src={session.user.image}
-                        alt={session.user.name || "User Avatar"}
-                        fill
-                        className="object-cover"
-                        sizes="40px"
-                        referrerPolicy="no-referrer"
-                      />
-                    </div>
-                  )}
-                  <div>
-                    <span className="block text-sm font-bold text-slate-800">{session.user?.name}</span>
-                    <button
-                      onClick={() => {
-                        setIsOpen(false);
-                        signOut();
-                      }}
-                      className="text-sm font-semibold text-rose-500 hover:text-rose-600 hover:underline cursor-pointer"
-                    >
-                      Sign Out
-                    </button>
-                  </div>
+                  <ProfileDropdown />
                 </div>
               ) : (
                 <Link

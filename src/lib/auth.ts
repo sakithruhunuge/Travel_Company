@@ -76,7 +76,9 @@ export const authOptions: NextAuthOptions = {
           }
           return true;
         } catch (error) {
-          console.error("Error in NextAuth signIn Google callback:", error);
+          // Fail sign-in silently and return false; warn in server logs
+          // eslint-disable-next-line no-console
+          console.warn("Error in NextAuth signIn Google callback:", error);
           return false;
         }
       }
@@ -93,7 +95,8 @@ export const authOptions: NextAuthOptions = {
             token.createdAt = dbUser.createdAt?.toISOString();
           }
         } catch (error) {
-          console.error("Error in NextAuth jwt callback:", error);
+          // eslint-disable-next-line no-console
+          console.warn("Error in NextAuth jwt callback:", error);
         }
       }
       return token;

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/context/ToastContext";
 import Link from "next/link";
 
 interface TravelRequestData {
@@ -21,6 +22,7 @@ export default function MyRequestsPage() {
   const [requests, setRequests] = useState<TravelRequestData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const { addToast } = useToast();
 
   useEffect(() => {
     if (sessionStatus === "unauthenticated") {
@@ -38,8 +40,8 @@ export default function MyRequestsPage() {
             throw new Error(data.error || data.message || "Failed to fetch requests");
           }
           setRequests(data.requests || []);
-        } catch (err) {
-          console.error(err);
+        } catch {
+          addToast("error", "Could not load your travel requests. Please try again.");
           setError("Could not load your travel requests. Please try again.");
         } finally {
           setIsLoading(false);
@@ -48,7 +50,7 @@ export default function MyRequestsPage() {
 
       fetchRequests();
     }
-  }, [sessionStatus]);
+  }, [sessionStatus, addToast]);
 
   if (sessionStatus === "loading" || (sessionStatus === "authenticated" && isLoading)) {
     return (

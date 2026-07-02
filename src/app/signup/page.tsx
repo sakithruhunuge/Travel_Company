@@ -3,6 +3,7 @@
 import { useEffect, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import SignupForm from "@/components/SignupForm";
 
@@ -34,32 +35,45 @@ function SignupContent() {
     }
 
     return (
-        <main className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-sky-400 via-sky-50 to-indigo-100 px-4 sm:px-6 lg:px-8 relative overflow-hidden py-12">
-            <div className="absolute top-[-10%] left-[-10%] w-72 h-72 bg-white/20 rounded-full blur-3xl" />
-            <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-brand-primary/10 rounded-full blur-3xl" />
-
-            <div className="max-w-md w-full space-y-8 bg-white/95 backdrop-blur-md p-10 rounded-3xl border border-white/20 shadow-2xl relative z-10">
-                <div className="text-center space-y-2">
-                    <span className="text-2xl font-black tracking-tight text-brand-dark">
-                        HORIZON<span className="text-brand-primary">TRAVEL</span>
-                    </span>
-                    <h2 className="text-3xl font-black text-slate-950 tracking-tight pt-2">
-                        Create your account
-                    </h2>
-                    <p className="text-sm text-slate-500 font-semibold leading-relaxed">
-                        Join TravelMate to plan your next adventure.
-                    </p>
+        <main className="min-h-screen flex items-center justify-center bg-slate-50">
+            <div className="w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 px-4 py-12">
+                <div className="hidden md:flex flex-col justify-center rounded-3xl overflow-hidden shadow-2xl">
+                    <div className="relative h-full w-full bg-gradient-to-br from-sky-400 to-indigo-100 p-12 flex items-center">
+                        <div className="max-w-lg text-white">
+                            <h1 className="text-4xl font-extrabold leading-tight">Start Your Journey</h1>
+                            <p className="mt-4 text-sm opacity-90">Create your free account and begin planning personalized tours with local experts.</p>
+                            <div className="mt-6">
+                                <Image src="/images/hero_bg.png" alt="Travel" width={720} height={520} className="rounded-2xl shadow-lg w-full object-cover" />
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <SignupForm />
+                <div className="flex items-center justify-center">
+                    <div className="w-full max-w-md space-y-8 bg-white/95 backdrop-blur-md p-10 rounded-3xl border border-white/20 shadow-2xl relative z-10">
+                        <div className="text-center space-y-2">
+                            <span className="text-2xl font-black tracking-tight text-brand-dark">
+                                HORIZON<span className="text-brand-primary">TRAVEL</span>
+                            </span>
+                            <h2 className="text-3xl font-black text-slate-950 tracking-tight pt-2">
+                                Create your account
+                            </h2>
+                            <p className="text-sm text-slate-500 font-semibold leading-relaxed">
+                                Join TravelMate to plan your next adventure.
+                            </p>
+                        </div>
 
-                <div className="text-center pt-2">
-                    <p className="text-sm text-slate-500">
-                        Already have an account?{' '}
-                        <Link href={`/login?callbackUrl=${encodeURIComponent(callbackUrl)}${restoreForm ? "&restoreForm=true" : ""}`} className="font-semibold text-brand-primary hover:text-brand-primary/90">
-                            Sign in
-                        </Link>
-                    </p>
+                        <SignupForm />
+
+                        <div className="text-center pt-2">
+                            <p className="text-sm text-slate-500">
+                                Already have an account?{' '}
+                                <Link href={`/login?callbackUrl=${encodeURIComponent(callbackUrl)}${restoreForm ? "&restoreForm=true" : ""}`} className="font-semibold text-brand-primary hover:text-brand-primary/90">
+                                    Sign in
+                                </Link>
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
