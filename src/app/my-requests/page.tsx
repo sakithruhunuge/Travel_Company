@@ -161,22 +161,20 @@ export default function MyRequestsPage() {
                       </td>
                       <td className="px-6 py-4 text-left">
                         <span
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold capitalize ${
-                            req.status === "approved"
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold capitalize ${req.status === "approved"
                               ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
                               : req.status === "rejected"
-                              ? "bg-rose-50 text-rose-700 border border-rose-100"
-                              : "bg-amber-50 text-amber-700 border border-amber-100"
-                          }`}
+                                ? "bg-rose-50 text-rose-700 border border-rose-100"
+                                : "bg-amber-50 text-amber-700 border border-amber-100"
+                            }`}
                         >
                           <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              req.status === "approved"
+                            className={`w-1.5 h-1.5 rounded-full ${req.status === "approved"
                                 ? "bg-emerald-600"
                                 : req.status === "rejected"
-                                ? "bg-rose-600"
-                                : "bg-amber-600"
-                            }`}
+                                  ? "bg-rose-600"
+                                  : "bg-amber-600"
+                              }`}
                           />
                           {req.status}
                         </span>

@@ -494,8 +494,8 @@ export default function TravelRequestWizard({ isModal = false }: TravelRequestWi
                 type="submit"
                 disabled={submitStatus === "loading"}
                 className={`px-8 py-3 text-white text-sm font-extrabold rounded-xl shadow-lg hover:shadow-brand-primary/20 transition-all cursor-pointer ml-auto flex items-center gap-2 ${!isAuthenticated
-                    ? "bg-amber-500 hover:bg-amber-600 hover:shadow-amber-500/25"
-                    : "bg-brand-primary hover:bg-brand-primary/95"
+                  ? "bg-amber-500 hover:bg-amber-600 hover:shadow-amber-500/25"
+                  : "bg-brand-primary hover:bg-brand-primary/95"
                   }`}
               >
                 {submitStatus === "loading" ? (
