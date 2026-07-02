@@ -2,8 +2,10 @@
 
 import Image from "next/image";
 import { sriLankaImages } from "@/constants/sriLankaImages";
+import { useTravelRequest } from "@/context/TravelRequestContext";
 
 export default function Hero() {
+  const { openFormModal } = useTravelRequest();
   return (
     <section id="home" className="relative bg-slate-950 py-32 overflow-hidden flex items-center min-h-[90vh]">
       {/* Background Image using Next.js Image component */}
@@ -44,12 +46,13 @@ export default function Hero() {
               >
                 Explore Packages
               </a>
-              <a
-                href="#plan-trip"
-                className="px-8 py-4 rounded-full text-sm font-bold text-slate-200 border border-slate-700 hover:border-slate-500 hover:bg-white/5 hover:translate-y-[-2px] transition-all duration-200"
+              <button
+                type="button"
+                onClick={() => openFormModal()}
+                className="px-8 py-4 rounded-full text-sm font-bold text-slate-200 border border-slate-700 hover:border-slate-500 hover:bg-white/5 hover:translate-y-[-2px] transition-all duration-200 cursor-pointer"
               >
                 Plan My Trip
-              </a>
+              </button>
             </div>
           </div>
 

@@ -1,8 +1,9 @@
 "use client";
 
-import TravelRequestForm from "./TravelRequestForm";
+import { useTravelRequest } from "@/context/TravelRequestContext";
 
 export default function Contact() {
+  const { openFormModal } = useTravelRequest();
   return (
     <section id="contact" className="py-24 bg-white scroll-mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -42,9 +43,45 @@ export default function Contact() {
             </div>
           </div>
 
-          {/* Form Side */}
-          <div className="lg:col-span-7">
-            <TravelRequestForm />
+          {/* CTA Card Side */}
+          <div className="lg:col-span-7 flex items-center">
+            <div className="w-full bg-slate-950 text-white rounded-[32px] p-8 sm:p-12 relative overflow-hidden border border-slate-800 shadow-2xl text-left">
+              {/* Background gradient effect */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-brand-primary/20 rounded-full blur-3xl -z-10" />
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-brand-secondary/15 rounded-full blur-3xl -z-10" />
+              
+              <div className="space-y-6 relative z-10">
+                <span className="inline-flex rounded-full bg-white/10 px-3.5 py-1 text-xxs font-extrabold uppercase tracking-widest text-brand-accent border border-white/5">
+                  Start Your Consultation
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight">
+                  Design Your Dream Sri Lankan Getaway
+                </h3>
+                <p className="text-sm text-slate-300 leading-relaxed font-medium">
+                  Use our step-by-step customization wizard to design a personalized itinerary. Choose destinations, select activities, and lock in pricing details with our local travel specialists.
+                </p>
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center gap-3 text-xs text-slate-300 font-semibold">
+                    <span className="text-brand-accent">✓</span> Curated local guides and private transport options.
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-slate-300 font-semibold">
+                    <span className="text-brand-accent">✓</span> Flexible planning and free cancellations.
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-slate-300 font-semibold">
+                    <span className="text-brand-accent">✓</span> Personal specialist coordinates every booking detail.
+                  </div>
+                </div>
+                <div className="pt-6">
+                  <button
+                    type="button"
+                    onClick={() => openFormModal()}
+                    className="inline-flex items-center justify-center w-full sm:w-auto px-8 py-4 bg-brand-primary hover:bg-brand-primary/95 text-white text-sm font-extrabold rounded-xl hover:shadow-lg hover:shadow-brand-primary/25 hover:translate-y-[-2px] transition-all duration-200 cursor-pointer"
+                  >
+                    Start Planning Now &rarr;
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

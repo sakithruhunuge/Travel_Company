@@ -1,5 +1,7 @@
 "use client";
 
+import { useTravelRequest } from "@/context/TravelRequestContext";
+
 const sellingPoints = [
   {
     title: "Trusted Local Travel Experts",
@@ -58,6 +60,7 @@ const sellingPoints = [
 ];
 
 export default function WhyChooseUs() {
+  const { openFormModal } = useTravelRequest();
   return (
     <section id="why-choose-us" className="py-24 bg-slate-50 scroll-mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -74,12 +77,13 @@ export default function WhyChooseUs() {
               Planning a trip to Sri Lanka shouldn&apos;t be stressful. We bridge the gap between dream itineraries and flawless execution, giving you complete freedom to enjoy your travels.
             </p>
             <div className="pt-2">
-              <a
-                href="#plan-trip"
-                className="inline-flex px-8 py-4 rounded-full text-sm font-bold text-white bg-brand-primary hover:bg-brand-primary/95 transition-all duration-200 hover:translate-y-[-2px] hover:shadow-lg hover:shadow-brand-primary/20"
+              <button
+                type="button"
+                onClick={() => openFormModal()}
+                className="inline-flex px-8 py-4 rounded-full text-sm font-bold text-white bg-brand-primary hover:bg-brand-primary/95 transition-all duration-200 hover:translate-y-[-2px] hover:shadow-lg hover:shadow-brand-primary/20 cursor-pointer"
               >
                 Plan Your Escapes
-              </a>
+              </button>
             </div>
           </div>
 

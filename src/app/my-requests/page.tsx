@@ -78,7 +78,7 @@ export default function MyRequestsPage() {
             <p className="text-sm text-slate-500 mt-1">Track the status of your customized Sri Lanka travel itineraries.</p>
           </div>
           <Link
-            href="/#plan-trip"
+            href="/plan-trip"
             className="inline-flex items-center justify-center px-6 py-3 bg-brand-primary text-white text-sm font-extrabold rounded-xl hover:bg-brand-primary/95 hover:shadow-lg hover:shadow-brand-primary/25 transition-all duration-200 self-start sm:self-auto"
           >
             Plan Another Trip
@@ -109,7 +109,7 @@ export default function MyRequestsPage() {
               </p>
             </div>
             <Link
-              href="/#plan-trip"
+              href="/plan-trip"
               className="inline-flex px-6 py-3 bg-brand-primary text-white text-sm font-bold rounded-xl hover:bg-brand-primary/95 transition-all"
             >
               Plan Your First Trip

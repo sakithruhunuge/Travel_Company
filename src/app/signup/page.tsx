@@ -1,20 +1,23 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import SignupForm from "@/components/SignupForm";
 
-export default function SignupPage() {
+function SignupContent() {
     const { status } = useSession();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+    const restoreForm = searchParams.get("restoreForm") === "true";
 
     useEffect(() => {
         if (status === "authenticated") {
-            router.push("/");
+            router.push(callbackUrl);
         }
-    }, [status, router]);
+    }, [status, router, callbackUrl]);
 
     if (status === "loading") {
         return (
@@ -53,12 +56,30 @@ export default function SignupPage() {
                 <div className="text-center pt-2">
                     <p className="text-sm text-slate-500">
                         Already have an account?{' '}
-                        <Link href="/login" className="font-semibold text-brand-primary hover:text-brand-primary/90">
+                        <Link href={`/login?callbackUrl=${encodeURIComponent(callbackUrl)}${restoreForm ? "&restoreForm=true" : ""}`} className="font-semibold text-brand-primary hover:text-brand-primary/90">
                             Sign in
                         </Link>
                     </p>
                 </div>
             </div>
         </main>
+    );
+}
+
+export default function SignupPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+                <div className="text-center space-y-4">
+                    <svg className="animate-spin h-10 w-10 text-brand-primary mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p className="text-sm font-semibold text-slate-500">Loading...</p>
+                </div>
+            </div>
+        }>
+            <SignupContent />
+        </Suspense>
     );
 }

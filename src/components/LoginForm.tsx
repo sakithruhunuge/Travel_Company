@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -10,6 +10,9 @@ export default function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const restoreForm = searchParams.get("restoreForm") === "true";
 
   const handleCredentialsSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +30,8 @@ export default function LoginForm() {
         setError(res.error || "Invalid email or password");
         setIsLoading(false);
       } else {
-        router.push("/dashboard");
+        const targetUrl = restoreForm && callbackUrl ? callbackUrl : callbackUrl || "/dashboard";
+        router.push(targetUrl);
         router.refresh();
       }
     } catch (err) {
@@ -97,7 +101,10 @@ export default function LoginForm() {
       </button>
 
       <div className="text-center pt-1">
-        <a href="/signup" className="text-sm font-semibold text-brand-primary hover:text-brand-primary/90">
+        <a
+          href={`/signup?callbackUrl=${encodeURIComponent(callbackUrl)}${restoreForm ? "&restoreForm=true" : ""}`}
+          className="text-sm font-semibold text-brand-primary hover:text-brand-primary/90"
+        >
           Create an account
         </a>
       </div>

@@ -4,7 +4,6 @@ import Destinations from "@/components/Destinations";
 import Packages from "@/components/Packages";
 import WhyChooseUs from "@/components/WhyChooseUs";
 import Testimonials from "@/components/Testimonials";
-import TravelRequestForm from "@/components/TravelRequestForm";
 import Contact from "@/components/Contact";
 
 export default function Home() {
@@ -16,7 +15,6 @@ export default function Home() {
       <Packages />
       <WhyChooseUs />
       <Testimonials />
-      <TravelRequestForm />
       <Contact />
     </>
   );

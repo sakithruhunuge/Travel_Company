@@ -2,8 +2,10 @@
 
 import Image from "next/image";
 import { sriLankaPackages } from "@/data/packages";
+import { useTravelRequest } from "@/context/TravelRequestContext";
 
 export default function Packages() {
+  const { openFormModal } = useTravelRequest();
   return (
     <section id="packages" className="py-24 bg-slate-50 scroll-mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -93,12 +95,13 @@ export default function Packages() {
                 </div>
 
                 <div className="pt-4 border-t border-slate-100">
-                  <a
-                    href="#plan-trip"
-                    className="block w-full text-center py-3 bg-brand-primary/10 hover:bg-brand-primary hover:text-white text-brand-primary rounded-xl font-bold transition-all duration-200"
+                  <button
+                    type="button"
+                    onClick={() => openFormModal(pkg.id)}
+                    className="block w-full text-center py-3 bg-brand-primary/10 hover:bg-brand-primary hover:text-white text-brand-primary rounded-xl font-bold transition-all duration-200 cursor-pointer"
                   >
                     Select this Package
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>

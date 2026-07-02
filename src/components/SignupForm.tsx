@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function SignupForm() {
     const [name, setName] = useState("");
@@ -13,6 +13,9 @@ export default function SignupForm() {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+    const restoreForm = searchParams.get("restoreForm") === "true";
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -56,7 +59,8 @@ export default function SignupForm() {
                 setIsLoading(false);
                 router.push("/login");
             } else {
-                router.push("/dashboard");
+                const targetUrl = restoreForm && callbackUrl ? callbackUrl : callbackUrl || "/dashboard";
+                router.push(targetUrl);
                 router.refresh();
             }
         } catch (err) {
