@@ -27,29 +27,41 @@ export default function Hero() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
           {/* Text Content */}
           <div className="lg:col-span-7 space-y-8 text-left">
-            <span className="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest text-brand-accent bg-brand-accent/15 border border-brand-accent/30 animate-pulse">
+            <span 
+              className="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest text-brand-primary bg-brand-primary/10 border border-brand-primary/25 animate-fade-in-up"
+              style={{ animationDelay: "150ms", animationFillMode: "both" }}
+            >
               Explore the Pearl of the Indian Ocean
             </span>
-            <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white leading-[1.1]">
+            <h1 
+              className="text-4xl sm:text-6xl font-black tracking-tight text-white leading-[1.15] animate-fade-in-up"
+              style={{ animationDelay: "300ms", animationFillMode: "both" }}
+            >
               Discover the Beauty <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-primary to-brand-secondary">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-primary via-brand-accent to-brand-primary">
                 of Sri Lanka
               </span>
             </h1>
-            <p className="text-lg text-slate-300 leading-relaxed max-w-xl">
+            <p 
+              className="text-lg text-slate-300 leading-relaxed max-w-xl animate-fade-in-up"
+              style={{ animationDelay: "450ms", animationFillMode: "both" }}
+            >
               From ancient kingdoms and misty mountains to golden beaches and unforgettable wildlife experiences, explore Sri Lanka with carefully crafted travel packages.
             </p>
-            <div className="flex flex-wrap gap-4 pt-2">
+            <div 
+              className="flex flex-wrap gap-4 pt-2 animate-fade-in-up"
+              style={{ animationDelay: "600ms", animationFillMode: "both" }}
+            >
               <a
                 href="#packages"
-                className="px-8 py-4 rounded-full text-sm font-bold text-white bg-brand-primary hover:bg-brand-primary/90 hover:shadow-lg hover:shadow-brand-primary/20 hover:translate-y-[-2px] transition-all duration-200"
+                className="px-8 py-4 rounded-full text-sm font-bold text-brand-dark bg-brand-primary hover:bg-brand-primary/90 hover:shadow-lg hover:shadow-brand-primary/30 hover:scale-[1.02] transition-all duration-300"
               >
                 Explore Packages
               </a>
               <button
                 type="button"
                 onClick={() => openFormModal()}
-                className="px-8 py-4 rounded-full text-sm font-bold text-slate-200 border border-slate-700 hover:border-slate-500 hover:bg-white/5 hover:translate-y-[-2px] transition-all duration-200 cursor-pointer"
+                className="px-8 py-4 rounded-full text-sm font-bold text-white border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/40 hover:scale-[1.02] transition-all duration-300 cursor-pointer"
               >
                 Plan My Trip
               </button>
@@ -57,26 +69,38 @@ export default function Hero() {
           </div>
 
           {/* Quick Info Panel */}
-          <div className="lg:col-span-5">
-            <div className="bg-white/10 backdrop-blur-xl p-8 rounded-3xl border border-white/15 shadow-2xl space-y-6 text-left">
-              <h3 className="text-xl font-bold text-white">A Journey Beyond Expectations</h3>
+          <div 
+            className="lg:col-span-5 animate-scale-in"
+            style={{ animationDelay: "750ms", animationFillMode: "both" }}
+          >
+            <div className="glass-dark p-8 rounded-3xl border border-white/10 shadow-2xl space-y-6 text-left glow-gold animate-float relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-brand-primary/10 rounded-full blur-xl pointer-events-none" />
+              <h3 className="text-xl font-bold text-white tracking-tight border-b border-white/10 pb-4">
+                A Journey Beyond Expectations
+              </h3>
               <div className="space-y-4">
-                <div className="flex items-center gap-4 bg-slate-900/50 p-4 rounded-2xl border border-white/5">
-                  <div className="w-10 h-10 rounded-xl bg-brand-primary/20 flex items-center justify-center text-brand-primary font-bold">✓</div>
+                <div className="flex items-center gap-4 bg-white/5 hover:bg-white/10 p-4 rounded-2xl border border-white/5 hover:border-white/10 hover:translate-x-1 transition-all duration-300 group">
+                  <div className="w-10 h-10 rounded-xl bg-brand-primary/20 flex items-center justify-center text-brand-primary font-black group-hover:scale-110 transition-transform">
+                    ✓
+                  </div>
                   <div>
                     <h4 className="text-sm font-bold text-white">Bespoke Itineraries</h4>
                     <p className="text-xs text-slate-400">100% personalized travel plans.</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 bg-slate-900/50 p-4 rounded-2xl border border-white/5">
-                  <div className="w-10 h-10 rounded-xl bg-brand-secondary/20 flex items-center justify-center text-brand-secondary font-bold">✓</div>
+                <div className="flex items-center gap-4 bg-white/5 hover:bg-white/10 p-4 rounded-2xl border border-white/5 hover:border-white/10 hover:translate-x-1 transition-all duration-300 group">
+                  <div className="w-10 h-10 rounded-xl bg-brand-accent/20 flex items-center justify-center text-brand-accent font-black group-hover:scale-110 transition-transform">
+                    ✓
+                  </div>
                   <div>
                     <h4 className="text-sm font-bold text-white">All-inclusive Comfort</h4>
                     <p className="text-xs text-slate-400">Hotels, transport & guides included.</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 bg-slate-900/50 p-4 rounded-2xl border border-white/5">
-                  <div className="w-10 h-10 rounded-xl bg-brand-accent/20 flex items-center justify-center text-brand-accent font-bold">✓</div>
+                <div className="flex items-center gap-4 bg-white/5 hover:bg-white/10 p-4 rounded-2xl border border-white/5 hover:border-white/10 hover:translate-x-1 transition-all duration-300 group">
+                  <div className="w-10 h-10 rounded-xl bg-brand-secondary/20 flex items-center justify-center text-brand-secondary font-black group-hover:scale-110 transition-transform">
+                    ✓
+                  </div>
                   <div>
                     <h4 className="text-sm font-bold text-white">Trusted Experts</h4>
                     <p className="text-xs text-slate-400">Award-winning local operators.</p>
