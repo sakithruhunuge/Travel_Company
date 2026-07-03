@@ -44,13 +44,12 @@ export default function MyRequestsPage() {
 
     return (
         <div className="space-y-6">
-            <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-                    <div>
-                        <h2 className="text-2xl font-semibold text-slate-900">My Travel Requests</h2>
-                        <p className="mt-1 text-sm text-slate-500">Track your pending, approved, and cancelled journeys.</p>
-                    </div>
-                </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-[0_2px_8px_rgb(0,0,0,0.04)]">
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Travel Requests</p>
+                <h2 className="mt-1 text-xl font-semibold text-slate-800">My Travel Requests</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                    Track your pending, approved, and cancelled journeys.
+                </p>
             </div>
 
             {loading ? (
@@ -58,11 +57,19 @@ export default function MyRequestsPage() {
             ) : error ? (
                 <EmptyState title="Unable to load requests" description={error} />
             ) : requests.length === 0 ? (
-                <EmptyState title="No travel requests yet" description="Submit a request through the travel form to see it appear here." />
+                <EmptyState
+                    title="No travel requests yet"
+                    description="Submit a request through the travel form to see it appear here."
+                />
             ) : (
                 <div className="grid gap-4">
                     {requests.map((request) => (
-                        <RequestCard key={request._id} request={request} onCancel={handleCancel} isCancelling={cancellingId === request._id} />
+                        <RequestCard
+                            key={request._id}
+                            request={request}
+                            onCancel={handleCancel}
+                            isCancelling={cancellingId === request._id}
+                        />
                     ))}
                 </div>
             )}

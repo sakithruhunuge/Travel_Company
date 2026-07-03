@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { CloseOutlined, MenuOutlined } from "@ant-design/icons";
 import Sidebar from "@/components/dashboard/Sidebar";
 import TopNavbar from "@/components/dashboard/TopNavbar";
 
@@ -22,7 +23,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return (
             <div className="flex min-h-screen items-center justify-center bg-slate-50">
                 <div className="text-center">
-                    <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" />
+                    <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-slate-700" />
                     <p className="mt-4 text-sm font-medium text-slate-500">Loading dashboard...</p>
                 </div>
             </div>
@@ -34,29 +35,55 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
 
     return (
-        <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(212,175,55,0.06),_transparent_35%),linear-gradient(135deg,_#FAF8F5_0%,_#F3EFE9_100%)] p-3 md:p-6">
-            <div className="mx-auto flex max-w-7xl flex-col gap-4 lg:flex-row">
-                <div className="lg:hidden">
-                    <button
-                        onClick={() => setMobileSidebarOpen((prev) => !prev)}
-                        className="mb-2 rounded-2xl border border-slate-200/60 bg-white/80 backdrop-blur-sm px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-white active:scale-95"
-                    >
-                        {mobileSidebarOpen ? "✕ Close Menu" : "☰ Open Menu"}
-                    </button>
-                    {mobileSidebarOpen ? (
-                        <div className="mb-3 animate-scale-in">
-                            <Sidebar onNavigate={() => setMobileSidebarOpen(false)} onLogout={() => signOut({ callbackUrl: "/login" })} />
-                        </div>
-                    ) : null}
-                </div>
-
-                <div className="hidden lg:block lg:w-72">
+        <div className="min-h-screen bg-slate-50">
+            <div className="flex min-h-screen">
+                {/* Desktop sidebar */}
+                <div className="hidden lg:flex lg:w-64 lg:flex-shrink-0">
                     <Sidebar onNavigate={() => undefined} onLogout={() => signOut({ callbackUrl: "/login" })} />
                 </div>
 
-                <div className="flex-1 space-y-4">
+                <div className="flex flex-1 flex-col min-w-0">
+                    {/* Mobile header bar */}
+                    <div className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
+                        <button
+                            onClick={() => setMobileSidebarOpen((prev) => !prev)}
+                            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors duration-200 hover:bg-slate-100"
+                            aria-label={mobileSidebarOpen ? "Close menu" : "Open menu"}
+                        >
+                            {mobileSidebarOpen ? (
+                                <>
+                                    <CloseOutlined className="text-xs" />
+                                    Close
+                                </>
+                            ) : (
+                                <>
+                                    <MenuOutlined className="text-xs" />
+                                    Menu
+                                </>
+                            )}
+                        </button>
+                        <span className="text-sm font-semibold text-slate-800">Horizon Travel</span>
+                    </div>
+
+                    {/* Mobile sidebar overlay */}
+                    {mobileSidebarOpen ? (
+                        <div className="fixed inset-0 z-40 lg:hidden">
+                            <div
+                                className="absolute inset-0 bg-slate-900/20"
+                                onClick={() => setMobileSidebarOpen(false)}
+                            />
+                            <div className="absolute inset-y-0 left-0 w-64 bg-white shadow-lg">
+                                <Sidebar
+                                    onNavigate={() => setMobileSidebarOpen(false)}
+                                    onLogout={() => signOut({ callbackUrl: "/login" })}
+                                />
+                            </div>
+                        </div>
+                    ) : null}
+
                     <TopNavbar title="Dashboard" subtitle="Manage your Sri Lanka plans" />
-                    <main className="animate-scale-in">{children}</main>
+
+                    <main className="flex-1 p-4 md:p-6 lg:p-8">{children}</main>
                 </div>
             </div>
         </div>

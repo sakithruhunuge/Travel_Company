@@ -2,6 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+    AppstoreOutlined,
+    SendOutlined,
+    HistoryOutlined,
+    UserOutlined,
+    SettingOutlined,
+    LogoutOutlined,
+} from "@ant-design/icons";
 
 type SidebarProps = {
     onNavigate?: () => void;
@@ -9,46 +17,56 @@ type SidebarProps = {
 };
 
 const menuItems = [
-    { href: "/dashboard", label: "Dashboard", icon: "▣" },
-    { href: "/dashboard/my-requests", label: "My Travel Requests", icon: "✈" },
-    { href: "/dashboard/request-history", label: "Request History", icon: "⏱" },
-    { href: "/dashboard/profile", label: "Profile", icon: "👤" },
-    { href: "/dashboard/settings", label: "Settings", icon: "⚙" },
+    { href: "/dashboard", label: "Dashboard", icon: AppstoreOutlined },
+    { href: "/dashboard/my-requests", label: "My Travel Requests", icon: SendOutlined },
+    { href: "/dashboard/request-history", label: "Request History", icon: HistoryOutlined },
+    { href: "/dashboard/profile", label: "Profile", icon: UserOutlined },
+    { href: "/dashboard/settings", label: "Settings", icon: SettingOutlined },
 ];
 
 export default function Sidebar({ onNavigate, onLogout }: SidebarProps) {
     const pathname = usePathname();
 
     return (
-        <aside className="flex h-full w-full flex-col rounded-[32px] border border-white/10 bg-brand-dark/95 p-5 text-white shadow-2xl backdrop-blur-md">
-            <div className="px-3 py-3">
-                <p className="text-2xl font-black tracking-[0.2em] text-brand-primary">HORIZON</p>
-                <p className="text-xs font-bold uppercase tracking-[0.3em] text-slate-400 mt-1">TRAVEL</p>
+        <aside className="flex h-full w-full flex-col border-r border-slate-200 bg-white">
+            <div className="border-b border-slate-200 px-5 py-5">
+                <p className="text-base font-bold tracking-wide text-slate-800">
+                    HORIZON<span className="text-teal-700">TRAVEL</span>
+                </p>
+                <p className="mt-0.5 text-xs uppercase tracking-wider text-slate-500">Dashboard</p>
             </div>
 
-            <nav className="mt-8 space-y-2">
+            <nav className="flex-1 space-y-0.5 px-3 py-4">
                 {menuItems.map((item) => {
-                    const isActive = pathname === item.href || (pathname.startsWith(item.href + "/") && item.href !== "/dashboard");
+                    const isActive =
+                        pathname === item.href ||
+                        (pathname.startsWith(item.href + "/") && item.href !== "/dashboard");
+                    const Icon = item.icon;
+
                     return (
                         <Link
                             key={item.href}
                             href={item.href}
                             onClick={onNavigate}
-                            className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition-all duration-200 hover:translate-x-0.5 ${isActive ? "bg-brand-primary text-brand-dark shadow-lg shadow-brand-primary/25" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}
+                            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
+                                isActive
+                                    ? "bg-teal-50 text-teal-800 border-l-2 border-teal-700 pl-[10px]"
+                                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+                            }`}
                         >
-                            <span className="text-base">{item.icon}</span>
+                            <Icon className={`text-base ${isActive ? "text-teal-700" : "text-slate-400"}`} />
                             {item.label}
                         </Link>
                     );
                 })}
             </nav>
 
-            <div className="mt-auto border-t border-white/10 pt-4">
+            <div className="border-t border-slate-200 px-3 py-4">
                 <button
                     onClick={onLogout}
-                    className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-rose-400 transition-colors duration-200 hover:bg-rose-500/10"
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors duration-200 hover:bg-slate-100 hover:text-slate-800"
                 >
-                    <span>↩</span>
+                    <LogoutOutlined className="text-base text-slate-400" />
                     Logout
                 </button>
             </div>

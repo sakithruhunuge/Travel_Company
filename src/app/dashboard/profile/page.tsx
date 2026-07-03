@@ -13,6 +13,9 @@ type SessionUser = {
     createdAt?: string | null;
 };
 
+const inputClassName =
+    "w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-800 transition-colors duration-200 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20";
+
 export default function ProfilePage() {
     const { data: session, update } = useSession();
     const [name, setName] = useState("");
@@ -54,26 +57,55 @@ export default function ProfilePage() {
 
     return (
         <div className="space-y-6">
-            <ProfileCard name={session?.user?.name || "Traveler"} email={session?.user?.email || ""} image={(session?.user as SessionUser | undefined)?.image || null} provider={(session?.user as SessionUser | undefined)?.provider || "credentials"} createdAt={(session?.user as SessionUser | undefined)?.createdAt || new Date().toISOString()} />
+            <ProfileCard
+                name={session?.user?.name || "Traveler"}
+                email={session?.user?.email || ""}
+                image={(session?.user as SessionUser | undefined)?.image || null}
+                provider={(session?.user as SessionUser | undefined)?.provider || "credentials"}
+                createdAt={(session?.user as SessionUser | undefined)?.createdAt || new Date().toISOString()}
+            />
 
             <form onSubmit={handleUpdateProfile} className="space-y-6">
                 <SettingsCard title="Profile details" description="Update your public profile information.">
                     <div className="grid gap-4 md:grid-cols-2">
                         <div>
-                            <label className="mb-2 block text-sm font-semibold text-slate-700">Full name</label>
-                            <input value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm" />
+                            <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-slate-500">
+                                Full name
+                            </label>
+                            <input
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                className={inputClassName}
+                            />
                         </div>
                         <div>
-                            <label className="mb-2 block text-sm font-semibold text-slate-700">Email</label>
-                            <input value={session?.user?.email || ""} readOnly className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500" />
+                            <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-slate-500">
+                                Email
+                            </label>
+                            <input
+                                value={session?.user?.email || ""}
+                                readOnly
+                                className={`${inputClassName} bg-slate-50 text-slate-500`}
+                            />
                         </div>
                         <div className="md:col-span-2">
-                            <label className="mb-2 block text-sm font-semibold text-slate-700">Profile photo URL</label>
-                            <input value={image} onChange={(e) => setImage(e.target.value)} className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm" placeholder="https://..." />
+                            <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-slate-500">
+                                Profile photo URL
+                            </label>
+                            <input
+                                value={image}
+                                onChange={(e) => setImage(e.target.value)}
+                                className={inputClassName}
+                                placeholder="https://..."
+                            />
                         </div>
                     </div>
                     <div className="mt-5 flex flex-wrap gap-3">
-                        <button type="submit" disabled={loading} className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400">
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="rounded-lg bg-slate-800 px-5 py-2.5 text-sm font-medium text-white transition-colors duration-200 hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                        >
                             {loading ? "Saving..." : "Save changes"}
                         </button>
                     </div>

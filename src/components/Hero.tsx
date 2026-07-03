@@ -1,111 +1,196 @@
 "use client";
 
 import Image from "next/image";
-import { sriLankaImages } from "@/constants/sriLankaImages";
+import { useState } from "react";
 import { useTravelRequest } from "@/context/TravelRequestContext";
+
+const DESTINATIONS = ["Kandy", "Ella", "Mirissa", "Sigiriya", "Galle"];
+const BUDGETS = ["$100 - $300", "$300 - $600", "$600 - $1000", "$1000+"];
 
 export default function Hero() {
   const { openFormModal } = useTravelRequest();
-  return (
-    <section id="home" className="relative bg-brand-dark py-32 overflow-hidden flex items-center min-h-[90vh]">
-      {/* Background Image using Next.js Image component */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        <Image
-          src={sriLankaImages.hero.imageUrl}
-          alt={sriLankaImages.hero.title}
-          fill
-          priority
-          className="object-cover animate-float-slow"
-          sizes="100vw"
-        />
-        {/* Dark overlays to maintain text readability */}
-        <div className="absolute inset-0 bg-brand-dark/60 z-10" />
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-dark via-brand-dark/20 to-brand-dark/40 z-10" />
-      </div>
+  const [destination, setDestination] = useState(DESTINATIONS[0]);
+  const [date, setDate] = useState("");
+  const [budget, setBudget] = useState(BUDGETS[0]);
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full z-20">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
-          {/* Text Content */}
-          <div className="lg:col-span-7 space-y-8 text-left">
+  return (
+    <section
+      id="home"
+      className="relative bg-white py-24 lg:py-32 overflow-hidden"
+    >
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+          {/* Text + Search */}
+          <div className="lg:col-span-6 space-y-8 text-left">
             <span
-              className="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest text-brand-primary bg-brand-primary/15 border border-brand-primary/30 backdrop-blur-sm animate-fade-in-up"
+              className="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest text-brand-primary bg-brand-primary/10 border border-brand-primary/20 animate-fade-in-up"
               style={{ animationDelay: "150ms", animationFillMode: "both" }}
             >
               Explore the Pearl of the Indian Ocean
             </span>
+
             <h1
-              className="text-4xl sm:text-6xl font-black tracking-tight text-white leading-[1.15] animate-fade-in-up"
+              className="text-4xl sm:text-6xl font-black tracking-tight text-brand-dark leading-[1.1] animate-fade-in-up"
               style={{ animationDelay: "300ms", animationFillMode: "both" }}
             >
-              Discover the Beauty <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-primary via-orange-300 to-brand-primary">
-                of Sri Lanka
+              Explore Beautiful
+              <br />
+              <span className="relative inline-block text-transparent bg-clip-text bg-gradient-to-r from-brand-primary to-orange-400">
+                Sri Lanka
+                <svg
+                  className="absolute -top-2 -right-8 w-6 h-6 text-brand-primary"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path d="M12 0l2.2 7.3L22 9.5l-7.3 2.2L12 19l-2.2-7.3L2 9.5l7.8-2.2L12 0z" />
+                </svg>
               </span>
             </h1>
+
             <p
-              className="text-lg text-white/75 leading-relaxed max-w-xl animate-fade-in-up"
+              className="text-lg text-brand-dark/60 leading-relaxed max-w-xl animate-fade-in-up"
               style={{ animationDelay: "450ms", animationFillMode: "both" }}
             >
-              From ancient kingdoms and misty mountains to golden beaches and unforgettable wildlife experiences, explore Sri Lanka with carefully crafted travel packages.
+              From ancient kingdoms and misty mountains to golden beaches and
+              unforgettable wildlife experiences, explore Sri Lanka with
+              carefully crafted travel packages.
             </p>
+
+            {/* Search / filter bar */}
             <div
-              className="flex flex-wrap gap-4 pt-2 animate-fade-in-up"
+              className="animate-fade-in-up"
               style={{ animationDelay: "600ms", animationFillMode: "both" }}
+            >
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  openFormModal();
+                }}
+                className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-0 bg-white rounded-2xl sm:rounded-full border border-black/10 shadow-[0_10px_40px_rgba(0,0,0,0.08)] p-3 sm:p-2 sm:pl-6 max-w-2xl"
+              >
+                <label className="flex-1 sm:pr-4 sm:border-r sm:border-black/10">
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-brand-primary">
+                    Destination
+                  </span>
+                  <select
+                    value={destination}
+                    onChange={(e) => setDestination(e.target.value)}
+                    className="w-full text-sm font-semibold text-brand-dark bg-transparent outline-none py-1"
+                  >
+                    {DESTINATIONS.map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="flex-1 sm:px-4 sm:border-r sm:border-black/10">
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-brand-primary">
+                    Travel Date
+                  </span>
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full text-sm font-semibold text-brand-dark bg-transparent outline-none py-1"
+                  />
+                </label>
+
+                <label className="flex-1 sm:px-4">
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-brand-primary">
+                    Budget
+                  </span>
+                  <select
+                    value={budget}
+                    onChange={(e) => setBudget(e.target.value)}
+                    className="w-full text-sm font-semibold text-brand-dark bg-transparent outline-none py-1"
+                  >
+                    {BUDGETS.map((b) => (
+                      <option key={b} value={b}>
+                        {b}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <button
+                  type="submit"
+                  className="shrink-0 px-8 py-3.5 rounded-full text-sm font-bold text-white bg-brand-primary hover:bg-brand-primary/90 hover:scale-[1.03] active:scale-95 transition-all duration-300 ease-in-out cursor-pointer"
+                >
+                  Plan My Trip
+                </button>
+              </form>
+            </div>
+
+            <div
+              className="flex items-center gap-6 pt-2 animate-fade-in-up"
+              style={{ animationDelay: "750ms", animationFillMode: "both" }}
             >
               <a
                 href="#packages"
-                className="px-8 py-4 rounded-full text-sm font-bold text-white bg-brand-primary hover:bg-brand-primary/90 shadow-[0_8px_30px_rgb(255,139,80,0.3)] hover:shadow-[0_12px_36px_rgb(255,139,80,0.4)] hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out"
+                className="text-sm font-bold text-brand-dark underline decoration-brand-primary decoration-2 underline-offset-4 hover:text-brand-primary transition-colors"
               >
-                Explore Packages
+                Browse all packages →
               </a>
-              <button
-                type="button"
-                onClick={() => openFormModal()}
-                className="px-8 py-4 rounded-full text-sm font-bold text-white border border-white/25 bg-white/10 backdrop-blur-md hover:bg-white/20 hover:border-white/40 hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out cursor-pointer"
-              >
-                Plan My Trip
-              </button>
             </div>
           </div>
 
-          {/* Quick Info Panel */}
+          {/* Illustration */}
           <div
-            className="lg:col-span-5 animate-scale-in"
-            style={{ animationDelay: "750ms", animationFillMode: "both" }}
+            className="lg:col-span-6 relative animate-scale-in"
+            style={{ animationDelay: "450ms", animationFillMode: "both" }}
           >
-            <div className="bg-white/10 backdrop-blur-lg p-8 rounded-3xl border border-white/20 shadow-xl space-y-6 text-left glow-orange relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/15 rounded-full blur-2xl pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-brand-secondary/15 rounded-full blur-2xl pointer-events-none" />
-              <h3 className="text-xl font-bold text-white tracking-tight border-b border-white/15 pb-4 relative z-10">
-                A Journey Beyond Expectations
-              </h3>
-              <div className="space-y-4 relative z-10">
-                <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm hover:bg-white/15 p-4 rounded-2xl border border-white/10 hover:border-white/20 hover:translate-x-1 transition-all duration-300 ease-in-out group">
-                  <div className="w-10 h-10 rounded-2xl bg-brand-primary/25 flex items-center justify-center text-brand-primary font-black group-hover:scale-110 transition-all duration-300 ease-in-out">
-                    ✓
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-white">Bespoke Itineraries</h4>
-                    <p className="text-xs text-white/60">100% personalized travel plans.</p>
-                  </div>
+            <div className="relative mx-auto max-w-md aspect-square">
+              {/* Decorative blob */}
+              <div className="absolute inset-0 bg-brand-primary/15 rounded-[45%_55%_60%_40%/50%_45%_55%_50%] blur-sm" />
+              <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-brand-secondary/15 rounded-full blur-2xl" />
+
+              {/* Dashed flight path + plane */}
+              <svg
+                className="absolute -top-4 left-4 w-28 h-20 text-brand-primary/70"
+                viewBox="0 0 120 80"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M4 60 C 30 10, 70 10, 110 20"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeDasharray="4 6"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M100 12l14 8-16 4 2-12z"
+                  fill="currentColor"
+                />
+              </svg>
+
+              {/* Main image */}
+              <div className="relative w-full h-full rounded-[45%_55%_60%_40%/50%_45%_55%_50%] overflow-hidden">
+                <Image
+                  src="/images/hero-traveler.jpg"
+                  alt="Young woman traveler in Sri Lanka"
+                  fill
+                  priority
+                  className="object-cover"
+                  sizes="(min-width: 1024px) 480px, 90vw"
+                />
+              </div>
+
+              {/* Floating stat card */}
+              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 sm:left-auto sm:right-0 sm:translate-x-0 bg-white rounded-2xl shadow-xl border border-black/5 px-5 py-3 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-brand-primary/15 flex items-center justify-center text-brand-primary font-black text-sm">
+                  ✓
                 </div>
-                <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm hover:bg-white/15 p-4 rounded-2xl border border-white/10 hover:border-white/20 hover:translate-x-1 transition-all duration-300 ease-in-out group">
-                  <div className="w-10 h-10 rounded-2xl bg-brand-secondary/25 flex items-center justify-center text-brand-secondary font-black group-hover:scale-110 transition-all duration-300 ease-in-out">
-                    ✓
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-white">All-inclusive Comfort</h4>
-                    <p className="text-xs text-white/60">Hotels, transport & guides included.</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm hover:bg-white/15 p-4 rounded-2xl border border-white/10 hover:border-white/20 hover:translate-x-1 transition-all duration-300 ease-in-out group">
-                  <div className="w-10 h-10 rounded-2xl bg-brand-primary/25 flex items-center justify-center text-brand-primary font-black group-hover:scale-110 transition-all duration-300 ease-in-out">
-                    ✓
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-white">Trusted Experts</h4>
-                    <p className="text-xs text-white/60">Award-winning local operators.</p>
-                  </div>
+                <div>
+                  <p className="text-sm font-bold text-brand-dark leading-none">
+                    500+
+                  </p>
+                  <p className="text-[11px] text-brand-dark/50">
+                    Happy travelers
+                  </p>
                 </div>
               </div>
             </div>
