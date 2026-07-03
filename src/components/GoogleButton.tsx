@@ -13,7 +13,11 @@ export default function GoogleButton() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+      const restoreForm = searchParams.get("restoreForm") === "true";
+      let callbackUrl = searchParams.get("callbackUrl") || (restoreForm ? "/plan-trip" : "/dashboard");
+      if (restoreForm && (callbackUrl === "/dashboard" || callbackUrl === "/login" || callbackUrl === "/signup")) {
+        callbackUrl = "/plan-trip";
+      }
       await signIn("google", { callbackUrl });
     } catch {
       addToast("error", "Sign-in failed. Please try again.");

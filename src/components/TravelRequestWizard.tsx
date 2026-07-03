@@ -122,17 +122,7 @@ export default function TravelRequestWizard({ isModal = false }: TravelRequestWi
         addToast("error", "Failed to save your draft. Please try again.");
       }
 
-      // 3. Close the modal so it doesn't cover the page transition
-      closeFormModal();
-
-      // 4. Keep the draft marked as open for restoration after authentication
-      try {
-        sessionStorage.setItem("travel_request_draft", JSON.stringify({ ...draftState, isFormModalOpen: true }));
-      } catch {
-        addToast("error", "Failed to preserve your draft. Please try again.");
-      }
-
-      // 5. Redirect to login
+      // 3. Redirect to login
       router.push(`/login?callbackUrl=${encodeURIComponent(currentPage)}&restoreForm=true`);
       return;
     }

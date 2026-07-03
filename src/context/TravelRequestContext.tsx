@@ -116,6 +116,9 @@ export function TravelRequestProvider({ children }: { children: React.ReactNode 
   // 3. Persist draft to sessionStorage on state changes
   useEffect(() => {
     if (!isDraftLoaded) return;
+    // Do not save draft status when on login/signup pages to avoid overwriting modal visibility state
+    if (pathname === "/login" || pathname === "/signup") return;
+
     try {
       sessionStorage.setItem(
         "travel_request_draft",
@@ -125,7 +128,7 @@ export function TravelRequestProvider({ children }: { children: React.ReactNode 
       // eslint-disable-next-line no-console
       console.warn("Failed to save travel request draft to sessionStorage:", e);
     }
-  }, [formData, currentStep, isFormModalOpen, isDraftLoaded]);
+  }, [formData, currentStep, isFormModalOpen, isDraftLoaded, pathname]);
 
   const setStep = (step: number) => {
     setCurrentStep(step);

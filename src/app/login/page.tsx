@@ -11,7 +11,12 @@ function LoginContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const restoreForm = searchParams.get("restoreForm") === "true";
+  
+  let callbackUrl = searchParams.get("callbackUrl") || (restoreForm ? "/plan-trip" : "/dashboard");
+  if (restoreForm && (callbackUrl === "/dashboard" || callbackUrl === "/login" || callbackUrl === "/signup")) {
+    callbackUrl = "/plan-trip";
+  }
 
   useEffect(() => {
     if (status === "authenticated") {

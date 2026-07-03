@@ -1,41 +1,117 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, SignInResponse } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/context/ToastContext";
 
-export default function LoginForm() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+/**
+ * LoginForm
+ *
+ * Behavior summary for `restoreForm` flow:
+ * - If `restoreForm=true` and a valid `callbackUrl` is provided, redirect there after login.
+ * - If `restoreForm=true` and no valid `callbackUrl` is provided, redirect to a default
+ *   form page (`/checkout` by default).
+ * - If `restoreForm` is false or not present, attempt to redirect to `callbackUrl` (if valid),
+ *   otherwise fallback to `/dashboard`.
+ *
+ * State preservation:
+ * - Form pages which redirect users to login with `restoreForm=true` should save any necessary
+ *   unsaved form state to `sessionStorage` under `pendingFormState` (JSON string). When the user
+ *   returns after login, this component will append `formState` to the redirect URL if present.
+ * - This avoids embedding potentially large or sensitive data in query strings; it's still the
+ *   integrator's responsibility to implement the saving on the form page.
+ */
+
+export default function LoginForm(): JSX.Element {
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+
+  // Raw values from URL. Don't default early — we need to decide fallbacks based on restoreForm.
+  const rawCallback = searchParams.get("callbackUrl");
   const restoreForm = searchParams.get("restoreForm") === "true";
+  const rawFormState = searchParams.get("formState");
   const { addToast } = useToast();
 
-  const handleCredentialsSignIn = async (e: React.FormEvent) => {
+  const DEFAULT_FORM_URL = "/plan-trip"; // default page to restore incomplete forms to
+  const DEFAULT_FALLBACK = "/dashboard"; // fallback when not restoring a form
+
+  // Only allow relative URLs to prevent open-redirect vulnerabilities. Adjust policy as needed.
+  const isValidRedirectUrl = (u: string): boolean => {
+    // Accept absolute same-origin URLs or relative paths that begin with '/'
+    try {
+      // If it starts with '/', treat as relative and valid
+      if (u.startsWith("/")) return true;
+      // Otherwise, attempt to parse and ensure it is same origin (optional)
+      const parsed = new URL(u);
+      // Replace with your app origin if you want to strictly allow same-origin only
+      return parsed.origin === window.location.origin;
+    } catch {
+      return false;
+    }
+  };
+
+  const buildRedirectUrl = (base: string, formState?: string | null) => {
+    if (!formState) return base;
+    const separator = base.includes("?") ? "&" : "?";
+    return `${base}${separator}formState=${encodeURIComponent(formState)}`;
+  };
+
+  // Compute signup link preserving redirect params when appropriate
+  const signupHref = (() => {
+    const params: string[] = [];
+    if (rawCallback && isValidRedirectUrl(rawCallback)) params.push(`callbackUrl=${encodeURIComponent(rawCallback)}`);
+    if (restoreForm) params.push(`restoreForm=true`);
+    if (rawFormState) params.push(`formState=${encodeURIComponent(rawFormState)}`);
+    return `/signup${params.length ? `?${params.join("&")}` : ""}`;
+  })();
+
+  const handleCredentialsSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
     try {
-      const res = await signIn("credentials", {
+      const res: SignInResponse | undefined = (await signIn("credentials", {
         redirect: false,
         email,
         password,
-      });
+      })) as SignInResponse | undefined;
 
       if (res?.error) {
         setError(res.error || "Invalid email or password");
         setIsLoading(false);
-      } else {
-        const targetUrl = restoreForm && callbackUrl ? callbackUrl : callbackUrl || "/dashboard";
-        router.push(targetUrl);
-        router.refresh();
+        return;
       }
+
+      // Determine any preserved form state (from URL param or sessionStorage).
+      // Integrations should write pending form state to sessionStorage under `pendingFormState`.
+      const preservedFormState = rawFormState || sessionStorage.getItem("pendingFormState");
+
+      // Decide redirect target according to restoreForm flag and callback validity.
+      let callbackUrl = rawCallback && isValidRedirectUrl(rawCallback) ? rawCallback : null;
+      if (restoreForm && (!callbackUrl || callbackUrl === "/dashboard" || callbackUrl === "/login" || callbackUrl === "/signup")) {
+        callbackUrl = DEFAULT_FORM_URL;
+      }
+
+      let targetUrl: string;
+      if (restoreForm) {
+        // When restoring a form, prefer the provided callbackUrl, else fall back to DEFAULT_FORM_URL
+        targetUrl = buildRedirectUrl(callbackUrl || DEFAULT_FORM_URL, preservedFormState);
+      } else {
+        // Not restoring: go to callback if valid, otherwise dashboard
+        targetUrl = callbackUrl ? buildRedirectUrl(callbackUrl, null) : DEFAULT_FALLBACK;
+      }
+
+      // Clean up any saved pending state after consuming it.
+      if (sessionStorage.getItem("pendingFormState")) sessionStorage.removeItem("pendingFormState");
+
+      router.push(targetUrl);
+      router.refresh();
     } catch {
       addToast("error", "An unexpected error occurred. Please try again.");
       setError("An unexpected error occurred. Please try again.");
@@ -103,10 +179,7 @@ export default function LoginForm() {
       </button>
 
       <div className="text-center pt-1">
-        <a
-          href={`/signup?callbackUrl=${encodeURIComponent(callbackUrl)}${restoreForm ? "&restoreForm=true" : ""}`}
-          className="text-sm font-semibold text-brand-primary hover:text-brand-primary/90"
-        >
+        <a href={signupHref} className="text-sm font-semibold text-brand-primary hover:text-brand-primary/90">
           Create an account
         </a>
       </div>

@@ -15,9 +15,11 @@ export default function SignupForm() {
     const [success, setSuccess] = useState("");
     const router = useRouter();
     const searchParams = useSearchParams();
-    const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+    const rawCallback = searchParams.get("callbackUrl");
     const restoreForm = searchParams.get("restoreForm") === "true";
     const { addToast } = useToast();
+    const DEFAULT_FORM_URL = "/plan-trip";
+    const DEFAULT_FALLBACK = "/dashboard";
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -61,7 +63,11 @@ export default function SignupForm() {
                 setIsLoading(false);
                 router.push("/login");
             } else {
-                const targetUrl = restoreForm && callbackUrl ? callbackUrl : callbackUrl || "/dashboard";
+                let callbackUrl = rawCallback || null;
+                if (restoreForm && (!callbackUrl || callbackUrl === "/dashboard" || callbackUrl === "/login" || callbackUrl === "/signup")) {
+                    callbackUrl = DEFAULT_FORM_URL;
+                }
+                const targetUrl = callbackUrl || DEFAULT_FALLBACK;
                 router.push(targetUrl);
                 router.refresh();
             }
