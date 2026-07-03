@@ -3,7 +3,7 @@
 import { useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTravelRequest } from "@/context/TravelRequestContext";
-import TravelRequestWizard from "@/components/TravelRequestWizard";
+import TravelRequestAntD from "@/components/TravelRequestAntD";
 
 function PlanTripContent() {
   const searchParams = useSearchParams();
@@ -37,8 +37,8 @@ function PlanTripContent() {
       <div className="absolute top-[-10%] left-[-15%] w-[500px] h-[500px] bg-sky-100 rounded-full blur-3xl opacity-65 -z-10" />
       <div className="absolute bottom-[-10%] right-[-15%] w-[600px] h-[600px] bg-indigo-50 rounded-full blur-3xl opacity-75 -z-10" />
 
-      <div className="max-w-4xl mx-auto w-full space-y-8 bg-white/80 backdrop-blur-md p-6 sm:p-10 rounded-[32px] border border-white/50 shadow-xl relative z-10">
-        <TravelRequestWizard isModal={false} />
+      <div className="max-w-6xl mx-auto w-full space-y-8 bg-white/80 backdrop-blur-md p-6 sm:p-10 rounded-[32px] border border-white/50 shadow-xl relative z-10">
+        <TravelRequestAntD isModal={false} />
       </div>
     </main>
   );

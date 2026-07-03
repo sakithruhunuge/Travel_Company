@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Providers from "./Providers";
+import { AntdRegistry } from "@ant-design/nextjs-registry";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,11 +21,13 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body className={`${inter.className} bg-slate-50 text-slate-900 antialiased min-h-screen flex flex-col`}>
-        <Providers>
-          <Navbar />
-          <main className="flex-grow">{children}</main>
-          <Footer />
-        </Providers>
+        <AntdRegistry>
+          <Providers>
+            <Navbar />
+            <main className="flex-grow">{children}</main>
+            <Footer />
+          </Providers>
+        </AntdRegistry>
       </body>
     </html>
   );

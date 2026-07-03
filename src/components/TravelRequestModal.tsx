@@ -1,7 +1,7 @@
 "use client";
 
 import { useTravelRequest } from "@/context/TravelRequestContext";
-import TravelRequestWizard from "./TravelRequestWizard";
+import TravelRequestAntD from "./TravelRequestAntD";
 
 export default function TravelRequestModal() {
   const { isFormModalOpen, closeFormModal, isDraftLoaded } = useTravelRequest();
@@ -14,7 +14,7 @@ export default function TravelRequestModal() {
       onClick={closeFormModal}
     >
       <div
-        className="relative bg-white rounded-3xl w-full max-w-3xl p-6 sm:p-10 shadow-2xl border border-slate-100 animate-scale-up max-h-[90vh] overflow-y-auto text-left"
+        className="relative bg-white rounded-3xl w-full max-w-6xl p-6 sm:p-10 shadow-2xl border border-slate-100 animate-scale-up max-h-[90vh] overflow-y-auto text-left"
         onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside content
       >
         {/* Close Button */}
@@ -26,8 +26,8 @@ export default function TravelRequestModal() {
           &times;
         </button>
 
-        {/* Form Wizard */}
-        <TravelRequestWizard isModal={true} />
+        {/* Unified Form Layout */}
+        <TravelRequestAntD isModal={true} />
       </div>
     </div>
   );
