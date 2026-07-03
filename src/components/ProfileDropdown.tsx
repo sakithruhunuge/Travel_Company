@@ -54,8 +54,7 @@ export default function ProfileDropdown() {
                     <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-700 font-bold">{(session.user?.name || "").slice(0, 1)}</div>
                 )}
                 <div className="text-left hidden sm:block">
-                    <div className="text-xs font-bold text-slate-800 leading-none">{session.user?.name}</div>
-                    <div className="text-xxs text-slate-500">Account</div>
+                    <div className="text-base font-bold text-slate-900 leading-none">{session.user?.name}</div>
                 </div>
             </button>
 

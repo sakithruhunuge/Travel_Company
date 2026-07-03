@@ -59,7 +59,7 @@ export default function Hero() {
           {/* Quick Info Panel */}
           <div className="lg:col-span-5">
             <div className="bg-white/10 backdrop-blur-xl p-8 rounded-3xl border border-white/15 shadow-2xl space-y-6 text-left">
-              <h3 className="text-xl font-bold text-white">Your Sri Lankan Escape</h3>
+              <h3 className="text-xl font-bold text-white">A Journey Beyond Expectations</h3>
               <div className="space-y-4">
                 <div className="flex items-center gap-4 bg-slate-900/50 p-4 rounded-2xl border border-white/5">
                   <div className="w-10 h-10 rounded-xl bg-brand-primary/20 flex items-center justify-center text-brand-primary font-bold">✓</div>
