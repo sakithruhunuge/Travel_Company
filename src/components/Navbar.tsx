@@ -52,7 +52,7 @@ export default function Navbar() {
             ) : (
               <Link
                 href={`/login`}
-                className="inline-flex items-center justify-center px-6 py-2.5 rounded-full text-sm font-bold text-white bg-brand-secondary hover:bg-brand-secondary/90 shadow-[0_8px_30px_rgb(37,165,254,0.3)] hover:shadow-[0_12px_36px_rgb(37,165,254,0.4)] hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out"
+                className="inline-flex items-center justify-center px-6 py-2.5 rounded-full text-sm font-bold text-white bg-brand-primary hover:bg-brand-primary/90 shadow-[0_8px_30px_rgb(255,139,80,0.3)] hover:shadow-[0_12px_36px_rgb(255,139,80,0.4)] hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out"
               >
                 Login
               </Link>
@@ -106,7 +106,7 @@ export default function Navbar() {
                 <Link
                   href="/login"
                   onClick={() => setIsOpen(false)}
-                  className="block w-full text-center px-6 py-3 rounded-full text-base font-bold text-white bg-brand-secondary hover:bg-brand-secondary/90 shadow-[0_8px_30px_rgb(37,165,254,0.3)] hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out"
+                  className="block w-full text-center px-6 py-3 rounded-full text-base font-bold text-white bg-brand-primary hover:bg-brand-primary/90 shadow-[0_8px_30px_rgb(255,139,80,0.3)] hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out"
                 >
                   Login
                 </Link>

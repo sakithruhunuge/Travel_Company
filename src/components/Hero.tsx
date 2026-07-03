@@ -132,7 +132,7 @@ export default function Hero() {
                 href="#packages"
                 className="text-sm font-bold text-brand-dark underline decoration-brand-primary decoration-2 underline-offset-4 hover:text-brand-primary transition-colors"
               >
-                Browse all packages →
+                Browse all packages
               </a>
             </div>
           </div>
@@ -142,56 +142,17 @@ export default function Hero() {
             className="lg:col-span-6 relative animate-scale-in"
             style={{ animationDelay: "450ms", animationFillMode: "both" }}
           >
-            <div className="relative mx-auto max-w-md aspect-square">
-              {/* Decorative blob */}
-              <div className="absolute inset-0 bg-brand-primary/15 rounded-[45%_55%_60%_40%/50%_45%_55%_50%] blur-sm" />
-              <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-brand-secondary/15 rounded-full blur-2xl" />
-
-              {/* Dashed flight path + plane */}
-              <svg
-                className="absolute -top-4 left-4 w-28 h-20 text-brand-primary/70"
-                viewBox="0 0 120 80"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M4 60 C 30 10, 70 10, 110 20"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeDasharray="4 6"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M100 12l14 8-16 4 2-12z"
-                  fill="currentColor"
-                />
-              </svg>
-
+            <div className="relative mx-auto max-w-xl aspect-square">
               {/* Main image */}
               <div className="relative w-full h-full rounded-[45%_55%_60%_40%/50%_45%_55%_50%] overflow-hidden">
                 <Image
-                  src="/images/hero-traveler.jpg"
+                  src="/images/hero-traveler-new.png"
                   alt="Young woman traveler in Sri Lanka"
                   fill
                   priority
-                  className="object-cover"
-                  sizes="(min-width: 1024px) 480px, 90vw"
+                  className="object-contain object-center"
+                  sizes="(min-width: 1024px) 900px, 100vw"
                 />
-              </div>
-
-              {/* Floating stat card */}
-              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 sm:left-auto sm:right-0 sm:translate-x-0 bg-white rounded-2xl shadow-xl border border-black/5 px-5 py-3 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-brand-primary/15 flex items-center justify-center text-brand-primary font-black text-sm">
-                  ✓
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-brand-dark leading-none">
-                    500+
-                  </p>
-                  <p className="text-[11px] text-brand-dark/50">
-                    Happy travelers
-                  </p>
-                </div>
               </div>
             </div>
           </div>

@@ -91,7 +91,9 @@ export default function Packages() {
                   <div className="grid grid-cols-1 gap-1.5 pt-1">
                     {pkg.includes.map((item, i) => (
                       <div key={i} className="flex items-center gap-2 text-xs text-brand-muted font-semibold">
-                        <span className="text-brand-secondary font-black text-[10px]">✔</span>
+                        <svg className="w-3.5 h-3.5 text-brand-secondary" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path d="M16.7 5.3a1 1 0 010 1.4l-7.3 7.3a1 1 0 01-1.4 0l-3.3-3.3a1 1 0 011.4-1.4l2.6 2.6 6.6-6.6a1 1 0 011.4 0z" />
+                        </svg>
                         <span>{item}</span>
                       </div>
                     ))}

@@ -35,7 +35,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
             <div className="flex min-h-screen">
                 {/* Desktop sidebar */}
                 <div className="hidden lg:flex lg:w-64 lg:flex-shrink-0">
@@ -83,7 +83,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                     <TopNavbar title="Dashboard" subtitle="Manage your Sri Lanka plans" />
 
-                    <main className="flex-1 p-4 md:p-6 lg:p-8">{children}</main>
+                    <main className="flex-1 p-4 md:p-6 lg:p-10 max-w-7xl mx-auto">{children}</main>
                 </div>
             </div>
         </div>

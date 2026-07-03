@@ -19,7 +19,7 @@ export default function Toasts() {
                         {t.message}
                     </div>
                     <button onClick={() => removeToast(t.id)} aria-label="Dismiss" className="text-xs opacity-80 hover:opacity-100">
-                        ✕
+                        x
                     </button>
                 </div>
             ))}

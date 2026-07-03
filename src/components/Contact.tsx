@@ -62,13 +62,22 @@ export default function Contact() {
                 </p>
                 <div className="space-y-3 pt-2">
                   <div className="flex items-center gap-3 text-xs text-white/70 font-semibold">
-                    <span className="text-brand-primary font-black">✓</span> Curated local guides and private transport options.
+                    <svg className="w-3.5 h-3.5 text-brand-primary" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path d="M16.7 5.3a1 1 0 010 1.4l-7.3 7.3a1 1 0 01-1.4 0l-3.3-3.3a1 1 0 011.4-1.4l2.6 2.6 6.6-6.6a1 1 0 011.4 0z" />
+                    </svg>
+                    Curated local guides and private transport options.
                   </div>
                   <div className="flex items-center gap-3 text-xs text-white/70 font-semibold">
-                    <span className="text-brand-primary font-black">✓</span> Flexible planning and free cancellations.
+                    <svg className="w-3.5 h-3.5 text-brand-primary" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path d="M16.7 5.3a1 1 0 010 1.4l-7.3 7.3a1 1 0 01-1.4 0l-3.3-3.3a1 1 0 011.4-1.4l2.6 2.6 6.6-6.6a1 1 0 011.4 0z" />
+                    </svg>
+                    Flexible planning and free cancellations.
                   </div>
                   <div className="flex items-center gap-3 text-xs text-white/70 font-semibold">
-                    <span className="text-brand-primary font-black">✓</span> Personal specialist coordinates every booking detail.
+                    <svg className="w-3.5 h-3.5 text-brand-primary" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path d="M16.7 5.3a1 1 0 010 1.4l-7.3 7.3a1 1 0 01-1.4 0l-3.3-3.3a1 1 0 011.4-1.4l2.6 2.6 6.6-6.6a1 1 0 011.4 0z" />
+                    </svg>
+                    Personal specialist coordinates every booking detail.
                   </div>
                 </div>
                 <div className="pt-6">
@@ -77,7 +86,7 @@ export default function Contact() {
                     onClick={() => openFormModal()}
                     className="inline-flex items-center justify-center w-full sm:w-auto px-8 py-4 bg-brand-primary hover:bg-brand-primary/90 text-white text-sm font-extrabold rounded-full shadow-[0_8px_30px_rgb(255,139,80,0.3)] hover:shadow-[0_12px_36px_rgb(255,139,80,0.4)] hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out cursor-pointer"
                   >
-                    Start Planning Now &rarr;
+                    Start Planning Now
                   </button>
                 </div>
               </div>

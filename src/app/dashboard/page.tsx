@@ -39,49 +39,41 @@ export default function DashboardHomePage() {
     }, []);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             {/* Welcome Banner */}
-            <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-[0_2px_8px_rgb(0,0,0,0.04)] lg:p-8">
-                <div className="grid gap-8 lg:grid-cols-[1.35fr_0.65fr]">
+            <section className="rounded-2xl bg-gradient-to-r from-white via-slate-50 to-white p-6 shadow-lg lg:p-8">
+                <div className="grid gap-8 lg:grid-cols-[1.4fr_0.6fr] items-center">
                     <div className="space-y-4 text-left">
-                        <span className="inline-flex text-xs font-medium uppercase tracking-wider text-teal-700">
+                        <span className="inline-flex text-xs font-semibold uppercase tracking-wider text-teal-600">
                             Sri Lanka Curated Journeys
                         </span>
-                        <h2 className="text-2xl font-semibold leading-tight text-slate-800 sm:text-3xl">
+                        <h2 className="text-3xl font-extrabold leading-tight text-slate-900 sm:text-4xl">
                             Welcome back, {session?.user?.name || "Traveler"}
                         </h2>
-                        <p className="max-w-xl text-sm leading-relaxed text-slate-500 sm:text-base">
-                            Manage your Sri Lanka travel plans, requests, and preferences from one secure dashboard.
+                        <p className="max-w-2xl text-base leading-relaxed text-slate-600">
+                            Manage your Sri Lanka travel plans, requests, and preferences from one secure and
+                            beautiful dashboard.
                         </p>
-                        <div className="flex flex-wrap gap-3 pt-1">
+                        <div className="flex flex-wrap gap-3 pt-3">
                             <Link
                                 href="/dashboard/my-requests"
-                                className="rounded-lg bg-slate-800 px-5 py-2.5 text-sm font-medium text-white transition-colors duration-200 hover:bg-slate-700"
+                                className="rounded-md bg-teal-600 px-5 py-3 text-sm font-semibold text-white shadow-md hover:bg-teal-500 transition"
                             >
                                 View Requests
                             </Link>
                             <Link
                                 href="/dashboard/profile"
-                                className="rounded-lg border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-700 transition-colors duration-200 hover:bg-slate-100"
+                                className="rounded-md border border-slate-200 px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
                             >
                                 Update Profile
                             </Link>
                         </div>
                     </div>
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                        <div
-                            className="relative overflow-hidden rounded-lg h-36 bg-cover bg-center"
-                            style={{
-                                backgroundImage:
-                                    "url('https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=900&q=80')",
-                            }}
-                        >
-                            <div className="absolute inset-0 bg-slate-900/50" />
-                            <div className="absolute inset-0 flex flex-col justify-end p-4 text-left">
-                                <p className="text-xs font-medium uppercase tracking-wider text-teal-300">Travel tip</p>
-                                <p className="mt-1.5 text-xs font-medium leading-relaxed text-slate-100">
-                                    The best time to visit Sri Lanka is between December and April for sunny beaches and lush hill country.
-                                </p>
+                    <div className="rounded-xl overflow-hidden">
+                        <div className="relative h-40 w-full rounded-xl bg-cover bg-center shadow-inner" style={{ backgroundImage: "linear-gradient(180deg, rgba(15,23,42,0.15), rgba(255,255,255,0.1)), url('https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1200&q=80')" }}>
+                            <div className="absolute inset-0 flex flex-col justify-end p-5 text-left">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-amber-100">Travel tip</p>
+                                <p className="mt-1 text-sm font-medium text-white drop-shadow">The best time to visit Sri Lanka is December–April for sunny beaches and lush hill country.</p>
                             </div>
                         </div>
                     </div>
@@ -89,7 +81,7 @@ export default function DashboardHomePage() {
             </section>
 
             {/* Statistics Widgets */}
-            <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
                 {loading ? (
                     <LoadingSkeleton />
                 ) : error ? (
@@ -98,41 +90,17 @@ export default function DashboardHomePage() {
                     </div>
                 ) : stats ? (
                     <>
-                        <StatCard
-                            title="Total Requests"
-                            value={stats.total}
-                            description="All travel requests submitted"
-                            icon={<SendOutlined className="text-lg" />}
-                            accent="bg-slate-100 text-slate-600"
-                        />
-                        <StatCard
-                            title="Pending Requests"
-                            value={stats.pending}
-                            description="Awaiting team review"
-                            icon={<ClockCircleOutlined className="text-lg" />}
-                            accent="bg-amber-50 text-amber-700"
-                        />
-                        <StatCard
-                            title="Approved Requests"
-                            value={stats.approved}
-                            description="Confirmed by the travel team"
-                            icon={<CheckCircleOutlined className="text-lg" />}
-                            accent="bg-emerald-50 text-emerald-700"
-                        />
-                        <StatCard
-                            title="Rejected Requests"
-                            value={stats.rejected}
-                            description="Requests needing updates"
-                            icon={<CloseCircleOutlined className="text-lg" />}
-                            accent="bg-rose-50 text-rose-700"
-                        />
+                        <StatCard title="Total Requests" value={stats.total} description="All travel requests" icon={<SendOutlined />} accent="bg-gradient-to-br from-brand-primary to-brand-secondary" />
+                        <StatCard title="Pending" value={stats.pending} description="Awaiting review" icon={<ClockCircleOutlined />} accent="bg-gradient-to-br from-yellow-400 to-amber-400" />
+                        <StatCard title="Approved" value={stats.approved} description="Confirmed trips" icon={<CheckCircleOutlined />} accent="bg-gradient-to-br from-brand-secondary to-emerald-400" />
+                        <StatCard title="Rejected" value={stats.rejected} description="Needs attention" icon={<CloseCircleOutlined />} accent="bg-gradient-to-br from-rose-600 to-rose-400" />
                     </>
                 ) : null}
             </section>
 
             {/* Suggested & Support */}
             <section className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
-                <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-[0_2px_8px_rgb(0,0,0,0.04)] sm:p-8 text-left">
+                <div className="rounded-2xl bg-white p-6 shadow-lg sm:p-8 text-left">
                     <div>
                         <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
                             Recommendations
@@ -167,24 +135,18 @@ export default function DashboardHomePage() {
                                 image: "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=800&q=80",
                             },
                         ].map((place) => (
-                            <div
-                                key={place.name}
-                                className="overflow-hidden rounded-lg border border-slate-200 bg-white transition-colors duration-200 hover:border-slate-300"
-                            >
-                                <div
-                                    className="h-28 bg-cover bg-center"
-                                    style={{ backgroundImage: `url(${place.image})` }}
-                                />
+                            <div key={place.name} className="overflow-hidden rounded-xl bg-white shadow-sm transition-transform hover:-translate-y-1">
+                                <div className="h-28 w-full bg-cover bg-center" style={{ backgroundImage: `url(${place.image})` }} />
                                 <div className="p-4">
-                                    <p className="font-medium text-slate-800">{place.name}</p>
-                                    <p className="mt-1 text-xs text-slate-500">{place.desc}</p>
+                                    <p className="font-semibold text-slate-900">{place.name}</p>
+                                    <p className="mt-1 text-sm text-slate-500">{place.desc}</p>
                                 </div>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                <div className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-[0_2px_8px_rgb(0,0,0,0.04)] sm:p-8 text-left">
+                <div className="flex flex-col rounded-2xl bg-white p-6 shadow-lg sm:p-8 text-left">
                     <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Support</p>
                     <h3 className="mt-1 text-base font-semibold text-slate-800">Need help planning?</h3>
                     <p className="mt-2 text-sm leading-relaxed text-slate-500">
@@ -198,7 +160,7 @@ export default function DashboardHomePage() {
                         ].map((tip) => (
                             <div
                                 key={tip}
-                                className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3.5 text-sm text-slate-700 transition-colors duration-200 hover:bg-slate-100"
+                                className="flex items-center gap-3 rounded-lg bg-slate-50 p-3.5 text-sm text-slate-700 transition-transform hover:-translate-y-0.5"
                             >
                                 <RightOutlined className="flex-shrink-0 text-xs text-teal-700" />
                                 {tip}
