@@ -19,14 +19,14 @@ export default function Navbar() {
   const { data: session } = useSession();
 
   return (
-    <header className="sticky top-0 z-50 bg-white/60 backdrop-blur-md border-b border-white/20 transition-all duration-300 shadow-sm shadow-slate-100/50">
+    <header className="sticky top-0 z-50 bg-white/70 backdrop-blur-md border-b border-white/20 transition-all duration-300 ease-in-out shadow-sm shadow-black/[0.03]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
-            <Link href="/" className="flex items-center gap-2 group">
-              <span className="text-2xl font-black tracking-wider text-brand-dark group-hover:text-brand-primary transition-colors">
-                HORIZON<span className="text-brand-primary group-hover:text-brand-accent transition-colors font-medium">TRAVEL</span>
+            <Link href="/" className="flex items-center gap-2 group transition-all duration-300 ease-in-out">
+              <span className="text-2xl font-black tracking-wider text-brand-dark group-hover:text-brand-primary transition-all duration-300 ease-in-out">
+                HORIZON<span className="text-brand-primary group-hover:text-brand-secondary transition-all duration-300 ease-in-out font-medium">TRAVEL</span>
               </span>
             </Link>
           </div>
@@ -37,10 +37,10 @@ export default function Navbar() {
               <Link
                 key={link.label}
                 href={link.href}
-                className="text-sm font-bold text-slate-700 hover:text-brand-secondary transition-all duration-200 hover:translate-y-[-1px] relative py-1 group/item"
+                className="text-sm font-bold text-brand-muted hover:text-brand-secondary transition-all duration-300 ease-in-out relative py-1 group/item"
               >
                 {link.label}
-                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-brand-primary transition-all duration-300 group-hover/item:w-full" />
+                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-brand-primary transition-all duration-300 ease-in-out group-hover/item:w-full rounded-full" />
               </Link>
             ))}
           </nav>
@@ -52,7 +52,7 @@ export default function Navbar() {
             ) : (
               <Link
                 href={`/login`}
-                className="inline-flex items-center justify-center px-6 py-2.5 rounded-full text-sm font-bold text-white bg-brand-secondary hover:bg-brand-secondary/95 hover:shadow-lg hover:shadow-brand-secondary/20 hover:translate-y-[-1px] transition-all duration-200"
+                className="inline-flex items-center justify-center px-6 py-2.5 rounded-full text-sm font-bold text-white bg-brand-secondary hover:bg-brand-secondary/90 shadow-[0_8px_30px_rgb(37,165,254,0.3)] hover:shadow-[0_12px_36px_rgb(37,165,254,0.4)] hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out"
               >
                 Login
               </Link>
@@ -64,7 +64,7 @@ export default function Navbar() {
             <button
               onClick={() => setIsOpen(!isOpen)}
               type="button"
-              className="inline-flex items-center justify-center p-2 rounded-xl text-slate-600 hover:text-brand-dark hover:bg-slate-100/50 focus:outline-none transition-all duration-200"
+              className="inline-flex items-center justify-center p-2.5 rounded-2xl text-brand-muted hover:text-brand-dark hover:bg-white/60 focus:outline-none transition-all duration-300 ease-in-out"
               aria-controls="mobile-menu"
               aria-expanded={isOpen}
             >
@@ -86,27 +86,27 @@ export default function Navbar() {
       {/* Mobile Drawer */}
       {isOpen && (
         <div className="md:hidden animate-fade-in-down" id="mobile-menu">
-          <div className="px-3 pt-2 pb-5 space-y-1 bg-white/95 backdrop-blur-lg border-b border-slate-100 shadow-xl">
+          <div className="px-3 pt-2 pb-5 space-y-1 bg-white/80 backdrop-blur-lg border-b border-white/20 shadow-xl">
             {navLinks.map((link) => (
               <Link
                 key={link.label}
                 href={link.href}
                 onClick={() => setIsOpen(false)}
-                className="block px-4 py-3 rounded-xl text-base font-bold text-slate-700 hover:bg-slate-50 hover:text-brand-secondary transition-all duration-200"
+                className="block px-4 py-3 rounded-2xl text-base font-bold text-brand-muted hover:bg-white/60 hover:text-brand-secondary transition-all duration-300 ease-in-out"
               >
                 {link.label}
               </Link>
             ))}
-            <div className="pt-4 pb-2 px-4 border-t border-slate-100 mt-2">
+            <div className="pt-4 pb-2 px-4 border-t border-white/30 mt-2">
               {session ? (
-                <div className="flex items-center gap-3 animate-fade-in">
+                <div className="flex items-center gap-3 animate-fade-in-up">
                   <ProfileDropdown />
                 </div>
               ) : (
                 <Link
                   href="/login"
                   onClick={() => setIsOpen(false)}
-                  className="block w-full text-center px-6 py-3 rounded-full text-base font-bold text-white bg-brand-secondary hover:bg-brand-secondary/95 transition-all duration-200 shadow-md shadow-brand-secondary/15"
+                  className="block w-full text-center px-6 py-3 rounded-full text-base font-bold text-white bg-brand-secondary hover:bg-brand-secondary/90 shadow-[0_8px_30px_rgb(37,165,254,0.3)] hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out"
                 >
                   Login
                 </Link>

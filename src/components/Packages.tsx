@@ -7,27 +7,28 @@ import { useTravelRequest } from "@/context/TravelRequestContext";
 export default function Packages() {
   const { openFormModal } = useTravelRequest();
   return (
-    <section id="packages" className="py-24 bg-slate-50 scroll-mt-20">
+    <section id="packages" className="py-24 bg-white scroll-mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4 animate-fade-in-up">
           <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">
             Curated Escapes
           </span>
           <h2 className="text-3xl sm:text-5xl font-black text-brand-dark tracking-tight">
             Featured Sri Lanka Packages
           </h2>
-          <p className="text-base text-slate-500">
+          <p className="text-base text-brand-muted">
             Handpicked premium tours that combine comfort, adventure, and immersive local experiences. Explore Sri Lanka with our carefully crafted travel packages.
           </p>
         </div>
 
         {/* Destination Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {sriLankaPackages.map((pkg) => (
+          {sriLankaPackages.map((pkg, idx) => (
             <div
               key={pkg.id}
-              className="group bg-white rounded-[32px] overflow-hidden border border-slate-100/80 shadow-sm hover:shadow-2xl hover:shadow-brand-secondary/10 transition-all duration-500 hover:translate-y-[-6px] flex flex-col h-full"
+              className="group bg-white/80 backdrop-blur-sm rounded-3xl overflow-hidden border border-white/60 shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 ease-in-out flex flex-col h-full animate-fade-in-up"
+              style={{ animationDelay: `${100 + idx * 100}ms`, animationFillMode: "both" }}
             >
               {/* Image Container */}
               <div className="relative h-64 w-full overflow-hidden">
@@ -35,11 +36,11 @@ export default function Packages() {
                   src={pkg.image}
                   alt={pkg.name}
                   fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-700"
+                  className="object-cover group-hover:scale-105 transition-all duration-300 ease-in-out"
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
                 {/* Rating Badge */}
-                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-slate-800 flex items-center gap-1 shadow-sm z-10">
+                <div className="absolute top-4 right-4 bg-white/80 backdrop-blur-lg px-3 py-1 rounded-full text-xs font-bold text-brand-dark flex items-center gap-1 shadow-xl z-10">
                   <svg
                     className="w-3.5 h-3.5 text-brand-primary fill-brand-primary"
                     viewBox="0 0 20 20"
@@ -54,18 +55,18 @@ export default function Packages() {
               <div className="p-6 flex flex-col flex-grow space-y-5 text-left">
                 <div className="flex justify-between items-start gap-2">
                   <div>
-                    <h3 className="text-lg font-black text-brand-dark group-hover:text-brand-secondary transition-colors leading-tight">
+                    <h3 className="text-lg font-black text-brand-dark group-hover:text-brand-secondary transition-all duration-300 ease-in-out leading-tight">
                       {pkg.name}
                     </h3>
-                    <div className="flex items-center gap-1.5 mt-2.5 text-slate-400">
-                      <svg className="w-4 h-4 text-brand-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="flex items-center gap-1.5 mt-2.5 text-brand-muted">
+                      <svg className="w-4 h-4 text-brand-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span className="text-xs font-bold text-slate-500">{pkg.duration}</span>
+                      <span className="text-xs font-bold text-brand-muted">{pkg.duration}</span>
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">From</span>
+                    <span className="block text-[9px] font-bold text-brand-muted uppercase tracking-wider">From</span>
                     <span className="text-lg font-black text-brand-secondary whitespace-nowrap">
                       {pkg.priceRange}
                     </span>
@@ -74,10 +75,10 @@ export default function Packages() {
 
                 {/* Destinations */}
                 <div className="space-y-1.5">
-                  <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">Destinations</span>
+                  <span className="block text-[9px] font-bold text-brand-muted uppercase tracking-wider">Destinations</span>
                   <div className="flex flex-wrap gap-1.5 pt-0.5">
                     {pkg.destinations.map((dest, i) => (
-                      <span key={i} className="inline-flex bg-slate-100 text-slate-700 text-[11px] px-2.5 py-1 rounded-lg font-semibold">
+                      <span key={i} className="inline-flex bg-brand-light text-brand-dark text-[11px] px-2.5 py-1 rounded-full font-semibold border border-brand-light">
                         {dest}
                       </span>
                     ))}
@@ -86,10 +87,10 @@ export default function Packages() {
 
                 {/* Inclusions */}
                 <div className="space-y-2 flex-grow">
-                  <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">Includes</span>
+                  <span className="block text-[9px] font-bold text-brand-muted uppercase tracking-wider">Includes</span>
                   <div className="grid grid-cols-1 gap-1.5 pt-1">
                     {pkg.includes.map((item, i) => (
-                      <div key={i} className="flex items-center gap-2 text-xs text-slate-600 font-semibold">
+                      <div key={i} className="flex items-center gap-2 text-xs text-brand-muted font-semibold">
                         <span className="text-brand-secondary font-black text-[10px]">✔</span>
                         <span>{item}</span>
                       </div>
@@ -97,11 +98,11 @@ export default function Packages() {
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-100">
+                <div className="pt-4 border-t border-brand-light">
                   <button
                     type="button"
                     onClick={() => openFormModal(pkg.id)}
-                    className="block w-full text-center py-3 bg-brand-primary/10 hover:bg-brand-primary hover:text-brand-dark text-brand-primary hover:shadow-md hover:shadow-brand-primary/15 rounded-xl font-bold transition-all duration-300 cursor-pointer"
+                    className="block w-full text-center py-3 bg-brand-primary/10 hover:bg-brand-primary hover:text-white text-brand-primary rounded-full font-bold shadow-[0_4px_20px_rgb(255,139,80,0.15)] hover:shadow-[0_8px_30px_rgb(255,139,80,0.3)] hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out cursor-pointer"
                   >
                     Select this Package
                   </button>

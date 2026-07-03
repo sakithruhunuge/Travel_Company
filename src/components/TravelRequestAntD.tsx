@@ -255,9 +255,9 @@ export default function TravelRequestAntD({ isModal = false }: TravelRequestAntD
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: "#0B7C8A", // Mirissa Ocean Blue
-          colorSuccess: "#164E3F", // Ceylon Tea Green
-          colorWarning: "#D4AF37", // Ceylon Gold
+          colorPrimary: "#FF8B50",
+          colorSuccess: "#25A5FE",
+          colorWarning: "#FF8B50",
           borderRadius: 12,
           fontFamily: "Inter, sans-serif",
         },

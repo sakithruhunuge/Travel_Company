@@ -62,25 +62,25 @@ const sellingPoints = [
 export default function WhyChooseUs() {
   const { openFormModal } = useTravelRequest();
   return (
-    <section id="why-choose-us" className="py-24 bg-slate-50 scroll-mt-20">
+    <section id="why-choose-us" className="py-24 bg-brand-light scroll-mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
           {/* Text Info (Left) */}
-          <div className="lg:col-span-5 space-y-6 text-left">
+          <div className="lg:col-span-5 space-y-6 text-left animate-fade-in-up">
             <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">
               Our Advantages
             </span>
             <h2 className="text-3xl sm:text-5xl font-black text-brand-dark tracking-tight leading-tight">
               Why Travelers Choose Horizon Travel
             </h2>
-            <p className="text-base text-slate-500 leading-relaxed">
+            <p className="text-base text-brand-muted leading-relaxed">
               Planning a trip to Sri Lanka shouldn&apos;t be stressful. We bridge the gap between dream itineraries and flawless execution, giving you complete freedom to enjoy your travels.
             </p>
             <div className="pt-2">
               <button
                 type="button"
                 onClick={() => openFormModal()}
-                className="inline-flex px-8 py-4 rounded-full text-sm font-bold text-white bg-brand-primary hover:bg-brand-primary/95 transition-all duration-200 hover:translate-y-[-2px] hover:shadow-lg hover:shadow-brand-primary/20 cursor-pointer"
+                className="inline-flex px-8 py-4 rounded-full text-sm font-bold text-white bg-brand-primary hover:bg-brand-primary/90 shadow-[0_8px_30px_rgb(255,139,80,0.3)] hover:shadow-[0_12px_36px_rgb(255,139,80,0.4)] hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out cursor-pointer"
               >
                 Plan Your Escapes
               </button>
@@ -93,13 +93,14 @@ export default function WhyChooseUs() {
               {sellingPoints.map((point, index) => (
                 <div
                   key={index}
-                  className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-4 hover:shadow-md transition-shadow duration-300 text-left"
+                  className="bg-white/80 backdrop-blur-lg p-8 rounded-3xl border border-white/60 shadow-lg space-y-4 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 ease-in-out text-left animate-fade-in-up"
+                  style={{ animationDelay: `${150 + index * 80}ms`, animationFillMode: "both" }}
                 >
-                  <div className="w-12 h-12 rounded-2xl bg-brand-primary/10 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-2xl bg-brand-primary/10 flex items-center justify-center transition-all duration-300 ease-in-out group-hover:scale-110">
                     {point.icon}
                   </div>
                   <h3 className="text-base font-bold text-brand-dark">{point.title}</h3>
-                  <p className="text-xs text-slate-500 leading-relaxed">
+                  <p className="text-xs text-brand-muted leading-relaxed">
                     {point.description}
                   </p>
                 </div>

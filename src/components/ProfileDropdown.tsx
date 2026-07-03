@@ -44,7 +44,7 @@ export default function ProfileDropdown() {
                 onKeyDown={(e) => {
                     if (e.key === "Escape") setOpen(false);
                 }}
-                className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 transition-colors"
+                className="flex items-center gap-3 px-3 py-2 rounded-2xl hover:bg-white/60 transition-all duration-300 ease-in-out"
             >
                 {session.user?.image ? (
                     <div className="relative w-9 h-9 rounded-full overflow-hidden border border-slate-200">
@@ -59,7 +59,7 @@ export default function ProfileDropdown() {
             </button>
 
             {open && (
-                <div role="menu" aria-label="Profile options" className="absolute right-0 mt-2 w-56 bg-white border border-slate-100 rounded-2xl shadow-lg overflow-hidden animate-fade-in-up z-50">
+                <div role="menu" aria-label="Profile options" className="absolute right-0 mt-2 w-56 bg-white/80 backdrop-blur-lg border border-white/40 rounded-2xl shadow-xl overflow-hidden animate-fade-in-up z-50">
                     <div className="p-3 border-b border-slate-100">
                         <div className="text-sm font-bold text-slate-800">{session.user?.name}</div>
                         <div className="text-xxs text-slate-500 truncate">{session.user?.email}</div>
