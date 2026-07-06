@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import Providers from "./Providers";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
+import LayoutWrapper from "@/components/LayoutWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,9 +22,7 @@ export default function RootLayout({
       <body className={`${inter.className} bg-brand-light text-brand-dark antialiased min-h-screen flex flex-col`}>
         <AntdRegistry>
           <Providers>
-            <Navbar />
-            <main className="flex-grow">{children}</main>
-            <Footer />
+            <LayoutWrapper>{children}</LayoutWrapper>
           </Providers>
         </AntdRegistry>
       </body>

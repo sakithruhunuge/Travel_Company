@@ -39,35 +39,31 @@ function LoginContent() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-50">
-      <div className="w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 px-4 py-12">
-        <section className="hidden md:flex flex-col justify-center rounded-3xl overflow-hidden shadow-2xl">
-          <div className="relative h-full w-full flex flex-col justify-end">
-            {/* Background Image */}
-            <div className="absolute inset-0 rounded-3xl overflow-hidden">
-              <Image src="/images/hero_bg.png" alt="Travel illustration" fill className="object-cover" />
-            </div>
-            {/* Premium Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent rounded-3xl"></div>
-
-            {/* Glass Text Overlay - No Border, Just Shading */}
-            <div className="relative z-10 max-w-lg mx-8 mb-8 p-6 rounded-2xl backdrop-blur-xl bg-gradient-to-br from-white/10 via-white/5 to-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.5)] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
-
-              <h1 className="text-2xl font-extrabold leading-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] tracking-tight">
-                Discover Sri Lanka
-              </h1>
-              <p className="mt-2 text-xs font-medium leading-relaxed text-white/80 drop-shadow-[0_2px_6px_rgba(0,0,0,0.4)]">
-                Handcrafted tours, local advisors, and unforgettable experiences tailored for you.
-              </p>
-
-              {/* Decorative accent line */}
-              <div className="mt-3 w-10 h-0.5 bg-gradient-to-r from-brand-primary/70 to-orange-400/70 rounded-full"></div>
-            </div>
+    <main className="min-h-screen flex items-stretch bg-white">
+      <div className="w-full grid grid-cols-1 lg:grid-cols-2">
+        {/* Left side - Mountain/Landscape Image */}
+        <section className="hidden lg:flex relative overflow-hidden">
+          <div className="absolute inset-0">
+            <Image
+              src="/images/sigiriya.png"
+              alt="Mountain landscape"
+              fill
+              className="object-cover"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-transparent" />
+          </div>
+          <div className="relative z-10 flex flex-col justify-end p-12 text-white">
+            <h1 className="text-4xl font-bold mb-4">Explore Sri Lanka</h1>
+            <p className="text-lg opacity-90 max-w-md">
+              Discover ancient wonders, misty mountains, and pristine beaches. Your adventure begins here.
+            </p>
           </div>
         </section>
 
-        <section className="flex items-center justify-center">
-          <div className="w-full max-w-md space-y-8 bg-white/95 backdrop-blur-md p-10 rounded-3xl border border-white/20 shadow-2xl relative z-10">
+        {/* Right side - Login Form */}
+        <section className="flex items-center justify-center p-8 lg:p-16">
+          <div className="w-full max-w-md space-y-8">
             {status === "authenticated" ? (
               <div className="text-center space-y-6">
                 <div className="space-y-2">
@@ -76,11 +72,11 @@ function LoginContent() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                   </div>
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">Already Signed In</h2>
+                  <h2 className="text-2xl font-bold text-slate-900">Already Signed In</h2>
                   <p className="text-sm text-slate-500">You have an active secure session.</p>
                 </div>
 
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center gap-4 text-left">
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex items-center gap-4 text-left">
                   {session.user?.image ? (
                     <div className="relative w-12 h-12 rounded-full overflow-hidden border border-slate-200">
                       <Image
@@ -98,47 +94,34 @@ function LoginContent() {
                     </div>
                   )}
                   <div>
-                    <span className="block text-sm font-bold text-slate-900 leading-tight">{session.user?.name}</span>
+                    <span className="block text-sm font-semibold text-slate-900">{session.user?.name}</span>
                     <span className="block text-xs text-slate-500 mt-0.5">{session.user?.email}</span>
                   </div>
                 </div>
 
                 <button
                   onClick={() => router.push(callbackUrl)}
-                  className="w-full py-4 bg-brand-primary hover:bg-brand-primary/95 text-white font-extrabold rounded-xl hover:shadow-lg hover:shadow-brand-primary/20 transition-all duration-200"
+                  className="w-full py-3 bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold rounded-lg transition-colors"
                 >
                   Proceed
                 </button>
               </div>
             ) : (
               <div className="space-y-6">
-                <div className="text-center space-y-2">
-                  <span className="text-2xl font-black tracking-tight text-brand-dark">
-                    HORIZON<span className="text-brand-primary">TRAVEL</span>
-                  </span>
-                  <h2 className="text-3xl font-black text-slate-950 tracking-tight pt-2">
-                    Welcome to TravelMate
-                  </h2>
-                  <p className="text-sm text-slate-500 font-semibold leading-relaxed">
-                    Sign in to book your travel experiences
-                  </p>
+                <div className="space-y-2">
+                  <h1 className="text-3xl font-bold text-slate-900">Welcome Back</h1>
+                  <p className="text-slate-500">Sign in to continue your journey</p>
                 </div>
 
                 <LoginForm />
 
                 <div className="flex items-center my-4">
                   <div className="flex-grow border-t border-slate-200"></div>
-                  <span className="mx-4 text-xs font-bold text-slate-400 uppercase tracking-widest">or</span>
+                  <span className="mx-4 text-sm text-slate-400">or</span>
                   <div className="flex-grow border-t border-slate-200"></div>
                 </div>
 
                 <GoogleButton />
-
-                <div className="text-center pt-2">
-                  <p className="text-xs text-slate-400 font-medium">
-                    Protected and encrypted hybrid authentication system.
-                  </p>
-                </div>
               </div>
             )}
           </div>
