@@ -44,22 +44,22 @@ export default function RequestHistoryPage() {
 
     return (
         <div className="space-y-6">
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-[0_2px_8px_rgb(0,0,0,0.04)]">
-                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">History</p>
-                <h2 className="mt-1 text-xl font-semibold text-slate-800">Request History</h2>
-                <p className="mt-1 text-sm text-slate-500">
+            <div className="rounded-xl border border-brand-light/70 bg-brand-light p-6 shadow-[0_2px_8px_rgb(0,0,0,0.04)]">
+                <p className="text-xs font-medium uppercase tracking-wider text-brand-muted">History</p>
+                <h2 className="mt-1 text-xl font-semibold text-brand-dark">Request History</h2>
+                <p className="mt-1 text-sm text-brand-muted">
                     Review all of your submitted requests and their latest status.
                 </p>
             </div>
 
             {selectedRequest ? (
-                <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-[0_2px_8px_rgb(0,0,0,0.04)]">
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                <div className="rounded-xl border border-brand-light/70 bg-brand-light p-6 shadow-[0_2px_8px_rgb(0,0,0,0.04)]">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-light/70 pb-4">
                         <div>
-                            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                            <p className="text-xs font-medium uppercase tracking-wider text-brand-muted">
                                 Request Details
                             </p>
-                            <h3 className="mt-1 text-lg font-semibold text-slate-800">
+                            <h3 className="mt-1 text-lg font-semibold text-brand-dark">
                                 {selectedRequest.packageName}
                             </h3>
                         </div>
@@ -67,32 +67,32 @@ export default function RequestHistoryPage() {
                     </div>
 
                     <div className="mt-5 grid gap-4 md:grid-cols-2">
-                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                        <div className="rounded-lg border border-brand-light/70 bg-brand-light p-4">
+                            <p className="text-xs font-medium uppercase tracking-wider text-brand-muted">
                                 Traveler Count
                             </p>
-                            <p className="mt-1 tabular-nums text-lg font-medium text-slate-800">
+                            <p className="mt-1 tabular-nums text-lg font-medium text-brand-dark">
                                 {selectedRequest.numberOfTravelers}
                             </p>
                         </div>
-                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Travel Date</p>
-                            <p className="mt-1 tabular-nums text-lg font-medium text-slate-800">
+                        <div className="rounded-lg border border-brand-light/70 bg-brand-light p-4">
+                            <p className="text-xs font-medium uppercase tracking-wider text-brand-muted">Travel Date</p>
+                            <p className="mt-1 tabular-nums text-lg font-medium text-brand-dark">
                                 {new Date(selectedRequest.preferredStartDate).toLocaleDateString()}
                             </p>
                         </div>
-                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 md:col-span-2">
-                            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                        <div className="rounded-lg border border-brand-light/70 bg-brand-light p-4 md:col-span-2">
+                            <p className="text-xs font-medium uppercase tracking-wider text-brand-muted">
                                 Special Requests
                             </p>
-                            <p className="mt-1 text-base font-medium text-slate-800">
+                            <p className="mt-1 text-base font-medium text-brand-dark">
                                 {selectedRequest.specialRequests || "None"}
                             </p>
                         </div>
                     </div>
 
                     {selectedRequest.status === "approved" ? (
-                        <div className="mt-5 rounded-lg border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-700">
+                        <div className="mt-5 rounded-lg border border-brand-secondary/30 bg-brand-secondary/10 p-4 text-sm text-brand-secondary">
                             Our travel team will contact you shortly.
                         </div>
                     ) : null}

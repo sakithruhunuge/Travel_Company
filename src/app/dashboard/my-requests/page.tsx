@@ -44,10 +44,10 @@ export default function MyRequestsPage() {
 
     return (
         <div className="space-y-6">
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-[0_2px_8px_rgb(0,0,0,0.04)]">
-                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Travel Requests</p>
-                <h2 className="mt-1 text-xl font-semibold text-slate-800">My Travel Requests</h2>
-                <p className="mt-1 text-sm text-slate-500">
+            <div className="rounded-xl border border-brand-light/70 bg-brand-light p-6 shadow-[0_2px_8px_rgb(0,0,0,0.04)]">
+                <p className="text-xs font-medium uppercase tracking-wider text-brand-muted">Travel Requests</p>
+                <h2 className="mt-1 text-xl font-semibold text-brand-dark">My Travel Requests</h2>
+                <p className="mt-1 text-sm text-brand-muted">
                     Track your pending, approved, and cancelled journeys.
                 </p>
             </div>

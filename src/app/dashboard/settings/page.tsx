@@ -9,7 +9,7 @@ type SessionUser = {
 };
 
 const inputClassName =
-    "w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-800 transition-colors duration-200 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20";
+    "w-full rounded-lg border border-brand-light/70 bg-brand-light/50 px-4 py-2.5 text-sm text-brand-dark transition-colors duration-200 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20";
 
 export default function SettingsPage() {
     const { data: session } = useSession();
@@ -55,11 +55,11 @@ export default function SettingsPage() {
         <div className="space-y-6">
             <SettingsCard title="Security" description="Manage your account security settings.">
                 {provider === "google" ? (
-                    <p className="text-sm text-slate-600">Password is managed through your Google account.</p>
+                    <p className="text-sm text-brand-muted">Password is managed through your Google account.</p>
                 ) : (
                     <form onSubmit={handlePasswordChange} className="space-y-4">
                         <div>
-                            <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-slate-500">
+                            <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-brand-muted">
                                 New password
                             </label>
                             <input
@@ -70,7 +70,7 @@ export default function SettingsPage() {
                             />
                         </div>
                         <div>
-                            <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-slate-500">
+                            <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-brand-muted">
                                 Confirm password
                             </label>
                             <input
@@ -83,11 +83,11 @@ export default function SettingsPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="rounded-lg bg-slate-800 px-5 py-2.5 text-sm font-medium text-white transition-colors duration-200 hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                            className="rounded-lg bg-brand-primary px-5 py-2.5 text-sm font-medium text-white transition-colors duration-200 hover:bg-brand-primary/90 disabled:cursor-not-allowed disabled:bg-brand-light/40"
                         >
                             {loading ? "Updating..." : "Change password"}
                         </button>
-                        {message ? <p className="text-sm font-medium text-emerald-600">{message}</p> : null}
+                        {message ? <p className="text-sm font-medium text-brand-secondary">{message}</p> : null}
                         {error ? <p className="text-sm font-medium text-rose-600">{error}</p> : null}
                     </form>
                 )}
@@ -96,7 +96,7 @@ export default function SettingsPage() {
             <SettingsCard title="Session" description="Sign out of your current dashboard session.">
                 <button
                     onClick={() => signOut({ callbackUrl: "/login" })}
-                    className="rounded-lg border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-700 transition-colors duration-200 hover:bg-slate-100"
+                    className="rounded-lg border border-brand-light/70 px-5 py-2.5 text-sm font-medium text-brand-dark transition-colors duration-200 hover:bg-brand-light"
                 >
                     Logout
                 </button>

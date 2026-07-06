@@ -1,19 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { signOut, useSession } from "next-auth/react";
-import {
-    SendOutlined,
-    ClockCircleOutlined,
-    CheckCircleOutlined,
-    CloseCircleOutlined,
-    RightOutlined,
-} from "@ant-design/icons";
+import { useSession } from "next-auth/react";
 import StatCard from "@/components/dashboard/StatCard";
 import LoadingSkeleton from "@/components/dashboard/LoadingSkeleton";
 import EmptyState from "@/components/dashboard/EmptyState";
 import SettingsCard from "@/components/dashboard/SettingsCard";
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 
 export default function DashboardHomePage() {
     const { data: session } = useSession();
@@ -39,41 +33,45 @@ export default function DashboardHomePage() {
     }, []);
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-10">
             {/* Welcome Banner */}
-            <section className="rounded-2xl bg-gradient-to-r from-white via-slate-50 to-white p-6 shadow-lg lg:p-8">
-                <div className="grid gap-8 lg:grid-cols-[1.4fr_0.6fr] items-center">
-                    <div className="space-y-4 text-left">
-                        <span className="inline-flex text-xs font-semibold uppercase tracking-wider text-teal-600">
+            <section className="relative overflow-hidden rounded-3xl bg-brand-dark text-white p-8 md:p-10 lg:p-12 shadow-xl">
+                {/* Decorative background shapes */}
+                <div className="absolute top-0 right-0 h-[400px] w-[400px] rounded-full bg-gradient-to-br from-brand-primary/20 to-orange-400/0 blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-20 -left-20 h-[300px] w-[300px] rounded-full bg-gradient-to-tr from-amber-400/10 to-brand-primary/0 blur-2xl pointer-events-none" />
+
+                <div className="relative z-10 grid gap-8 lg:grid-cols-[1.3fr_0.7fr] items-center">
+                    <div className="space-y-6 text-left">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-primary/10 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-brand-primary border border-brand-primary/20">
                             Sri Lanka Curated Journeys
                         </span>
-                        <h2 className="text-3xl font-extrabold leading-tight text-slate-900 sm:text-4xl">
-                            Welcome back, {session?.user?.name || "Traveler"}
+                        <h2 className="text-3xl font-black leading-tight text-white sm:text-4xl lg:text-5xl tracking-tight">
+                            Welcome back, <span className="text-brand-primary">{session?.user?.name || "Traveler"}</span>
                         </h2>
-                        <p className="max-w-2xl text-base leading-relaxed text-slate-600">
+                        <p className="max-w-2xl text-base leading-relaxed text-brand-light/80 font-medium">
                             Manage your Sri Lanka travel plans, requests, and preferences from one secure and
                             beautiful dashboard.
                         </p>
-                        <div className="flex flex-wrap gap-3 pt-3">
+                        <div className="flex flex-wrap gap-4 pt-2">
                             <Link
                                 href="/dashboard/my-requests"
-                                className="rounded-md bg-teal-600 px-5 py-3 text-sm font-semibold text-white shadow-md hover:bg-teal-500 transition"
+                                className="rounded-xl bg-brand-primary px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-primary/20 hover:bg-brand-primary/90 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
                             >
                                 View Requests
                             </Link>
                             <Link
                                 href="/dashboard/profile"
-                                className="rounded-md border border-slate-200 px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+                                className="rounded-xl border border-brand-light/70 bg-brand-dark/80 px-6 py-3.5 text-sm font-bold text-brand-light hover:bg-brand-dark/90 hover:border-brand-dark/70 transition-all duration-200"
                             >
                                 Update Profile
                             </Link>
                         </div>
                     </div>
-                    <div className="rounded-xl overflow-hidden">
-                        <div className="relative h-40 w-full rounded-xl bg-cover bg-center shadow-inner" style={{ backgroundImage: "linear-gradient(180deg, rgba(15,23,42,0.15), rgba(255,255,255,0.1)), url('https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1200&q=80')" }}>
-                            <div className="absolute inset-0 flex flex-col justify-end p-5 text-left">
-                                <p className="text-xs font-semibold uppercase tracking-wider text-amber-100">Travel tip</p>
-                                <p className="mt-1 text-sm font-medium text-white drop-shadow">The best time to visit Sri Lanka is December–April for sunny beaches and lush hill country.</p>
+                    <div className="rounded-2xl overflow-hidden shadow-2xl border border-brand-dark/50">
+                        <div className="relative h-44 w-full rounded-2xl bg-cover bg-center shadow-inner" style={{ backgroundImage: "linear-gradient(180deg, rgba(34,34,34,0.12), rgba(34,34,34,0.85)), url('https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1200&q=80')" }}>
+                            <div className="absolute inset-0 flex flex-col justify-end p-6 text-left">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-brand-primary">Travel tip</p>
+                                <p className="mt-1.5 text-sm font-semibold text-white leading-relaxed">The best time to visit Sri Lanka is December–April for sunny beaches and lush hill country.</p>
                             </div>
                         </div>
                     </div>
@@ -90,29 +88,49 @@ export default function DashboardHomePage() {
                     </div>
                 ) : stats ? (
                     <>
-                        <StatCard title="Total Requests" value={stats.total} description="All travel requests" icon={<SendOutlined />} accent="bg-gradient-to-br from-brand-primary to-brand-secondary" />
-                        <StatCard title="Pending" value={stats.pending} description="Awaiting review" icon={<ClockCircleOutlined />} accent="bg-gradient-to-br from-yellow-400 to-amber-400" />
-                        <StatCard title="Approved" value={stats.approved} description="Confirmed trips" icon={<CheckCircleOutlined />} accent="bg-gradient-to-br from-brand-secondary to-emerald-400" />
-                        <StatCard title="Rejected" value={stats.rejected} description="Needs attention" icon={<CloseCircleOutlined />} accent="bg-gradient-to-br from-rose-600 to-rose-400" />
+                        <StatCard 
+                            title="Total Requests" 
+                            value={stats.total} 
+                            description="All travel requests" 
+                            imageUrl="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=400&q=80" 
+                        />
+                        <StatCard 
+                            title="Pending" 
+                            value={stats.pending} 
+                            description="Awaiting review" 
+                            imageUrl="https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=400&q=80" 
+                        />
+                        <StatCard 
+                            title="Approved" 
+                            value={stats.approved} 
+                            description="Confirmed trips" 
+                            imageUrl="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=80" 
+                        />
+                        <StatCard 
+                            title="Rejected" 
+                            value={stats.rejected} 
+                            description="Needs attention" 
+                            imageUrl="https://images.unsplash.com/photo-1428908728789-d2de25dbd4e2?auto=format&fit=crop&w=400&q=80" 
+                        />
                     </>
                 ) : null}
             </section>
 
             {/* Suggested & Support */}
-            <section className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
-                <div className="rounded-2xl bg-white p-6 shadow-lg sm:p-8 text-left">
+            <section className="grid gap-8 xl:grid-cols-[1.3fr_0.7fr]">
+                <div className="rounded-3xl bg-white p-6 shadow-sm border border-brand-light/70 sm:p-8 text-left">
                     <div>
-                        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                        <span className="inline-flex items-center rounded-full bg-brand-light px-3 py-1 text-xs font-semibold text-brand-muted">
                             Recommendations
-                        </p>
-                        <h3 className="mt-1 text-base font-semibold text-slate-800">
+                        </span>
+                        <h3 className="mt-3.5 text-xl font-bold text-brand-dark tracking-tight">
                             Suggested Sri Lanka destinations
                         </h3>
-                        <p className="mt-1 text-sm text-slate-500">
+                        <p className="mt-1 text-sm font-medium text-brand-muted">
                             Our team recommends these iconic places for your next escape.
                         </p>
                     </div>
-                    <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                    <div className="mt-8 grid gap-5 sm:grid-cols-2">
                         {[
                             {
                                 name: "Sigiriya Rock",
@@ -135,24 +153,30 @@ export default function DashboardHomePage() {
                                 image: "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=800&q=80",
                             },
                         ].map((place) => (
-                            <div key={place.name} className="overflow-hidden rounded-xl bg-white shadow-sm transition-transform hover:-translate-y-1">
-                                <div className="h-28 w-full bg-cover bg-center" style={{ backgroundImage: `url(${place.image})` }} />
+                            <div key={place.name} className="group overflow-hidden rounded-2xl bg-brand-light border border-brand-light/70 hover:border-brand-primary/20 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+                                <div className="h-32 w-full overflow-hidden">
+                                    <div className="h-full w-full bg-cover bg-center transition-transform duration-500 group-hover:scale-105" style={{ backgroundImage: `url(${place.image})` }} />
+                                </div>
                                 <div className="p-4">
-                                    <p className="font-semibold text-slate-900">{place.name}</p>
-                                    <p className="mt-1 text-sm text-slate-500">{place.desc}</p>
+                                    <p className="font-bold text-brand-dark group-hover:text-brand-primary transition-colors">{place.name}</p>
+                                    <p className="mt-1 text-xs font-semibold text-brand-muted">{place.desc}</p>
                                 </div>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                <div className="flex flex-col rounded-2xl bg-white p-6 shadow-lg sm:p-8 text-left">
-                    <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Support</p>
-                    <h3 className="mt-1 text-base font-semibold text-slate-800">Need help planning?</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-500">
+                <div className="flex flex-col rounded-3xl bg-brand-dark text-white p-6 shadow-xl sm:p-8 text-left border border-brand-dark/70 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 h-48 w-48 rounded-full bg-brand-primary/10 blur-2xl pointer-events-none" />
+                    
+                    <span className="inline-flex items-center rounded-full bg-brand-primary/10 px-3 py-1 text-xs font-semibold text-brand-primary border border-brand-primary/20 self-start">
+                        Support
+                    </span>
+                    <h3 className="mt-4 text-xl font-bold text-white tracking-tight">Need help planning?</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-brand-light/70 font-medium">
                         Our Ceylon travel specialists can tailor the itinerary around your preferences and schedule.
                     </p>
-                    <div className="mt-5 flex-grow space-y-2">
+                    <div className="mt-6 flex-grow space-y-3 relative z-10">
                         {[
                             "Best beaches and surf spots",
                             "Scenic train routes and tea country",
@@ -160,9 +184,9 @@ export default function DashboardHomePage() {
                         ].map((tip) => (
                             <div
                                 key={tip}
-                                className="flex items-center gap-3 rounded-lg bg-slate-50 p-3.5 text-sm text-slate-700 transition-transform hover:-translate-y-0.5"
+                                className="flex items-center gap-3.5 rounded-xl bg-brand-dark/40 hover:bg-brand-dark/80 border border-brand-dark/70 p-4 text-xs font-bold text-white transition-all hover:translate-x-1"
                             >
-                                <RightOutlined className="flex-shrink-0 text-xs text-teal-700" />
+                                <span className="h-2 w-2 flex-shrink-0 rounded-full bg-brand-primary shadow-md shadow-brand-primary/50" />
                                 {tip}
                             </div>
                         ))}
@@ -174,7 +198,7 @@ export default function DashboardHomePage() {
             <section className="grid gap-6 lg:grid-cols-2">
                 <SettingsCard title="Quick settings" description="Access your account controls from the main dashboard.">
                     <div className="space-y-4 text-left">
-                        <p className="text-sm text-slate-600">
+                        <p className="text-sm font-medium text-brand-muted">
                             {session?.user?.name
                                 ? `Signed in as ${session.user.name}`
                                 : "Signed in to your Horizon Travel account."}
@@ -182,13 +206,13 @@ export default function DashboardHomePage() {
                         <div className="flex flex-wrap gap-3 pt-1">
                             <Link
                                 href="/dashboard/settings"
-                                className="rounded-lg bg-slate-800 px-5 py-2.5 text-sm font-medium text-white transition-colors duration-200 hover:bg-slate-700"
+                                className="rounded-xl bg-brand-dark px-5 py-3 text-xs font-bold text-white transition-colors duration-200 hover:bg-brand-dark/90 shadow-md"
                             >
                                 Open Full Settings
                             </Link>
                             <button
                                 onClick={() => signOut({ callbackUrl: "/login" })}
-                                className="rounded-lg border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-700 transition-colors duration-200 hover:bg-slate-100"
+                                className="rounded-xl border border-brand-light/70 bg-white px-5 py-3 text-xs font-bold text-brand-dark transition-colors duration-200 hover:bg-brand-light hover:border-brand-light/70"
                             >
                                 Logout
                             </button>
@@ -197,16 +221,16 @@ export default function DashboardHomePage() {
                 </SettingsCard>
 
                 <SettingsCard title="Account status" description="See how your dashboard account is connected.">
-                    <div className="space-y-4 text-sm text-slate-600 text-left">
-                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Sign-in method</p>
-                            <p className="mt-1.5 font-medium text-slate-800">
+                    <div className="space-y-4 text-sm text-brand-muted text-left">
+                        <div className="rounded-xl border border-brand-light/70 bg-brand-light p-4">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-brand-muted">Sign-in method</p>
+                            <p className="mt-1 font-bold text-brand-dark">
                                 {(session?.user as { provider?: string } | undefined)?.provider === "google"
                                     ? "Google Account Connection"
                                     : "Email & Password Secure Login"}
                             </p>
                         </div>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs font-medium text-brand-muted">
                             Use the full settings page for password changes and other account actions.
                         </p>
                     </div>
@@ -215,3 +239,5 @@ export default function DashboardHomePage() {
         </div>
     );
 }
+
+

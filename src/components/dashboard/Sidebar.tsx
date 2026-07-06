@@ -28,17 +28,20 @@ export default function Sidebar({ onNavigate, onLogout }: SidebarProps) {
     const pathname = usePathname();
 
     return (
-        <aside className="flex h-full w-full flex-col bg-brand-light/60 backdrop-blur-sm border-r border-white/10">
-            <div className="px-6 py-6">
-                <div className="flex items-center justify-between">
+        <aside className="flex h-full w-full flex-col bg-slate-900 text-slate-100 border-r border-slate-800 shadow-xl">
+            <div className="px-6 py-6 border-b border-slate-800 bg-slate-950/40">
+                <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-lg bg-brand-primary flex items-center justify-center font-black text-slate-950 text-base tracking-wider shadow-md shadow-brand-primary/20">
+                        HZ
+                    </div>
                     <div>
-                        <p className="text-lg font-bold tracking-tight text-slate-900">HORIZON <span className="text-teal-600">TRAVEL</span></p>
-                        <p className="mt-1 text-xs uppercase tracking-wider text-slate-500">Dashboard</p>
+                        <p className="text-sm font-bold tracking-wider text-white">HORIZON TRAVEL</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-brand-primary">Curated Journeys</p>
                     </div>
                 </div>
             </div>
 
-            <nav className="flex-1 space-y-1 px-3 py-4">
+            <nav className="flex-1 space-y-1.5 px-4 py-6">
                 {menuItems.map((item) => {
                     const isActive = pathname === item.href || (pathname.startsWith(item.href + "/") && item.href !== "/dashboard");
                     const Icon = item.icon;
@@ -48,24 +51,24 @@ export default function Sidebar({ onNavigate, onLogout }: SidebarProps) {
                             key={item.href}
                             href={item.href}
                             onClick={onNavigate}
-                            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-150 ${isActive
-                                    ? "bg-brand-primary/10 text-brand-primary shadow-sm"
-                                    : "text-slate-600 hover:bg-white/30 hover:text-brand-dark"
-                                }`}>
+                            className={`flex items-center gap-3.5 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${isActive
+                                    ? "bg-brand-primary text-slate-950 shadow-lg shadow-brand-primary/25 scale-[1.02]"
+                                    : "text-slate-400 hover:bg-slate-800/60 hover:text-white hover:translate-x-1"
+                                }`}
                         >
-                            <Icon className={`text-lg ${isActive ? "text-teal-700" : "text-slate-400"}`} />
+                            <Icon className={`text-base ${isActive ? "text-slate-950" : "text-slate-400"}`} />
                             <span>{item.label}</span>
                         </Link>
                     );
                 })}
             </nav>
 
-            <div className="border-t border-slate-100 px-4 py-4">
+            <div className="border-t border-brand-dark/80 bg-brand-dark/80 p-4">
                 <button
                     onClick={onLogout}
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors duration-200 hover:bg-slate-100"
+                    className="flex w-full items-center gap-3.5 rounded-xl px-4 py-3 text-sm font-semibold text-brand-secondary transition-all duration-200 hover:bg-brand-secondary/10 hover:text-brand-secondary/90"
                 >
-                    <LogoutOutlined className="text-base text-slate-500" />
+                    <LogoutOutlined className="text-base" />
                     Logout
                 </button>
             </div>

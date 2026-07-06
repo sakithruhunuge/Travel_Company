@@ -26,7 +26,7 @@ export default function ProfileCard({ name, email, image, provider, createdAt }:
                         <span className="rounded-md border border-white/10 bg-white/10 px-2.5 py-1 text-xs font-medium uppercase tracking-wider text-brand-dark">
                             {provider === "google" ? "Google" : "Email/Password"}
                         </span>
-                        <span className="rounded-md border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                        <span className="rounded-md border border-brand-secondary/20 bg-brand-secondary/10 px-2.5 py-1 text-xs font-medium text-brand-secondary">
                             Joined {new Date(createdAt).toLocaleDateString()}
                         </span>
                     </div>

@@ -14,7 +14,7 @@ type SessionUser = {
 };
 
 const inputClassName =
-    "w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-800 transition-colors duration-200 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20";
+    "w-full rounded-lg border border-brand-light/70 bg-brand-light/50 px-4 py-2.5 text-sm text-brand-dark transition-colors duration-200 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20";
 
 export default function ProfilePage() {
     const { data: session, update } = useSession();
@@ -85,11 +85,11 @@ export default function ProfilePage() {
                             <input
                                 value={session?.user?.email || ""}
                                 readOnly
-                                className={`${inputClassName} bg-slate-50 text-slate-500`}
+                                className={`${inputClassName} bg-brand-light text-brand-muted`}
                             />
                         </div>
                         <div className="md:col-span-2">
-                            <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-slate-500">
+                            <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-brand-muted">
                                 Profile photo URL
                             </label>
                             <input
@@ -104,12 +104,12 @@ export default function ProfilePage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="rounded-lg bg-slate-800 px-5 py-2.5 text-sm font-medium text-white transition-colors duration-200 hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                            className="rounded-lg bg-brand-primary px-5 py-2.5 text-sm font-medium text-white transition-colors duration-200 hover:bg-brand-primary/90 disabled:cursor-not-allowed disabled:bg-brand-light/40"
                         >
                             {loading ? "Saving..." : "Save changes"}
                         </button>
                     </div>
-                    {message ? <p className="mt-4 text-sm font-medium text-emerald-600">{message}</p> : null}
+                    {message ? <p className="mt-4 text-sm font-medium text-brand-secondary">{message}</p> : null}
                     {error ? <p className="mt-4 text-sm font-medium text-rose-600">{error}</p> : null}
                 </SettingsCard>
             </form>

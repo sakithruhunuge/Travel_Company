@@ -1,25 +1,31 @@
+import Image from "next/image";
+
 type StatCardProps = {
     title: string;
     value: number | string;
     description: string;
-    icon: React.ReactNode;
-    accent: string;
+    imageUrl: string;
 };
 
-export default function StatCard({ title, value, description, icon, accent }: StatCardProps) {
+export default function StatCard({ title, value, description, imageUrl }: StatCardProps) {
     return (
-        <div className="rounded-2xl bg-white/60 backdrop-blur-sm p-6 shadow-lg ring-1 ring-white/10 border border-white/10 transition-transform hover:-translate-y-1">
-            <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-brand-muted">{title}</p>
-                    <div className="mt-3 flex items-baseline gap-3">
-                        <p className="text-3xl font-extrabold tabular-nums text-brand-dark">{value}</p>
-                        <p className="text-sm text-brand-muted">{description}</p>
-                    </div>
+        <div className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md border border-brand-primary/20 flex items-center justify-between gap-4">
+            <div className="absolute top-0 left-0 h-1 w-full bg-brand-primary/10 transition-all duration-300 group-hover:bg-brand-primary" />
+            <div className="min-w-0 z-10">
+                <p className="text-xs font-bold uppercase tracking-wider text-brand-muted group-hover:text-brand-dark transition-colors">{title}</p>
+                <div className="mt-2.5 flex items-baseline gap-2">
+                    <p className="text-3xl font-black tabular-nums text-brand-dark tracking-tight">{value}</p>
+                    <p className="text-xs font-medium text-brand-muted truncate">{description}</p>
                 </div>
-                <div className={`flex h-12 w-12 items-center justify-center rounded-xl shadow-sm text-white ${accent}`}>
-                    <div className="text-xl">{icon}</div>
-                </div>
+            </div>
+            <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-brand-light border border-brand-light/70 group-hover:border-brand-primary/20 shadow-inner transition-all duration-300">
+                <Image 
+                    src={imageUrl} 
+                    alt={title} 
+                    fill 
+                    sizes="56px"
+                    className="object-cover transition-transform duration-500 group-hover:scale-110" 
+                />
             </div>
         </div>
     );
