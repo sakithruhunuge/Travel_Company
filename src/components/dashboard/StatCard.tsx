@@ -19,12 +19,12 @@ export default function StatCard({ title, value, description, imageUrl }: StatCa
                 </div>
             </div>
             <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-brand-light border border-brand-light/70 group-hover:border-brand-primary/20 shadow-inner transition-all duration-300">
-                <Image 
-                    src={imageUrl} 
-                    alt={title} 
-                    fill 
+                <Image
+                    src={imageUrl}
+                    alt={title}
+                    fill
                     sizes="56px"
-                    className="object-cover transition-transform duration-500 group-hover:scale-110" 
+                    className="object-cover transition-transform duration-500 group-hover:scale-110"
                 />
             </div>
         </div>

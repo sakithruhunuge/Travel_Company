@@ -52,8 +52,8 @@ export default function Sidebar({ onNavigate, onLogout }: SidebarProps) {
                             href={item.href}
                             onClick={onNavigate}
                             className={`flex items-center gap-3.5 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${isActive
-                                    ? "bg-brand-primary text-slate-950 shadow-lg shadow-brand-primary/25 scale-[1.02]"
-                                    : "text-slate-400 hover:bg-slate-800/60 hover:text-white hover:translate-x-1"
+                                ? "bg-brand-primary text-slate-950 shadow-lg shadow-brand-primary/25 scale-[1.02]"
+                                : "text-slate-400 hover:bg-slate-800/60 hover:text-white hover:translate-x-1"
                                 }`}
                         >
                             <Icon className={`text-base ${isActive ? "text-slate-950" : "text-slate-400"}`} />

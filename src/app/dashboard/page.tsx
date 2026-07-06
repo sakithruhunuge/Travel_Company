@@ -88,29 +88,29 @@ export default function DashboardHomePage() {
                     </div>
                 ) : stats ? (
                     <>
-                        <StatCard 
-                            title="Total Requests" 
-                            value={stats.total} 
-                            description="All travel requests" 
-                            imageUrl="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=400&q=80" 
+                        <StatCard
+                            title="Total Requests"
+                            value={stats.total}
+                            description="All travel requests"
+                            imageUrl="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=400&q=80"
                         />
-                        <StatCard 
-                            title="Pending" 
-                            value={stats.pending} 
-                            description="Awaiting review" 
-                            imageUrl="https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=400&q=80" 
+                        <StatCard
+                            title="Pending"
+                            value={stats.pending}
+                            description="Awaiting review"
+                            imageUrl="https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=400&q=80"
                         />
-                        <StatCard 
-                            title="Approved" 
-                            value={stats.approved} 
-                            description="Confirmed trips" 
-                            imageUrl="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=80" 
+                        <StatCard
+                            title="Approved"
+                            value={stats.approved}
+                            description="Confirmed trips"
+                            imageUrl="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=80"
                         />
-                        <StatCard 
-                            title="Rejected" 
-                            value={stats.rejected} 
-                            description="Needs attention" 
-                            imageUrl="https://images.unsplash.com/photo-1428908728789-d2de25dbd4e2?auto=format&fit=crop&w=400&q=80" 
+                        <StatCard
+                            title="Rejected"
+                            value={stats.rejected}
+                            description="Needs attention"
+                            imageUrl="https://images.unsplash.com/photo-1428908728789-d2de25dbd4e2?auto=format&fit=crop&w=400&q=80"
                         />
                     </>
                 ) : null}
@@ -168,7 +168,7 @@ export default function DashboardHomePage() {
 
                 <div className="flex flex-col rounded-3xl bg-brand-dark text-white p-6 shadow-xl sm:p-8 text-left border border-brand-dark/70 relative overflow-hidden">
                     <div className="absolute top-0 right-0 h-48 w-48 rounded-full bg-brand-primary/10 blur-2xl pointer-events-none" />
-                    
+
                     <span className="inline-flex items-center rounded-full bg-brand-primary/10 px-3 py-1 text-xs font-semibold text-brand-primary border border-brand-primary/20 self-start">
                         Support
                     </span>
