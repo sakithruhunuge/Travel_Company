@@ -53,11 +53,18 @@ function LoginContent() {
             />
             <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-transparent" />
           </div>
-          <div className="relative z-10 flex flex-col justify-end p-12 text-white">
-            <h1 className="text-4xl font-bold mb-4">Explore Sri Lanka</h1>
-            <p className="text-lg opacity-90 max-w-md">
-              Discover ancient wonders, misty mountains, and pristine beaches. Your adventure begins here.
-            </p>
+          <div className="relative z-10 flex flex-col items-center justify-end pb-8 text-white w-full h-full">
+            {/* Glass transparency container - Centered with more bottom spacing */}
+            <div className="max-w-md w-full p-6 rounded-2xl backdrop-blur-lg bg-black/20 border border-white/20 shadow-2xl text-center mb-12">
+              <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+              <h1 className="text-xl font-bold mb-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
+                Explore Sri Lanka
+              </h1>
+              <p className="text-xs opacity-90 drop-shadow-[0_2px_6px_rgba(0,0,0,0.4)]">
+                Discover ancient wonders, misty mountains, and pristine beaches. Your adventure begins here.
+              </p>
+              <div className="mt-3 w-10 h-0.5 bg-gradient-to-r from-white/50 to-transparent rounded-full mx-auto"></div>
+            </div>
           </div>
         </section>
 
