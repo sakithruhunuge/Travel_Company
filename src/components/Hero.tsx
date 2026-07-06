@@ -4,8 +4,8 @@ import Image from "next/image";
 import { useState } from "react";
 import { useTravelRequest } from "@/context/TravelRequestContext";
 
-const DESTINATIONS = ["Kandy", "Ella", "Mirissa", "Sigiriya", "Galle"];
-const BUDGETS = ["$100 - $300", "$300 - $600", "$600 - $1000", "$1000+"];
+const DESTINATIONS = ["Kandy", "Ella", "Mirissa", "Sigiriya", "Galle", "Nuwara Eliya", "Trincomalee", "Jaffna"];
+const BUDGETS = ["$100 - $300", "$300 - $600", "$600 - $1000", "$1000+", "$2000+ Luxury"];
 
 export default function Hero() {
   const { openFormModal } = useTravelRequest();
@@ -16,19 +16,12 @@ export default function Hero() {
   return (
     <section
       id="home"
-      className="relative bg-white py-24 lg:py-32 overflow-hidden"
+      className="relative bg-white py-16 lg:py-20 overflow-hidden"
     >
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
           {/* Text + Search */}
           <div className="lg:col-span-6 space-y-8 text-left">
-            <span
-              className="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest text-brand-primary bg-brand-primary/10 border border-brand-primary/20 animate-fade-in-up"
-              style={{ animationDelay: "150ms", animationFillMode: "both" }}
-            >
-              Explore the Pearl of the Indian Ocean
-            </span>
-
             <h1
               className="text-4xl sm:text-6xl font-black tracking-tight text-brand-dark leading-[1.1] animate-fade-in-up"
               style={{ animationDelay: "300ms", animationFillMode: "both" }}
@@ -67,60 +60,115 @@ export default function Hero() {
                   e.preventDefault();
                   openFormModal();
                 }}
-                className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-0 bg-white rounded-2xl sm:rounded-full border border-black/10 shadow-[0_10px_40px_rgba(0,0,0,0.08)] p-3 sm:p-2 sm:pl-6 max-w-2xl"
+                className="flex flex-col gap-4 bg-white rounded-3xl border border-black/10 shadow-[0_15px_50px_rgba(0,0,0,0.08)] p-6 max-w-2xl"
               >
-                <label className="flex-1 sm:pr-4 sm:border-r sm:border-black/10">
-                  <span className="block text-[10px] font-bold uppercase tracking-wider text-brand-primary">
-                    Destination
-                  </span>
-                  <select
-                    value={destination}
-                    onChange={(e) => setDestination(e.target.value)}
-                    className="w-full text-sm font-semibold text-brand-dark bg-transparent outline-none py-1"
+                {/* Row 1: Destination + Travel Date */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <label className="flex flex-col gap-1.5">
+                    <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-brand-primary">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Destination
+                    </span>
+                    <select
+                      value={destination}
+                      onChange={(e) => setDestination(e.target.value)}
+                      className="w-full text-base font-semibold text-brand-dark bg-brand-light/50 rounded-xl px-4 py-3.5 border border-black/5 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none transition-all"
+                    >
+                      {DESTINATIONS.map((d) => (
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="flex flex-col gap-1.5">
+                    <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-brand-primary">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      Travel Date
+                    </span>
+                    <input
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="w-full text-base font-semibold text-brand-dark bg-brand-light/50 rounded-xl px-4 py-3.5 border border-black/5 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none transition-all"
+                    />
+                  </label>
+                </div>
+
+                {/* Row 2: Budget + Travelers + Button */}
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
+                  <label className="sm:col-span-4 flex flex-col gap-1.5">
+                    <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-brand-primary">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Budget
+                    </span>
+                    <select
+                      value={budget}
+                      onChange={(e) => setBudget(e.target.value)}
+                      className="w-full text-base font-semibold text-brand-dark bg-brand-light/50 rounded-xl px-4 py-3.5 border border-black/5 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none transition-all"
+                    >
+                      {BUDGETS.map((b) => (
+                        <option key={b} value={b}>
+                          {b}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="sm:col-span-3 flex flex-col gap-1.5">
+                    <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-brand-primary">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      Travelers
+                    </span>
+                    <select className="w-full text-base font-semibold text-brand-dark bg-brand-light/50 rounded-xl px-4 py-3.5 border border-black/5 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none transition-all">
+                      {[1, 2, 3, 4, 5, 6].map((num) => (
+                        <option key={num} value={num}>
+                          {num} {num === 1 ? "Traveler" : "Travelers"}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <button
+                    type="submit"
+                    className="sm:col-span-5 shrink-0 px-8 py-3.5 rounded-xl text-base font-bold text-white bg-gradient-to-r from-brand-primary to-orange-400 hover:from-brand-primary/90 hover:to-orange-400/90 hover:scale-[1.02] active:scale-95 shadow-lg shadow-brand-primary/25 hover:shadow-xl hover:shadow-brand-primary/35 transition-all duration-300 ease-in-out cursor-pointer flex items-center justify-center gap-2"
                   >
-                    {DESTINATIONS.map((d) => (
-                      <option key={d} value={d}>
-                        {d}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Plan My Trip
+                  </button>
+                </div>
 
-                <label className="flex-1 sm:px-4 sm:border-r sm:border-black/10">
-                  <span className="block text-[10px] font-bold uppercase tracking-wider text-brand-primary">
-                    Travel Date
+                {/* Popular destinations quick links */}
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-black/5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Popular:
                   </span>
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full text-sm font-semibold text-brand-dark bg-transparent outline-none py-1"
-                  />
-                </label>
-
-                <label className="flex-1 sm:px-4">
-                  <span className="block text-[10px] font-bold uppercase tracking-wider text-brand-primary">
-                    Budget
-                  </span>
-                  <select
-                    value={budget}
-                    onChange={(e) => setBudget(e.target.value)}
-                    className="w-full text-sm font-semibold text-brand-dark bg-transparent outline-none py-1"
-                  >
-                    {BUDGETS.map((b) => (
-                      <option key={b} value={b}>
-                        {b}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <button
-                  type="submit"
-                  className="shrink-0 px-8 py-3.5 rounded-full text-sm font-bold text-white bg-brand-primary hover:bg-brand-primary/90 hover:scale-[1.03] active:scale-95 transition-all duration-300 ease-in-out cursor-pointer"
-                >
-                  Plan My Trip
-                </button>
+                  {["Sigiriya", "Ella", "Mirissa", "Galle"].map((place) => (
+                    <button
+                      key={place}
+                      type="button"
+                      onClick={() => setDestination(place)}
+                      className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-all ${destination === place
+                          ? "bg-brand-primary text-white"
+                          : "bg-brand-light/50 text-brand-dark/70 hover:bg-brand-light hover:text-brand-dark"
+                        }`}
+                    >
+                      {place}
+                    </button>
+                  ))}
+                </div>
               </form>
             </div>
 
@@ -137,23 +185,20 @@ export default function Hero() {
             </div>
           </div>
 
-          {/* Illustration */}
+          {/* Illustration - Proportioned to match search section */}
           <div
             className="lg:col-span-6 relative animate-scale-in"
             style={{ animationDelay: "450ms", animationFillMode: "both" }}
           >
-            <div className="relative mx-auto max-w-xl aspect-square">
-              {/* Main image */}
-              <div className="relative w-full h-full rounded-[45%_55%_60%_40%/50%_45%_55%_50%] overflow-hidden">
-                <Image
-                  src="/images/hero-traveler-new.png"
-                  alt="Young woman traveler in Sri Lanka"
-                  fill
-                  priority
-                  className="object-contain object-center"
-                  sizes="(min-width: 1024px) 900px, 100vw"
-                />
-              </div>
+            <div className="relative mx-auto w-[160%] max-w-none aspect-[4/5] flex items-center justify-center -mr-12 lg:-mr-16 -ml-12 lg:-ml-16">
+              <Image
+                src="/images/hero-traveler-new.png"
+                alt="Young woman traveler in Sri Lanka"
+                width={1100}
+                height={1375}
+                priority
+                className="w-full h-auto max-h-full object-contain scale-105 hover:scale-110 transition-transform duration-700"
+              />
             </div>
           </div>
         </div>
