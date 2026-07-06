@@ -35,8 +35,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-brand-light to-white">
-            <div className="flex min-h-screen">
+        <div className="min-h-screen bg-slate-50 relative overflow-hidden">
+            {/* Ambient background gradients for glassmorphism */}
+            <div className="absolute top-[-10%] left-[-10%] h-[500px] w-[500px] rounded-full bg-orange-200/30 blur-[100px] pointer-events-none" />
+            <div className="absolute bottom-[-10%] right-[-10%] h-[600px] w-[600px] rounded-full bg-amber-100/45 blur-[120px] pointer-events-none" />
+            <div className="absolute top-[30%] right-[20%] h-[500px] w-[500px] rounded-full bg-rose-100/20 blur-[100px] pointer-events-none" />
+
+            <div className="flex min-h-screen relative z-10">
                 {/* Desktop sidebar */}
                 <div className="hidden lg:flex lg:w-64 lg:flex-shrink-0">
                     <Sidebar onNavigate={() => undefined} onLogout={() => signOut({ callbackUrl: "/login" })} />
@@ -44,10 +49,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                 <div className="flex flex-1 flex-col min-w-0">
                     {/* Mobile header bar */}
-                    <div className="flex items-center gap-3 border-b border-brand-light/70 bg-white px-4 py-3 lg:hidden">
+                    <div className="flex items-center gap-3 border-b border-white/20 bg-white/40 backdrop-blur-md px-4 py-3 lg:hidden">
                         <button
                             onClick={() => setMobileSidebarOpen((prev) => !prev)}
-                            className="inline-flex items-center gap-2 rounded-lg border border-brand-light/70 px-3 py-2 text-sm font-medium text-brand-muted transition-colors duration-200 hover:bg-brand-light"
+                            className="inline-flex items-center gap-2 rounded-lg border border-slate-200/60 px-3 py-2 text-sm font-medium text-slate-650 transition-colors duration-200 hover:bg-white/60"
                             aria-label={mobileSidebarOpen ? "Close menu" : "Open menu"}
                         >
                             {mobileSidebarOpen ? (
@@ -62,17 +67,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 </>
                             )}
                         </button>
-                        <span className="text-sm font-semibold text-brand-dark">Horizon Travel</span>
+                        <span className="text-sm font-semibold text-slate-800">Horizon Travel</span>
                     </div>
 
                     {/* Mobile sidebar overlay */}
                     {mobileSidebarOpen ? (
                         <div className="fixed inset-0 z-40 lg:hidden">
                             <div
-                                className="absolute inset-0 bg-brand-dark/10"
+                                className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm"
                                 onClick={() => setMobileSidebarOpen(false)}
                             />
-                            <div className="absolute inset-y-0 left-0 w-64 bg-white shadow-lg">
+                            <div className="absolute inset-y-0 left-0 w-64 bg-white/90 backdrop-blur-lg shadow-lg">
                                 <Sidebar
                                     onNavigate={() => setMobileSidebarOpen(false)}
                                     onLogout={() => signOut({ callbackUrl: "/login" })}
@@ -83,7 +88,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                     <TopNavbar title="Dashboard" subtitle="Manage your Sri Lanka plans" />
 
-                    <main className="flex-1 p-4 md:p-6 lg:p-10 max-w-7xl mx-auto">{children}</main>
+                    <main className="flex-1 p-4 md:p-6 lg:p-10 max-w-7xl mx-auto w-full">{children}</main>
                 </div>
             </div>
         </div>

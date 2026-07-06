@@ -28,20 +28,20 @@ export default function Sidebar({ onNavigate, onLogout }: SidebarProps) {
     const pathname = usePathname();
 
     return (
-        <aside className="flex h-full w-full flex-col bg-slate-900 text-slate-100 border-r border-slate-800 shadow-xl">
-            <div className="px-6 py-6 border-b border-slate-800 bg-slate-950/40">
+        <aside className="flex h-full w-full flex-col bg-white/35 backdrop-blur-lg text-slate-700 border-r border-white/20 shadow-xl">
+            <div className="px-6 py-6 border-b border-white/20 bg-white/10">
                 <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-lg bg-brand-primary flex items-center justify-center font-black text-slate-950 text-base tracking-wider shadow-md shadow-brand-primary/20">
+                    <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-brand-primary to-orange-400 flex items-center justify-center font-black text-white text-base shadow-sm">
                         HZ
                     </div>
                     <div>
-                        <p className="text-sm font-bold tracking-wider text-white">HORIZON TRAVEL</p>
-                        <p className="text-[10px] font-semibold uppercase tracking-widest text-brand-primary">Curated Journeys</p>
+                        <p className="text-sm font-bold text-slate-900">HORIZON TRAVEL</p>
+                        <p className="text-[10px] font-semibold uppercase text-slate-400">Curated Journeys</p>
                     </div>
                 </div>
             </div>
 
-            <nav className="flex-1 space-y-1.5 px-4 py-6">
+            <nav className="flex-1 space-y-1 px-4 py-6">
                 {menuItems.map((item) => {
                     const isActive = pathname === item.href || (pathname.startsWith(item.href + "/") && item.href !== "/dashboard");
                     const Icon = item.icon;
@@ -51,22 +51,22 @@ export default function Sidebar({ onNavigate, onLogout }: SidebarProps) {
                             key={item.href}
                             href={item.href}
                             onClick={onNavigate}
-                            className={`flex items-center gap-3.5 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${isActive
-                                ? "bg-brand-primary text-slate-950 shadow-lg shadow-brand-primary/25 scale-[1.02]"
-                                : "text-slate-400 hover:bg-slate-800/60 hover:text-white hover:translate-x-1"
+                            className={`flex items-center gap-3.5 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${isActive
+                                    ? "bg-white/60 text-slate-900 border border-white/40 shadow-sm"
+                                    : "text-slate-600 hover:bg-white/30 hover:text-slate-900"
                                 }`}
                         >
-                            <Icon className={`text-base ${isActive ? "text-slate-950" : "text-slate-400"}`} />
+                            <Icon className="text-base" />
                             <span>{item.label}</span>
                         </Link>
                     );
                 })}
             </nav>
 
-            <div className="border-t border-brand-dark/80 bg-brand-dark/80 p-4">
+            <div className="border-t border-white/20 bg-white/10 p-4">
                 <button
                     onClick={onLogout}
-                    className="flex w-full items-center gap-3.5 rounded-xl px-4 py-3 text-sm font-semibold text-brand-secondary transition-all duration-200 hover:bg-brand-secondary/10 hover:text-brand-secondary/90"
+                    className="flex w-full items-center gap-3.5 rounded-xl px-4 py-3 text-sm font-semibold text-slate-600 hover:bg-white/30 hover:text-slate-900 transition-colors duration-200"
                 >
                     <LogoutOutlined className="text-base" />
                     Logout
