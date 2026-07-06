@@ -135,22 +135,22 @@ export default function DashboardHomePage() {
                             {
                                 name: "Sigiriya Rock",
                                 desc: "Unearth ancient royal ruins",
-                                image: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=800&q=80",
+                                image: "/images/sigiriya.png",
                             },
                             {
                                 name: "Ella Train Journey",
                                 desc: "Ride the world's most scenic rails",
-                                image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=800&q=80",
+                                image: "/images/nine_arch.png",
                             },
                             {
                                 name: "Nuwara Eliya Hills",
                                 desc: "Mist-covered tea estates & falls",
-                                image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800&q=80",
+                                image: "/images/tea.png",
                             },
                             {
                                 name: "Mirissa Coastline",
                                 desc: "Surf breaks & whale watching",
-                                image: "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=800&q=80",
+                                image: "/images/mirissa.png",
                             },
                         ].map((place) => (
                             <div key={place.name} className="group overflow-hidden rounded-2xl bg-brand-light border border-brand-light/70 hover:border-brand-primary/20 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
