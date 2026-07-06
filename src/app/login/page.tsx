@@ -42,13 +42,26 @@ function LoginContent() {
     <main className="min-h-screen flex items-center justify-center bg-slate-50">
       <div className="w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 px-4 py-12">
         <section className="hidden md:flex flex-col justify-center rounded-3xl overflow-hidden shadow-2xl">
-          <div className="relative h-full w-full bg-gradient-to-br from-sky-400 to-indigo-100 p-12 flex items-center">
-            <div className="max-w-lg text-white">
-              <h1 className="text-4xl font-extrabold leading-tight">Discover Sri Lanka</h1>
-              <p className="mt-4 text-sm opacity-90">Handcrafted tours, local advisors, and unforgettable experiences tailored for you.</p>
-              <div className="mt-6 rounded-3xl overflow-hidden shadow-lg ring-1 ring-white/10">
-                <Image src="/images/hero_bg.png" alt="Travel illustration" width={720} height={520} className="w-full h-auto object-cover" />
-              </div>
+          <div className="relative h-full w-full flex flex-col justify-end">
+            {/* Background Image */}
+            <div className="absolute inset-0 rounded-3xl overflow-hidden">
+              <Image src="/images/hero_bg.png" alt="Travel illustration" fill className="object-cover" />
+            </div>
+            {/* Premium Gradient Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent rounded-3xl"></div>
+
+            {/* Glass Text Overlay - No Border, Just Shading */}
+            <div className="relative z-10 max-w-lg mx-8 mb-8 p-6 rounded-2xl backdrop-blur-xl bg-gradient-to-br from-white/10 via-white/5 to-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.5)] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
+
+              <h1 className="text-2xl font-extrabold leading-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] tracking-tight">
+                Discover Sri Lanka
+              </h1>
+              <p className="mt-2 text-xs font-medium leading-relaxed text-white/80 drop-shadow-[0_2px_6px_rgba(0,0,0,0.4)]">
+                Handcrafted tours, local advisors, and unforgettable experiences tailored for you.
+              </p>
+
+              {/* Decorative accent line */}
+              <div className="mt-3 w-10 h-0.5 bg-gradient-to-r from-brand-primary/70 to-orange-400/70 rounded-full"></div>
             </div>
           </div>
         </section>
