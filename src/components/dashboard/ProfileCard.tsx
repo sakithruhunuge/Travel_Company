@@ -10,7 +10,7 @@ type ProfileCardProps = {
 
 export default function ProfileCard({ name, email, image, provider, createdAt }: ProfileCardProps) {
     return (
-        <div className="rounded-2xl bg-white/60 backdrop-blur-sm p-6 shadow-lg ring-1 ring-white/10 border border-white/10">
+        <div className="rounded-2xl bg-white/60 backdrop-blur-sm p-6 border border-slate-200">
             <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
                 <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white/20 text-xl font-semibold text-brand-dark">
                     {image ? (

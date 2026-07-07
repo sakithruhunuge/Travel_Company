@@ -11,6 +11,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const { data: session, status } = useSession();
     const router = useRouter();
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(false);
 
     useEffect(() => {
         if (status !== "authenticated") return;
@@ -43,11 +44,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <div className="flex min-h-screen relative z-10">
                 {/* Desktop sidebar */}
-                <div className="hidden lg:flex lg:w-64 lg:flex-shrink-0">
-                    <Sidebar onNavigate={() => undefined} onLogout={() => signOut({ callbackUrl: "/login" })} />
+                <div className={`hidden lg:flex ${isCollapsed ? "w-20" : "w-64"} transition-all duration-300 ease-in-out flex-shrink-0 h-screen fixed top-0 left-0 z-20`}>
+                    <Sidebar 
+                        onNavigate={() => undefined} 
+                        onLogout={() => signOut({ callbackUrl: "/login" })} 
+                        isCollapsed={isCollapsed}
+                        onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+                    />
                 </div>
 
-                <div className="flex flex-1 flex-col min-w-0">
+                <div className={`flex flex-1 flex-col min-w-0 ${isCollapsed ? "lg:pl-20" : "lg:pl-64"} transition-all duration-300 ease-in-out`}>
                     {/* Mobile header bar */}
                     <div className="flex items-center gap-3 border-b border-white/20 bg-white/40 backdrop-blur-md px-4 py-3 lg:hidden">
                         <button
@@ -81,6 +87,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 <Sidebar
                                     onNavigate={() => setMobileSidebarOpen(false)}
                                     onLogout={() => signOut({ callbackUrl: "/login" })}
+                                    isCollapsed={false}
                                 />
                             </div>
                         </div>

@@ -52,9 +52,9 @@ function SignupContent() {
               className="object-cover"
               priority
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-transparent" />
+            <div className="absolute inset-0 bg-black/50" />
           </div>
-          <div className="relative z-10 flex flex-col justify-end p-12 text-white">
+          <div className="relative z-10 flex flex-col justify-end p-12 text-white h-full w-full">
             <h1 className="text-4xl font-bold mb-4">Explore Sri Lanka</h1>
             <p className="text-lg opacity-90 max-w-md">
               Discover ancient wonders, misty mountains, and pristine beaches. Your adventure begins here.
@@ -123,6 +123,18 @@ function SignupContent() {
                 </div>
 
                 <GoogleButton />
+
+                <div className="text-center pt-2">
+                  <Link
+                    href="/"
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-brand-primary transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Back to home page
+                  </Link>
+                </div>
 
                 <div className="text-center pt-2">
                   <p className="text-sm text-slate-500">

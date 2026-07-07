@@ -9,7 +9,7 @@ type StatCardProps = {
 
 export default function StatCard({ title, value, description, imageUrl }: StatCardProps) {
     return (
-        <div className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md border border-brand-primary/20 flex items-center justify-between gap-4">
+        <div className="group relative overflow-hidden rounded-2xl bg-white p-6 transition-all duration-300 hover:-translate-y-1 border border-slate-200 flex items-center justify-between gap-4">
             <div className="absolute top-0 left-0 h-1 w-full bg-brand-primary/10 transition-all duration-300 group-hover:bg-brand-primary" />
             <div className="min-w-0 z-10">
                 <p className="text-xs font-bold uppercase tracking-wider text-brand-muted group-hover:text-brand-dark transition-colors">{title}</p>

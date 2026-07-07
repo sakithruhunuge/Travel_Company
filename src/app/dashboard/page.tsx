@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import StatCard from "@/components/dashboard/StatCard";
-import LoadingSkeleton from "@/components/dashboard/LoadingSkeleton";
+import StatsOverviewCard from "@/components/dashboard/StatsOverviewCard";
 import EmptyState from "@/components/dashboard/EmptyState";
 import SettingsCard from "@/components/dashboard/SettingsCard";
 import Link from "next/link";
@@ -79,48 +78,21 @@ export default function DashboardHomePage() {
             </section>
 
             {/* Statistics Widgets */}
-            <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            <section className="w-full">
                 {loading ? (
-                    <LoadingSkeleton />
+                    <div className="h-32 animate-pulse rounded-2xl bg-white/40 backdrop-blur-sm border border-slate-200" />
                 ) : error ? (
-                    <div className="md:col-span-2 xl:col-span-4">
-                        <EmptyState title="Unable to load dashboard stats" description={error} />
-                    </div>
+                    <EmptyState title="Unable to load dashboard stats" description={error} />
                 ) : stats ? (
-                    <>
-                        <StatCard
-                            title="Total Requests"
-                            value={stats.total}
-                            description="All travel requests"
-                            imageUrl="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=400&q=80"
-                        />
-                        <StatCard
-                            title="Pending"
-                            value={stats.pending}
-                            description="Awaiting review"
-                            imageUrl="https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=400&q=80"
-                        />
-                        <StatCard
-                            title="Approved"
-                            value={stats.approved}
-                            description="Confirmed trips"
-                            imageUrl="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=80"
-                        />
-                        <StatCard
-                            title="Rejected"
-                            value={stats.rejected}
-                            description="Needs attention"
-                            imageUrl="https://images.unsplash.com/photo-1428908728789-d2de25dbd4e2?auto=format&fit=crop&w=400&q=80"
-                        />
-                    </>
+                    <StatsOverviewCard stats={stats} />
                 ) : null}
             </section>
 
             {/* Suggested & Support */}
             <section className="grid gap-8 xl:grid-cols-[1.3fr_0.7fr]">
-                <div className="rounded-3xl bg-white/40 backdrop-blur-md p-6 shadow-md border border-white/25 sm:p-8 text-left">
+                <div className="rounded-3xl bg-white/40 backdrop-blur-md p-6 border border-slate-200 sm:p-8 text-left">
                     <div>
-                        <span className="inline-flex items-center rounded-full bg-white/60 border border-white/40 shadow-sm px-3 py-1 text-xs font-semibold text-brand-muted">
+                        <span className="inline-flex items-center rounded-full bg-white/60 border border-white/40 px-3 py-1 text-xs font-semibold text-brand-muted">
                             Recommendations
                         </span>
                         <h3 className="mt-3.5 text-xl font-bold text-slate-900 tracking-tight">
@@ -153,7 +125,7 @@ export default function DashboardHomePage() {
                                 image: "/images/mirissa.png",
                             },
                         ].map((place) => (
-                            <div key={place.name} className="group overflow-hidden rounded-2xl bg-white/20 border border-white/20 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+                            <div key={place.name} className="group overflow-hidden rounded-2xl bg-white/20 border border-slate-200 transition-all duration-300 hover:-translate-y-1">
                                 <div className="h-32 w-full overflow-hidden">
                                     <div className="h-full w-full bg-cover bg-center transition-transform duration-500 group-hover:scale-105" style={{ backgroundImage: `url(${place.image})` }} />
                                 </div>
@@ -166,10 +138,10 @@ export default function DashboardHomePage() {
                     </div>
                 </div>
 
-                <div className="flex flex-col rounded-3xl bg-white/40 backdrop-blur-md text-slate-800 p-6 shadow-md sm:p-8 text-left border border-white/25 relative overflow-hidden">
+                <div className="flex flex-col rounded-3xl bg-white/40 backdrop-blur-md text-slate-800 p-6 sm:p-8 text-left border border-slate-200 relative overflow-hidden">
                     <div className="absolute top-0 right-0 h-48 w-48 rounded-full bg-slate-700/10 blur-2xl pointer-events-none" />
 
-                    <span className="inline-flex items-center rounded-full bg-white/60 px-3 py-1 text-xs font-semibold text-slate-650 border border-white/50 shadow-sm self-start">
+                    <span className="inline-flex items-center rounded-full bg-white/60 px-3 py-1 text-xs font-semibold text-slate-650 border border-white/50 self-start">
                         Support
                     </span>
                     <h3 className="mt-4 text-xl font-bold text-slate-900 tracking-tight">Need help planning?</h3>
@@ -186,7 +158,7 @@ export default function DashboardHomePage() {
                                 key={tip}
                                 className="flex items-center gap-3.5 rounded-xl bg-white/30 hover:bg-white/50 border border-white/20 p-4 text-xs font-bold text-slate-705 transition-all hover:translate-x-1"
                             >
-                                <span className="h-2 w-2 flex-shrink-0 rounded-full bg-slate-400 shadow-md shadow-slate-500/50" />
+                                <span className="h-2 w-2 flex-shrink-0 rounded-full bg-slate-400" />
                                 {tip}
                             </div>
                         ))}

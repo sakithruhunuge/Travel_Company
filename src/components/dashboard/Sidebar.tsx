@@ -9,14 +9,20 @@ import {
     UserOutlined,
     SettingOutlined,
     LogoutOutlined,
+    MenuFoldOutlined,
+    MenuUnfoldOutlined,
+    HomeOutlined,
 } from "@ant-design/icons";
 
 type SidebarProps = {
     onNavigate?: () => void;
     onLogout: () => void;
+    isCollapsed?: boolean;
+    onToggleCollapse?: () => void;
 };
 
 const menuItems = [
+    { href: "/", label: "Home", icon: HomeOutlined },
     { href: "/dashboard", label: "Dashboard", icon: AppstoreOutlined },
     { href: "/dashboard/my-requests", label: "My Travel Requests", icon: SendOutlined },
     { href: "/dashboard/request-history", label: "Request History", icon: HistoryOutlined },
@@ -24,26 +30,39 @@ const menuItems = [
     { href: "/dashboard/settings", label: "Settings", icon: SettingOutlined },
 ];
 
-export default function Sidebar({ onNavigate, onLogout }: SidebarProps) {
+export default function Sidebar({ onNavigate, onLogout, isCollapsed = false, onToggleCollapse }: SidebarProps) {
     const pathname = usePathname();
 
     return (
-        <aside className="flex h-full w-full flex-col bg-white/35 backdrop-blur-lg text-slate-700 border-r border-white/20 shadow-xl">
-            <div className="px-6 py-6 border-b border-white/20 bg-white/10">
-                <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-brand-primary to-orange-400 flex items-center justify-center font-black text-white text-base shadow-sm">
-                        HZ
-                    </div>
-                    <div>
-                        <p className="text-sm font-bold text-slate-900">HORIZON TRAVEL</p>
-                        <p className="text-[10px] font-semibold uppercase text-slate-400">Curated Journeys</p>
-                    </div>
-                </div>
+        <aside className="flex h-full w-full flex-col bg-white/35 backdrop-blur-lg text-slate-700 border-r border-white/20 shadow-xl overflow-hidden">
+            <div className={`px-4 py-6 border-b border-white/20 bg-white/10 flex ${isCollapsed ? "flex-col items-center gap-4" : "items-center justify-between"}`}>
+                {isCollapsed ? (
+                    <Link href="/" className="text-xl font-black tracking-wider text-brand-primary">
+                        H
+                    </Link>
+                ) : (
+                    <Link href="/" className="flex items-center gap-2 group transition-all duration-300 ease-in-out">
+                        <span className="text-base font-black tracking-wider text-slate-900 group-hover:text-brand-primary transition-all duration-300 ease-in-out">
+                            HORIZON<span className="text-brand-primary group-hover:text-brand-secondary transition-all duration-300 ease-in-out font-medium">TRAVEL</span>
+                        </span>
+                    </Link>
+                )}
+                {onToggleCollapse && (
+                    <button
+                        onClick={onToggleCollapse}
+                        className="text-slate-500 hover:text-slate-900 transition-colors p-1 rounded-md hover:bg-white/40 flex items-center justify-center"
+                        aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                    >
+                        {isCollapsed ? <MenuUnfoldOutlined className="text-lg" /> : <MenuFoldOutlined className="text-lg" />}
+                    </button>
+                )}
             </div>
 
-            <nav className="flex-1 space-y-1 px-4 py-6">
+            <nav className="flex-grow overflow-y-auto space-y-1 px-3 py-6">
                 {menuItems.map((item) => {
-                    const isActive = pathname === item.href || (pathname.startsWith(item.href + "/") && item.href !== "/dashboard");
+                    const isActive = item.href === "/" 
+                        ? pathname === "/" 
+                        : (pathname === item.href || (pathname.startsWith(item.href + "/") && item.href !== "/dashboard"));
                     const Icon = item.icon;
 
                     return (
@@ -51,25 +70,27 @@ export default function Sidebar({ onNavigate, onLogout }: SidebarProps) {
                             key={item.href}
                             href={item.href}
                             onClick={onNavigate}
-                            className={`flex items-center gap-3.5 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${isActive
+                            title={isCollapsed ? item.label : undefined}
+                            className={`flex items-center ${isCollapsed ? "justify-center px-2" : "gap-3.5 px-4"} rounded-xl py-3 text-sm font-semibold transition-all ${isActive
                                     ? "bg-white/60 text-slate-900 border border-white/40 shadow-sm"
                                     : "text-slate-600 hover:bg-white/30 hover:text-slate-900"
                                 }`}
                         >
-                            <Icon className="text-base" />
-                            <span>{item.label}</span>
+                            <Icon className="text-base flex-shrink-0" />
+                            {!isCollapsed && <span>{item.label}</span>}
                         </Link>
                     );
                 })}
             </nav>
 
-            <div className="border-t border-white/20 bg-white/10 p-4">
+            <div className="border-t border-white/20 bg-white/10 p-4 mt-auto">
                 <button
                     onClick={onLogout}
-                    className="flex w-full items-center gap-3.5 rounded-xl px-4 py-3 text-sm font-semibold text-slate-600 hover:bg-white/30 hover:text-slate-900 transition-colors duration-200"
+                    title={isCollapsed ? "Logout" : undefined}
+                    className={`flex w-full items-center ${isCollapsed ? "justify-center px-2" : "gap-3.5 px-4"} rounded-xl py-3 text-sm font-semibold text-slate-650 hover:bg-white/30 hover:text-slate-900 transition-colors duration-200`}
                 >
-                    <LogoutOutlined className="text-base" />
-                    Logout
+                    <LogoutOutlined className="text-base flex-shrink-0" />
+                    {!isCollapsed && <span>Logout</span>}
                 </button>
             </div>
         </aside>

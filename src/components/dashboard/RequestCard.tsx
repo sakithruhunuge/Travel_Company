@@ -21,7 +21,7 @@ type RequestCardProps = {
 
 export default function RequestCard({ request, showActions = true, onCancel, isCancelling = false }: RequestCardProps) {
     return (
-        <div className="rounded-2xl bg-white/60 backdrop-blur-sm p-6 shadow-lg ring-1 ring-white/10 border border-white/10 transition-transform hover:-translate-y-0.5">
+        <div className="rounded-2xl bg-white/60 backdrop-blur-sm p-6 border border-slate-200 transition-transform hover:-translate-y-0.5">
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <p className="text-xs font-medium uppercase tracking-wider text-brand-muted">Package</p>
