@@ -60,7 +60,7 @@ export default function Hero() {
                   e.preventDefault();
                   openFormModal();
                 }}
-                className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-white rounded-2xl border border-black/10 shadow-[0_10px_40px_rgba(0,0,0,0.08)] p-3 sm:p-2 sm:pl-4 max-w-xl"
+                className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-white rounded-2xl border border-black/10 shadow-[0_10px_40px_rgba(0,0,0,0.08)] p-3 sm:p-2 sm:pl-4 max-w-2xl w-full"
               >
                 <label className="flex-1 sm:pr-3 sm:border-r sm:border-black/10">
                   <span className="block text-[10px] font-bold uppercase tracking-wider text-brand-primary">
@@ -91,14 +91,14 @@ export default function Hero() {
                   />
                 </label>
 
-                <label className="flex-1 sm:px-3">
+                <label className="flex-[1.2] sm:min-w-[150px] sm:px-3">
                   <span className="block text-[10px] font-bold uppercase tracking-wider text-brand-primary">
                     Budget
                   </span>
                   <select
                     value={budget}
                     onChange={(e) => setBudget(e.target.value)}
-                    className="w-full text-sm font-semibold text-brand-dark bg-transparent outline-none py-1 pr-6"
+                    className="w-full text-sm font-semibold text-brand-dark bg-transparent outline-none py-1"
                   >
                     {BUDGETS.map((b) => (
                       <option key={b} value={b}>
