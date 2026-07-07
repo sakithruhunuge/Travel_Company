@@ -4,6 +4,8 @@ import { usePathname } from "next/navigation";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 
+import PageTransition from "./ui/PageTransition";
+
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const showHeaderFooter = pathname !== "/login" && pathname !== "/signup" && !pathname.startsWith("/dashboard");
@@ -11,7 +13,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   return (
     <>
       {showHeaderFooter && <Navbar />}
-      <main className="flex-grow">{children}</main>
+      <PageTransition>{children}</PageTransition>
       {showHeaderFooter && <Footer />}
     </>
   );

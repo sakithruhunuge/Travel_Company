@@ -46,7 +46,23 @@ export default function Navbar() {
           </nav>
 
           {/* Desktop CTA / Auth */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-3">
+            {/* Language Selector */}
+            <select aria-label="Language Selector" className="bg-white/50 border border-black/10 rounded-full px-3 py-1.5 text-xs font-bold text-brand-muted hover:text-brand-secondary outline-none focus:border-brand-primary cursor-pointer transition-all">
+              <option value="en">EN</option>
+              <option value="fr">FR</option>
+              <option value="de">DE</option>
+              <option value="si">SI</option>
+            </select>
+
+            {/* Currency Selector */}
+            <select aria-label="Currency Selector" className="bg-white/50 border border-black/10 rounded-full px-3 py-1.5 text-xs font-bold text-brand-muted hover:text-brand-secondary outline-none focus:border-brand-primary cursor-pointer transition-all mr-1">
+              <option value="USD">USD ($)</option>
+              <option value="LKR">LKR (Rs)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+            </select>
+
             {session ? (
               <ProfileDropdown />
             ) : (
@@ -97,7 +113,21 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
-            <div className="pt-4 pb-2 px-4 border-t border-white/30 mt-2">
+            <div className="pt-4 pb-2 px-4 border-t border-white/30 mt-2 space-y-4">
+              <div className="flex items-center gap-3">
+                <select aria-label="Mobile Language Selector" className="flex-1 bg-white border border-black/10 rounded-2xl px-4 py-2.5 text-sm font-bold text-brand-muted outline-none focus:border-brand-primary">
+                  <option value="en">English (EN)</option>
+                  <option value="fr">French (FR)</option>
+                  <option value="de">German (DE)</option>
+                  <option value="si">Sinhala (SI)</option>
+                </select>
+                <select aria-label="Mobile Currency Selector" className="flex-1 bg-white border border-black/10 rounded-2xl px-4 py-2.5 text-sm font-bold text-brand-muted outline-none focus:border-brand-primary">
+                  <option value="USD">USD ($)</option>
+                  <option value="LKR">LKR (Rs)</option>
+                  <option value="EUR">EUR (€)</option>
+                  <option value="GBP">GBP (£)</option>
+                </select>
+              </div>
               {session ? (
                 <div className="flex items-center gap-3 animate-fade-in-up">
                   <ProfileDropdown />

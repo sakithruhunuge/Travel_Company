@@ -75,7 +75,7 @@ export default function Hero() {
                     <select
                       value={destination}
                       onChange={(e) => setDestination(e.target.value)}
-                      className="w-full text-base font-semibold text-brand-dark bg-brand-light/50 rounded-xl px-4 py-3.5 border border-black/5 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none transition-all"
+                      className="w-full text-sm font-semibold text-brand-dark bg-brand-light/50 rounded-xl px-3 py-2.5 border border-black/5 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none transition-all"
                     >
                       {DESTINATIONS.map((d) => (
                         <option key={d} value={d}>
@@ -96,7 +96,7 @@ export default function Hero() {
                       type="date"
                       value={date}
                       onChange={(e) => setDate(e.target.value)}
-                      className="w-full text-base font-semibold text-brand-dark bg-brand-light/50 rounded-xl px-4 py-3.5 border border-black/5 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none transition-all"
+                      className="w-full text-sm font-semibold text-brand-dark bg-brand-light/50 rounded-xl px-3 py-2.5 border border-black/5 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none transition-all"
                     />
                   </label>
                 </div>
@@ -113,7 +113,7 @@ export default function Hero() {
                     <select
                       value={budget}
                       onChange={(e) => setBudget(e.target.value)}
-                      className="w-full text-base font-semibold text-brand-dark bg-brand-light/50 rounded-xl px-4 py-3.5 border border-black/5 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none transition-all"
+                      className="w-full text-sm font-semibold text-brand-dark bg-brand-light/50 rounded-xl px-3 py-2.5 border border-black/5 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none transition-all"
                     >
                       {BUDGETS.map((b) => (
                         <option key={b} value={b}>
@@ -130,7 +130,7 @@ export default function Hero() {
                       </svg>
                       Travelers
                     </span>
-                    <select className="w-full text-base font-semibold text-brand-dark bg-brand-light/50 rounded-xl px-4 py-3.5 border border-black/5 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none transition-all">
+                    <select className="w-full text-sm font-semibold text-brand-dark bg-brand-light/50 rounded-xl px-3 py-2.5 border border-black/5 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none transition-all">
                       {[1, 2, 3, 4, 5, 6].map((num) => (
                         <option key={num} value={num}>
                           {num} {num === 1 ? "Traveler" : "Travelers"}
@@ -141,7 +141,7 @@ export default function Hero() {
 
                   <button
                     type="submit"
-                    className="sm:col-span-5 shrink-0 px-8 py-3.5 rounded-xl text-base font-bold text-white bg-gradient-to-r from-brand-primary to-orange-400 hover:from-brand-primary/90 hover:to-orange-400/90 hover:scale-[1.02] active:scale-95 shadow-lg shadow-brand-primary/25 hover:shadow-xl hover:shadow-brand-primary/35 transition-all duration-300 ease-in-out cursor-pointer flex items-center justify-center gap-2"
+                    className="sm:col-span-5 shrink-0 px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-brand-primary to-orange-400 hover:from-brand-primary/90 hover:to-orange-400/90 hover:scale-[1.02] active:scale-95 shadow-lg shadow-brand-primary/25 hover:shadow-xl hover:shadow-brand-primary/35 transition-all duration-300 ease-in-out cursor-pointer flex items-center justify-center gap-2"
                   >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -161,8 +161,8 @@ export default function Hero() {
                       type="button"
                       onClick={() => setDestination(place)}
                       className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-all ${destination === place
-                          ? "bg-brand-primary text-white"
-                          : "bg-brand-light/50 text-brand-dark/70 hover:bg-brand-light hover:text-brand-dark"
+                        ? "bg-brand-primary text-white"
+                        : "bg-brand-light/50 text-brand-dark/70 hover:bg-brand-light hover:text-brand-dark"
                         }`}
                     >
                       {place}

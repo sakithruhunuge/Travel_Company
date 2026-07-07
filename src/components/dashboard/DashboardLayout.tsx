@@ -2,14 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { signOut, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { CloseOutlined, MenuOutlined } from "@ant-design/icons";
 import Sidebar from "@/components/dashboard/Sidebar";
 import TopNavbar from "@/components/dashboard/TopNavbar";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const { data: session, status } = useSession();
     const router = useRouter();
+    const pathname = usePathname();
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -95,7 +97,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                     <TopNavbar title="Dashboard" subtitle="Manage your Sri Lanka plans" />
 
-                    <main className="flex-1 p-4 md:p-6 lg:p-10 max-w-7xl mx-auto w-full">{children}</main>
+                    <AnimatePresence mode="wait">
+                        <motion.main
+                            key={pathname}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8 }}
+                            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                            className="flex-grow flex-1 p-4 md:p-6 lg:p-10 max-w-7xl mx-auto w-full"
+                        >
+                            {children}
+                        </motion.main>
+                    </AnimatePresence>
                 </div>
             </div>
         </div>

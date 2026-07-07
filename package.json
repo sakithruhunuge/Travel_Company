@@ -14,6 +14,7 @@
     "antd": "^6.5.0",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
+    "framer-motion": "^12.42.2",
     "mongodb": "^7.4.0",
     "mongoose": "^9.7.3",
     "next": "14.2.35",
