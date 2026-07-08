@@ -1,0 +1,21 @@
+{
+  "Hero": {
+    "title": "Explorez la Belle",
+    "country": "Sri Lanka",
+    "description": "Des royaumes antiques et des montagnes brumeuses aux plages dorées et aux expériences de faune inoubliables, explorez le Sri Lanka avec des forfaits de voyage soigneusement conçus.",
+    "planTrip": "Planifier Mon Voyage",
+    "browsePackages": "Parcourir tous les forfaits",
+    "destination": "Destination",
+    "travelDate": "Date de Voyage",
+    "budget": "Budget"
+  },
+  "Navbar": {
+    "home": "Accueil",
+    "about": "À propos",
+    "destinations": "Destinations",
+    "packages": "Forfaits",
+    "whyChooseUs": "Pourquoi Nous Choisir",
+    "contact": "Contact",
+    "login": "Connexion"
+  }
+}

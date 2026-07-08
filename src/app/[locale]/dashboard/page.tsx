@@ -67,7 +67,7 @@ export default function DashboardHomePage() {
                         </div>
                     </div>
                     <div className="rounded-2xl overflow-hidden shadow-xl border border-white/30">
-                        <div className="relative h-44 w-full rounded-2xl bg-cover bg-center shadow-inner" style={{ backgroundImage: "linear-gradient(180deg, rgba(34,34,34,0.12), rgba(34,34,34,0.85)), url('https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1200&q=80')" }}>
+                        <div className="relative h-44 w-full rounded-2xl bg-cover bg-center shadow-inner" style={{ backgroundImage: "linear-gradient(180deg, rgba(34,34,34,0.12), rgba(34,34,34,0.85)), url('/images/sigiriya.png')" }}>
                             <div className="absolute inset-0 flex flex-col justify-end p-6 text-left">
                                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-350">Travel tip</p>
                                 <p className="mt-1.5 text-sm font-semibold text-white leading-relaxed">The best time to visit Sri Lanka is December–April for sunny beaches and lush hill country.</p>

@@ -79,7 +79,8 @@ export function TravelRequestProvider({ children }: { children: React.ReactNode 
           setCurrentStep(parsed.currentStep);
         }
         // Do not auto-open on login or signup pages on initial mount
-        if (parsed.isFormModalOpen !== undefined && window.location.pathname !== "/login" && window.location.pathname !== "/signup") {
+        const pathWithoutLocale = window.location.pathname.replace(/^\/[a-z]{2}(?=\/|$)/, '') || '/';
+        if (parsed.isFormModalOpen !== undefined && pathWithoutLocale !== "/login" && pathWithoutLocale !== "/signup") {
           setIsFormModalOpen(parsed.isFormModalOpen);
         }
       }
@@ -95,7 +96,8 @@ export function TravelRequestProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     if (!isDraftLoaded) return;
 
-    if (pathname === "/login" || pathname === "/signup") {
+    const pathWithoutLocale = pathname.replace(/^\/[a-z]{2}(?=\/|$)/, '') || '/';
+    if (pathWithoutLocale === "/login" || pathWithoutLocale === "/signup") {
       setIsFormModalOpen(false);
     } else {
       try {
@@ -117,7 +119,8 @@ export function TravelRequestProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     if (!isDraftLoaded) return;
     // Do not save draft status when on login/signup pages to avoid overwriting modal visibility state
-    if (pathname === "/login" || pathname === "/signup") return;
+    const pathWithoutLocale = pathname.replace(/^\/[a-z]{2}(?=\/|$)/, '') || '/';
+    if (pathWithoutLocale === "/login" || pathWithoutLocale === "/signup") return;
 
     try {
       sessionStorage.setItem(

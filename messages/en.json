@@ -1,0 +1,21 @@
+{
+  "Hero": {
+    "title": "Explore Beautiful",
+    "country": "Sri Lanka",
+    "description": "From ancient kingdoms and misty mountains to golden beaches and unforgettable wildlife experiences, explore Sri Lanka with carefully crafted travel packages.",
+    "planTrip": "Plan My Trip",
+    "browsePackages": "Browse all packages",
+    "destination": "Destination",
+    "travelDate": "Travel Date",
+    "budget": "Budget"
+  },
+  "Navbar": {
+    "home": "Home",
+    "about": "About",
+    "destinations": "Destinations",
+    "packages": "Packages",
+    "whyChooseUs": "Why Choose Us",
+    "contact": "Contact",
+    "login": "Login"
+  }
+}

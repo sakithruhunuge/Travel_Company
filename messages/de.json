@@ -1,0 +1,21 @@
+{
+  "Hero": {
+    "title": "Erkunden Sie das Schöne",
+    "country": "Sri Lanka",
+    "description": "Von alten Königreichen und nebligen Bergen bis hin zu goldenen Stränden und unvergesslichen Naturerlebnissen - erkunden Sie Sri Lanka mit sorgfältig ausgearbeiteten Reisepaketen.",
+    "planTrip": "Reise Planen",
+    "browsePackages": "Alle Pakete durchsuchen",
+    "destination": "Reiseziel",
+    "travelDate": "Reisedatum",
+    "budget": "Budget"
+  },
+  "Navbar": {
+    "home": "Startseite",
+    "about": "Über Uns",
+    "destinations": "Reiseziele",
+    "packages": "Pakete",
+    "whyChooseUs": "Warum Wir",
+    "contact": "Kontakt",
+    "login": "Anmelden"
+  }
+}

@@ -21,27 +21,30 @@ type SidebarProps = {
     onToggleCollapse?: () => void;
 };
 
-const menuItems = [
-    { href: "/", label: "Home", icon: HomeOutlined },
-    { href: "/dashboard", label: "Dashboard", icon: AppstoreOutlined },
-    { href: "/dashboard/my-requests", label: "My Travel Requests", icon: SendOutlined },
-    { href: "/dashboard/request-history", label: "Request History", icon: HistoryOutlined },
-    { href: "/dashboard/profile", label: "Profile", icon: UserOutlined },
-    { href: "/dashboard/settings", label: "Settings", icon: SettingOutlined },
-];
+import { useLocale } from "next-intl";
 
 export default function Sidebar({ onNavigate, onLogout, isCollapsed = false, onToggleCollapse }: SidebarProps) {
     const pathname = usePathname();
+    const locale = useLocale();
+
+    const menuItems = [
+        { href: `/${locale}`, label: "Home", icon: HomeOutlined },
+        { href: `/${locale}/dashboard`, label: "Dashboard", icon: AppstoreOutlined },
+        { href: `/${locale}/dashboard/my-requests`, label: "My Travel Requests", icon: SendOutlined },
+        { href: `/${locale}/dashboard/request-history`, label: "Request History", icon: HistoryOutlined },
+        { href: `/${locale}/dashboard/profile`, label: "Profile", icon: UserOutlined },
+        { href: `/${locale}/dashboard/settings`, label: "Settings", icon: SettingOutlined },
+    ];
 
     return (
         <aside className="flex h-full w-full flex-col bg-white/35 backdrop-blur-lg text-slate-700 border-r border-white/20 shadow-xl overflow-hidden">
             <div className={`px-4 py-6 border-b border-white/20 bg-white/10 flex ${isCollapsed ? "flex-col items-center gap-4" : "items-center justify-between"}`}>
                 {isCollapsed ? (
-                    <Link href="/" className="text-xl font-black tracking-wider text-brand-primary">
+                    <Link href={`/${locale}`} className="text-xl font-black tracking-wider text-brand-primary">
                         H
                     </Link>
                 ) : (
-                    <Link href="/" className="flex items-center gap-2 group transition-all duration-300 ease-in-out">
+                    <Link href={`/${locale}`} className="flex items-center gap-2 group transition-all duration-300 ease-in-out">
                         <span className="text-base font-black tracking-wider text-slate-900 group-hover:text-brand-primary transition-all duration-300 ease-in-out">
                             HORIZON<span className="text-brand-primary group-hover:text-brand-secondary transition-all duration-300 ease-in-out font-medium">TRAVEL</span>
                         </span>
@@ -60,9 +63,9 @@ export default function Sidebar({ onNavigate, onLogout, isCollapsed = false, onT
 
             <nav className="flex-grow overflow-y-auto space-y-1 px-3 py-6">
                 {menuItems.map((item) => {
-                    const isActive = item.href === "/" 
-                        ? pathname === "/" 
-                        : (pathname === item.href || (pathname.startsWith(item.href + "/") && item.href !== "/dashboard"));
+                    const isActive = item.href === `/${locale}` 
+                        ? pathname === `/${locale}` 
+                        : (pathname === item.href || (pathname.startsWith(item.href + "/") && item.href !== `/${locale}/dashboard`));
                     const Icon = item.icon;
 
                     return (

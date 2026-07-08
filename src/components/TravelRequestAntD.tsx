@@ -7,6 +7,7 @@ import dayjs from "dayjs";
 import { sriLankaPackages } from "@/data/packages";
 import { useTravelRequest } from "@/context/TravelRequestContext";
 import { useToast } from "@/context/ToastContext";
+import { useLocale } from "next-intl";
 import {
   ConfigProvider,
   Row,
@@ -81,6 +82,7 @@ interface TravelRequestAntDProps {
 export default function TravelRequestAntD({ isModal = false }: TravelRequestAntDProps) {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
+  const locale = useLocale();
 
   const {
     formData,
@@ -160,7 +162,7 @@ export default function TravelRequestAntD({ isModal = false }: TravelRequestAntD
         addToast("error", "Failed to save draft progress.");
       }
 
-      router.push(`/login?callbackUrl=${encodeURIComponent(currentPage)}&restoreForm=true`);
+      router.push(`/${locale}/login?callbackUrl=${encodeURIComponent(currentPage)}&restoreForm=true`);
       return;
     }
 
