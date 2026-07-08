@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import ProfileDropdown from "@/components/ProfileDropdown";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
+import { useCurrency, Currency } from "@/context/CurrencyContext";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,6 +16,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const locale = useLocale();
   const t = useTranslations("Navbar");
+  const { currency, setCurrency } = useCurrency();
 
   const navLinks = [
     { label: t("home"), href: `/${locale}/#home` },
@@ -83,7 +85,12 @@ export default function Navbar() {
             </select>
 
             {/* Currency Selector */}
-            <select aria-label="Currency Selector" className="bg-white/50 border border-black/10 rounded-full px-3 py-1.5 text-xs font-bold text-brand-muted hover:text-brand-secondary outline-none focus:border-brand-primary cursor-pointer transition-all mr-1">
+            <select 
+              aria-label="Currency Selector" 
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value as Currency)}
+              className="bg-white/50 border border-black/10 rounded-full px-3 py-1.5 text-xs font-bold text-brand-muted hover:text-brand-secondary outline-none focus:border-brand-primary cursor-pointer transition-all mr-1"
+            >
               <option value="USD">USD ($)</option>
               <option value="LKR">LKR (Rs)</option>
               <option value="EUR">EUR (€)</option>

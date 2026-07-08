@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import dayjs from "dayjs";
 import { sriLankaPackages } from "@/data/packages";
 import { useTravelRequest } from "@/context/TravelRequestContext";
+import { useCurrency } from "@/context/CurrencyContext";
 import { useToast } from "@/context/ToastContext";
 import { useLocale } from "next-intl";
 import {
@@ -92,6 +93,7 @@ export default function TravelRequestAntD({ isModal = false }: TravelRequestAntD
     closeFormModal,
   } = useTravelRequest();
   const { addToast } = useToast();
+  const { formatPriceString, formatPrice, currency } = useCurrency();
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [submitStatus, setSubmitStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -367,7 +369,7 @@ export default function TravelRequestAntD({ isModal = false }: TravelRequestAntD
                           </Space>
                           <div style={{ marginTop: 8 }}>
                             <Text strong style={{ color: isSelected ? "#0B7C8A" : "#8c8c8c", fontSize: 12 }}>
-                              {pkg.priceRange}
+                              {formatPriceString(pkg.priceRange)}
                             </Text>
                           </div>
                         </Card>
@@ -536,19 +538,19 @@ export default function TravelRequestAntD({ isModal = false }: TravelRequestAntD
                 {/* Itemized Pricing */}
                 <Space direction="vertical" size={12} style={{ width: "100%", fontSize: 13 }}>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <Text type="secondary">Base Cost ({travelersCount} × ${basePrice})</Text>
+                    <Text type="secondary">Base Cost ({travelersCount} × {formatPrice(basePrice)})</Text>
                     <Text strong style={{ color: "#041A16" }}>
-                      ${(basePrice * travelersCount).toLocaleString()}
+                      {formatPrice(basePrice * travelersCount)}
                     </Text>
                   </div>
 
                   {selectedPackageId === "custom" && customDests.length > 0 && (
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
                       <Text type="secondary">
-                        Destinations Surcharge ({customDests.length} cities × $100 × {travelersCount})
+                        Destinations Surcharge ({customDests.length} cities × {formatPrice(100)} × {travelersCount})
                       </Text>
                       <Text strong style={{ color: "#041A16" }}>
-                        +${(destinationSurcharge * travelersCount).toLocaleString()}
+                        +{formatPrice(destinationSurcharge * travelersCount)}
                       </Text>
                     </div>
                   )}
@@ -559,7 +561,7 @@ export default function TravelRequestAntD({ isModal = false }: TravelRequestAntD
                         Multi-traveler Discount ({(discountRate * 100).toFixed(0)}%)
                       </Text>
                       <Text strong style={{ color: "#52c41a" }}>
-                        -${discount.toLocaleString()}
+                        -{formatPrice(discount)}
                       </Text>
                     </div>
                   )}
@@ -567,7 +569,7 @@ export default function TravelRequestAntD({ isModal = false }: TravelRequestAntD
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <Text type="secondary">Local Taxes & Service Fee (12%)</Text>
                     <Text strong style={{ color: "#041A16" }}>
-                      ${taxes.toLocaleString()}
+                      {formatPrice(taxes)}
                     </Text>
                   </div>
                 </Space>
@@ -579,9 +581,9 @@ export default function TravelRequestAntD({ isModal = false }: TravelRequestAntD
                   <Title level={5} style={{ margin: 0, color: "#041A16", fontWeight: 800 }}>Total Price</Title>
                   <div>
                     <span style={{ fontSize: 26, fontWeight: 900, color: "#0B7C8A" }}>
-                      ${totalPrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                      {formatPrice(totalPrice, true)}
                     </span>
-                    <span style={{ fontSize: 12, color: "#8c8c8c", marginLeft: 4 }}>USD</span>
+                    <span style={{ fontSize: 12, color: "#8c8c8c", marginLeft: 4 }}>{currency}</span>
                   </div>
                 </div>
 

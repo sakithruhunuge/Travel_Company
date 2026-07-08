@@ -3,9 +3,11 @@
 import Image from "next/image";
 import { sriLankaPackages } from "@/data/packages";
 import { useTravelRequest } from "@/context/TravelRequestContext";
+import { useCurrency } from "@/context/CurrencyContext";
 
 export default function Packages() {
   const { openFormModal } = useTravelRequest();
+  const { formatPriceString } = useCurrency();
   return (
     <section id="packages" className="py-24 bg-white scroll-mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -68,7 +70,7 @@ export default function Packages() {
                   <div className="text-right">
                     <span className="block text-[9px] font-bold text-brand-muted uppercase tracking-wider">From</span>
                     <span className="text-lg font-black text-brand-secondary whitespace-nowrap">
-                      {pkg.priceRange}
+                      {formatPriceString(pkg.priceRange)}
                     </span>
                   </div>
                 </div>

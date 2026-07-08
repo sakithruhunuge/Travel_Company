@@ -4,12 +4,14 @@ import Image from "next/image";
 import { useState } from "react";
 import { useTravelRequest } from "@/context/TravelRequestContext";
 import { useTranslations } from "next-intl";
+import { useCurrency } from "@/context/CurrencyContext";
 
 const DESTINATIONS = ["Kandy", "Ella", "Mirissa", "Sigiriya", "Galle", "Nuwara Eliya", "Trincomalee", "Jaffna"];
 const BUDGETS = ["$100 - $300", "$300 - $600", "$600 - $1000", "$1000+", "$2000+ Luxury"];
 
 export default function Hero() {
   const { openFormModal } = useTravelRequest();
+  const { formatPriceString } = useCurrency();
   const [destination, setDestination] = useState(DESTINATIONS[0]);
   const [date, setDate] = useState("");
   const [budget, setBudget] = useState(BUDGETS[0]);
@@ -102,7 +104,7 @@ export default function Hero() {
                   >
                     {BUDGETS.map((b) => (
                       <option key={b} value={b}>
-                        {b}
+                        {formatPriceString(b)}
                       </option>
                     ))}
                   </select>
