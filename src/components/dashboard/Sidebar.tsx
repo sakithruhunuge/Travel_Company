@@ -13,6 +13,7 @@ import {
     MenuUnfoldOutlined,
     HomeOutlined,
 } from "@ant-design/icons";
+import { useLocale, useTranslations } from "next-intl";
 
 type SidebarProps = {
     onNavigate?: () => void;
@@ -21,19 +22,18 @@ type SidebarProps = {
     onToggleCollapse?: () => void;
 };
 
-import { useLocale } from "next-intl";
-
 export default function Sidebar({ onNavigate, onLogout, isCollapsed = false, onToggleCollapse }: SidebarProps) {
     const pathname = usePathname();
     const locale = useLocale();
+    const t = useTranslations("Dashboard.Sidebar");
 
     const menuItems = [
-        { href: `/${locale}`, label: "Home", icon: HomeOutlined },
-        { href: `/${locale}/dashboard`, label: "Dashboard", icon: AppstoreOutlined },
-        { href: `/${locale}/dashboard/my-requests`, label: "My Travel Requests", icon: SendOutlined },
-        { href: `/${locale}/dashboard/request-history`, label: "Request History", icon: HistoryOutlined },
-        { href: `/${locale}/dashboard/profile`, label: "Profile", icon: UserOutlined },
-        { href: `/${locale}/dashboard/settings`, label: "Settings", icon: SettingOutlined },
+        { href: `/${locale}`, label: t("home"), icon: HomeOutlined },
+        { href: `/${locale}/dashboard`, label: t("dashboard"), icon: AppstoreOutlined },
+        { href: `/${locale}/dashboard/my-requests`, label: t("myRequests"), icon: SendOutlined },
+        { href: `/${locale}/dashboard/request-history`, label: t("requestHistory"), icon: HistoryOutlined },
+        { href: `/${locale}/dashboard/profile`, label: t("profile"), icon: UserOutlined },
+        { href: `/${locale}/dashboard/settings`, label: t("settings"), icon: SettingOutlined },
     ];
 
     return (
@@ -41,12 +41,12 @@ export default function Sidebar({ onNavigate, onLogout, isCollapsed = false, onT
             <div className={`px-4 py-6 border-b border-white/20 bg-white/10 flex ${isCollapsed ? "flex-col items-center gap-4" : "items-center justify-between"}`}>
                 {isCollapsed ? (
                     <Link href={`/${locale}`} className="text-xl font-black tracking-wider text-brand-primary">
-                        H
+                        {t("brand").slice(0, 1)}
                     </Link>
                 ) : (
                     <Link href={`/${locale}`} className="flex items-center gap-2 group transition-all duration-300 ease-in-out">
                         <span className="text-base font-black tracking-wider text-slate-900 group-hover:text-brand-primary transition-all duration-300 ease-in-out">
-                            HORIZON<span className="text-brand-primary group-hover:text-brand-secondary transition-all duration-300 ease-in-out font-medium">TRAVEL</span>
+                            {t("brand")}<span className="text-brand-primary group-hover:text-brand-secondary transition-all duration-300 ease-in-out font-medium">TRAVEL</span>
                         </span>
                     </Link>
                 )}
@@ -89,11 +89,11 @@ export default function Sidebar({ onNavigate, onLogout, isCollapsed = false, onT
             <div className="border-t border-white/20 bg-white/10 p-4 mt-auto">
                 <button
                     onClick={onLogout}
-                    title={isCollapsed ? "Logout" : undefined}
-                    className={`flex w-full items-center ${isCollapsed ? "justify-center px-2" : "gap-3.5 px-4"} rounded-xl py-3 text-sm font-semibold text-slate-650 hover:bg-white/30 hover:text-slate-900 transition-colors duration-200`}
+                    title={isCollapsed ? t("logout") : undefined}
+                    className={`flex w-full items-center ${isCollapsed ? "justify-center px-2" : "gap-3.5 px-4"} rounded-xl py-3 text-sm font-semibold text-slate-655 hover:bg-white/30 hover:text-slate-900 transition-colors duration-200`}
                 >
                     <LogoutOutlined className="text-base flex-shrink-0" />
-                    {!isCollapsed && <span>Logout</span>}
+                    {!isCollapsed && <span>{t("logout")}</span>}
                 </button>
             </div>
         </aside>

@@ -6,6 +6,7 @@ import RequestCard, { type RequestCardData } from "@/components/dashboard/Reques
 import LoadingSkeleton from "@/components/dashboard/LoadingSkeleton";
 import EmptyState from "@/components/dashboard/EmptyState";
 import StatusBadge from "@/components/dashboard/StatusBadge";
+import { useTranslations } from "next-intl";
 
 export default function RequestHistoryPage() {
     const searchParams = useSearchParams();
@@ -14,6 +15,7 @@ export default function RequestHistoryPage() {
     const [selectedRequest, setSelectedRequest] = useState<RequestCardData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const t = useTranslations("Dashboard.RequestHistory");
 
     useEffect(() => {
         const loadRequests = async () => {
@@ -45,10 +47,10 @@ export default function RequestHistoryPage() {
     return (
         <div className="space-y-6">
             <div className="rounded-xl border border-brand-light/70 bg-brand-light p-6 shadow-[0_2px_8px_rgb(0,0,0,0.04)]">
-                <p className="text-xs font-medium uppercase tracking-wider text-brand-muted">History</p>
-                <h2 className="mt-1 text-xl font-semibold text-brand-dark">Request History</h2>
+                <p className="text-xs font-medium uppercase tracking-wider text-brand-muted">{t("category")}</p>
+                <h2 className="mt-1 text-xl font-semibold text-brand-dark">{t("title")}</h2>
                 <p className="mt-1 text-sm text-brand-muted">
-                    Review all of your submitted requests and their latest status.
+                    {t("description")}
                 </p>
             </div>
 
@@ -57,7 +59,7 @@ export default function RequestHistoryPage() {
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-light/70 pb-4">
                         <div>
                             <p className="text-xs font-medium uppercase tracking-wider text-brand-muted">
-                                Request Details
+                                {t("requestDetails")}
                             </p>
                             <h3 className="mt-1 text-lg font-semibold text-brand-dark">
                                 {selectedRequest.packageName}
@@ -69,31 +71,31 @@ export default function RequestHistoryPage() {
                     <div className="mt-5 grid gap-4 md:grid-cols-2">
                         <div className="rounded-lg border border-brand-light/70 bg-brand-light p-4">
                             <p className="text-xs font-medium uppercase tracking-wider text-brand-muted">
-                                Traveler Count
+                                {t("travelerCount")}
                             </p>
                             <p className="mt-1 tabular-nums text-lg font-medium text-brand-dark">
                                 {selectedRequest.numberOfTravelers}
                             </p>
                         </div>
                         <div className="rounded-lg border border-brand-light/70 bg-brand-light p-4">
-                            <p className="text-xs font-medium uppercase tracking-wider text-brand-muted">Travel Date</p>
+                            <p className="text-xs font-medium uppercase tracking-wider text-brand-muted">{t("travelDate")}</p>
                             <p className="mt-1 tabular-nums text-lg font-medium text-brand-dark">
                                 {new Date(selectedRequest.preferredStartDate).toLocaleDateString()}
                             </p>
                         </div>
                         <div className="rounded-lg border border-brand-light/70 bg-brand-light p-4 md:col-span-2">
                             <p className="text-xs font-medium uppercase tracking-wider text-brand-muted">
-                                Special Requests
+                                {t("specialRequests")}
                             </p>
                             <p className="mt-1 text-base font-medium text-brand-dark">
-                                {selectedRequest.specialRequests || "None"}
+                                {selectedRequest.specialRequests || t("none")}
                             </p>
                         </div>
                     </div>
 
                     {selectedRequest.status === "approved" ? (
                         <div className="mt-5 rounded-lg border border-brand-secondary/30 bg-brand-secondary/10 p-4 text-sm text-brand-secondary">
-                            Our travel team will contact you shortly.
+                            {t("willContact")}
                         </div>
                     ) : null}
                 </div>
@@ -102,11 +104,11 @@ export default function RequestHistoryPage() {
             {loading ? (
                 <LoadingSkeleton />
             ) : error ? (
-                <EmptyState title="Unable to load request history" description={error} />
+                <EmptyState title={t("unableLoad")} description={error} />
             ) : requests.length === 0 ? (
                 <EmptyState
-                    title="No history found"
-                    description="Your completed and past travel requests will appear here."
+                    title={t("noHistoryFound")}
+                    description={t("pastRequestsDesc")}
                 />
             ) : (
                 <div className="grid gap-4">

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { CloseOutlined, MenuOutlined } from "@ant-design/icons";
 import Sidebar from "@/components/dashboard/Sidebar";
 import TopNavbar from "@/components/dashboard/TopNavbar";
@@ -16,6 +16,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
     const locale = useLocale();
+    const t = useTranslations("Dashboard.TopNavbar");
+    const tHome = useTranslations("Dashboard.Home");
 
     useEffect(() => {
         if (status !== "authenticated") return;
@@ -29,7 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="flex min-h-screen items-center justify-center bg-brand-light">
                 <div className="text-center">
                     <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-brand-light border-t-brand-dark" />
-                    <p className="mt-4 text-sm font-medium text-brand-muted">Loading dashboard...</p>
+                    <p className="mt-4 text-sm font-medium text-brand-muted">{tHome("loadingDashboard")}</p>
                 </div>
             </div>
         );
@@ -63,17 +65,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         <button
                             onClick={() => setMobileSidebarOpen((prev) => !prev)}
                             className="inline-flex items-center gap-2 rounded-lg border border-slate-200/60 px-3 py-2 text-sm font-medium text-slate-650 transition-colors duration-200 hover:bg-white/60"
-                            aria-label={mobileSidebarOpen ? "Close menu" : "Open menu"}
+                            aria-label={mobileSidebarOpen ? t("close") : t("menu")}
                         >
                             {mobileSidebarOpen ? (
                                 <>
                                     <CloseOutlined className="text-xs" />
-                                    Close
+                                    {t("close")}
                                 </>
                             ) : (
                                 <>
                                     <MenuOutlined className="text-xs" />
-                                    Menu
+                                    {t("menu")}
                                 </>
                             )}
                         </button>
@@ -97,7 +99,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         </div>
                     ) : null}
 
-                    <TopNavbar title="Dashboard" subtitle="Manage your Sri Lanka plans" />
+                    <TopNavbar title={t("title")} subtitle={t("subtitle")} />
 
                     <AnimatePresence mode="wait">
                         <motion.main

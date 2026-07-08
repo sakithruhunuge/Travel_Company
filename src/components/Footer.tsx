@@ -1,7 +1,12 @@
+"use client";
+
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const t = useTranslations("Footer");
+  const tNav = useTranslations("Navbar");
 
   return (
     <footer className="bg-brand-dark text-brand-muted py-16 border-t border-white/10 scroll-mt-20">
@@ -15,34 +20,34 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-sm leading-relaxed text-brand-muted">
-              Crafting premium travel experiences and lifelong memories. Explore the world&apos;s most breathtaking destinations with our dedicated team of travel experts.
+              {t("desc")}
             </p>
           </div>
 
           {/* Quick Links */}
           <div>
             <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">
-              Explore
+              {t("explore")}
             </h3>
             <ul className="space-y-3">
               <li>
                 <a href="#home" className="text-sm hover:text-brand-primary transition-all duration-300 ease-in-out">
-                  Home
+                  {tNav("home")}
                 </a>
               </li>
               <li>
                 <a href="#about" className="text-sm hover:text-brand-primary transition-all duration-300 ease-in-out">
-                  About
+                  {tNav("about")}
                 </a>
               </li>
               <li>
                 <a href="#packages" className="text-sm hover:text-brand-primary transition-all duration-300 ease-in-out">
-                  Packages
+                  {tNav("packages")}
                 </a>
               </li>
               <li>
                 <a href="#why-choose-us" className="text-sm hover:text-brand-primary transition-all duration-300 ease-in-out">
-                  Why Choose Us
+                  {tNav("whyChooseUs")}
                 </a>
               </li>
             </ul>
@@ -51,31 +56,31 @@ export default function Footer() {
           {/* Business Hours / Useful Info */}
           <div>
             <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">
-              Business Hours
+              {t("hours.title")}
             </h3>
             <ul className="space-y-3 text-sm">
-              <li>Monday - Friday: 9:00 AM - 6:00 PM</li>
-              <li>Saturday: 10:00 AM - 4:00 PM</li>
-              <li>Sunday: Closed</li>
+              <li>{t("hours.monFri")}</li>
+              <li>{t("hours.sat")}</li>
+              <li>{t("hours.sun")}</li>
             </ul>
           </div>
 
           {/* Contact Details */}
           <div>
             <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">
-              Contact Us
+              {t("contact.title")}
             </h3>
             <ul className="space-y-3 text-sm">
               <li>
-                <span className="block text-white font-semibold">Address:</span>
+                <span className="block text-white font-semibold">{t("contact.address")}:</span>
                 123 Travel Avenue, Suite 100, Ocean City
               </li>
               <li>
-                <span className="block text-white font-semibold">Phone:</span>
+                <span className="block text-white font-semibold">{t("contact.phone")}:</span>
                 +1 (555) 123-4567
               </li>
               <li>
-                <span className="block text-white font-semibold">Email:</span>
+                <span className="block text-white font-semibold">{t("contact.email")}:</span>
                 hello@horizontravel.com
               </li>
             </ul>
@@ -84,10 +89,10 @@ export default function Footer() {
 
         {/* Bottom Bar */}
         <div className="mt-16 pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs">
-          <p>&copy; {currentYear} Horizon Travel. All rights reserved.</p>
+          <p>&copy; {currentYear} {t("rights")}</p>
           <div className="flex space-x-6">
-            <a href="#" className="hover:text-brand-primary transition-all duration-300 ease-in-out">Privacy Policy</a>
-            <a href="#" className="hover:text-brand-primary transition-all duration-300 ease-in-out">Terms of Service</a>
+            <a href="#" className="hover:text-brand-primary transition-all duration-300 ease-in-out">{t("privacy")}</a>
+            <a href="#" className="hover:text-brand-primary transition-all duration-300 ease-in-out">{t("terms")}</a>
           </div>
         </div>
       </div>

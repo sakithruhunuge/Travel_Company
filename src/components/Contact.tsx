@@ -1,9 +1,12 @@
 "use client";
 
 import { useTravelRequest } from "@/context/TravelRequestContext";
+import { useTranslations } from "next-intl";
 
 export default function Contact() {
   const { openFormModal } = useTravelRequest();
+  const t = useTranslations("Contact");
+
   return (
     <section id="contact" className="py-24 bg-brand-light scroll-mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -12,13 +15,13 @@ export default function Contact() {
           <div className="lg:col-span-5 space-y-8 flex flex-col justify-center text-left animate-fade-in-up">
             <div className="space-y-4">
               <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">
-                Inquiries
+                {t("tagline")}
               </span>
               <h2 className="text-3xl sm:text-5xl font-black text-brand-dark tracking-tight">
-                Plan Your Journey
+                {t("title")}
               </h2>
               <p className="text-base text-brand-muted leading-relaxed">
-                Ready to explore? Drop us a line. Our dedicated travel planners will respond to you within 24 hours to schedule a custom consultation.
+                {t("description")}
               </p>
             </div>
 
@@ -52,32 +55,32 @@ export default function Contact() {
 
               <div className="space-y-6 relative z-10">
                 <span className="inline-flex rounded-full bg-white/10 backdrop-blur-sm px-3.5 py-1.5 text-[10px] font-extrabold uppercase tracking-widest text-brand-primary border border-white/10">
-                  Start Your Consultation
+                  {t("taglineCta")}
                 </span>
                 <h3 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight">
-                  Design Your Dream Sri Lankan Getaway
+                  {t("titleCta")}
                 </h3>
                 <p className="text-sm text-white/70 leading-relaxed font-medium">
-                  Use our step-by-step customization wizard to design a personalized itinerary. Choose destinations, select activities, and lock in pricing details with our local travel specialists.
+                  {t("descCta")}
                 </p>
                 <div className="space-y-3 pt-2">
                   <div className="flex items-center gap-3 text-xs text-white/70 font-semibold">
                     <svg className="w-3.5 h-3.5 text-brand-primary" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                       <path d="M16.7 5.3a1 1 0 010 1.4l-7.3 7.3a1 1 0 01-1.4 0l-3.3-3.3a1 1 0 011.4-1.4l2.6 2.6 6.6-6.6a1 1 0 011.4 0z" />
                     </svg>
-                    Curated local guides and private transport options.
+                    {t("bullet1")}
                   </div>
                   <div className="flex items-center gap-3 text-xs text-white/70 font-semibold">
                     <svg className="w-3.5 h-3.5 text-brand-primary" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                       <path d="M16.7 5.3a1 1 0 010 1.4l-7.3 7.3a1 1 0 01-1.4 0l-3.3-3.3a1 1 0 011.4-1.4l2.6 2.6 6.6-6.6a1 1 0 011.4 0z" />
                     </svg>
-                    Flexible planning and free cancellations.
+                    {t("bullet2")}
                   </div>
                   <div className="flex items-center gap-3 text-xs text-white/70 font-semibold">
                     <svg className="w-3.5 h-3.5 text-brand-primary" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                       <path d="M16.7 5.3a1 1 0 010 1.4l-7.3 7.3a1 1 0 01-1.4 0l-3.3-3.3a1 1 0 011.4-1.4l2.6 2.6 6.6-6.6a1 1 0 011.4 0z" />
                     </svg>
-                    Personal specialist coordinates every booking detail.
+                    {t("bullet3")}
                   </div>
                 </div>
                 <div className="pt-6">
@@ -86,7 +89,7 @@ export default function Contact() {
                     onClick={() => openFormModal()}
                     className="inline-flex items-center justify-center w-full sm:w-auto px-8 py-4 bg-brand-primary hover:bg-brand-primary/90 text-white text-sm font-extrabold rounded-full shadow-[0_8px_30px_rgb(255,139,80,0.3)] hover:shadow-[0_12px_36px_rgb(255,139,80,0.4)] hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out cursor-pointer"
                   >
-                    Start Planning Now
+                    {t("btnCta")}
                   </button>
                 </div>
               </div>

@@ -1,18 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import StatsOverviewCard from "@/components/dashboard/StatsOverviewCard";
 import EmptyState from "@/components/dashboard/EmptyState";
 import SettingsCard from "@/components/dashboard/SettingsCard";
 import Link from "next/link";
-import { signOut } from "next-auth/react";
+import { useTranslations } from "next-intl";
 
 export default function DashboardHomePage() {
     const { data: session } = useSession();
     const [stats, setStats] = useState<{ total: number; pending: number; approved: number; rejected: number } | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const t = useTranslations("Dashboard.Home");
 
     useEffect(() => {
         const loadStats = async () => {
@@ -31,6 +32,8 @@ export default function DashboardHomePage() {
         loadStats();
     }, []);
 
+    const provider = (session?.user as { provider?: string } | undefined)?.provider || "credentials";
+
     return (
         <div className="space-y-10">
             {/* Welcome Banner */}
@@ -42,35 +45,34 @@ export default function DashboardHomePage() {
                 <div className="relative z-10 grid gap-8 lg:grid-cols-[1.3fr_0.7fr] items-center">
                     <div className="space-y-6 text-left">
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-white/60 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-600 border border-white/50 shadow-sm">
-                            Sri Lanka Curated Journeys
+                            {t("curatedJourneys")}
                         </span>
                         <h2 className="text-3xl font-black leading-tight text-slate-900 sm:text-4xl lg:text-5xl tracking-tight">
-                            Welcome back, <span className="text-slate-800 font-extrabold">{session?.user?.name || "Traveler"}</span>
+                            {t("welcome", { name: session?.user?.name || "Traveler" })}
                         </h2>
                         <p className="max-w-2xl text-base leading-relaxed text-slate-600 font-medium">
-                            Manage your Sri Lanka travel plans, requests, and preferences from one secure and
-                            beautiful dashboard.
+                            {t("managePlans")}
                         </p>
                         <div className="flex flex-wrap gap-4 pt-2">
                             <Link
                                 href="/dashboard/my-requests"
                                 className="rounded-xl bg-slate-900 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-slate-900/10 hover:bg-slate-800 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
                             >
-                                View Requests
+                                {t("viewRequests")}
                             </Link>
                             <Link
                                 href="/dashboard/profile"
                                 className="rounded-xl border border-white/50 bg-white/40 px-6 py-3.5 text-sm font-bold text-slate-700 hover:bg-white/60 hover:border-white/70 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
                             >
-                                Update Profile
+                                {t("updateProfile")}
                             </Link>
                         </div>
                     </div>
                     <div className="rounded-2xl overflow-hidden shadow-xl border border-white/30">
                         <div className="relative h-44 w-full rounded-2xl bg-cover bg-center shadow-inner" style={{ backgroundImage: "linear-gradient(180deg, rgba(34,34,34,0.12), rgba(34,34,34,0.85)), url('/images/sigiriya.png')" }}>
                             <div className="absolute inset-0 flex flex-col justify-end p-6 text-left">
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-350">Travel tip</p>
-                                <p className="mt-1.5 text-sm font-semibold text-white leading-relaxed">The best time to visit Sri Lanka is December–April for sunny beaches and lush hill country.</p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-350">{t("travelTip")}</p>
+                                <p className="mt-1.5 text-sm font-semibold text-white leading-relaxed">{t("sigiriyaTip")}</p>
                             </div>
                         </div>
                     </div>
@@ -82,7 +84,7 @@ export default function DashboardHomePage() {
                 {loading ? (
                     <div className="h-32 animate-pulse rounded-2xl bg-white/40 backdrop-blur-sm border border-slate-200" />
                 ) : error ? (
-                    <EmptyState title="Unable to load dashboard stats" description={error} />
+                    <EmptyState title={t("unableLoadStats")} description={error} />
                 ) : stats ? (
                     <StatsOverviewCard stats={stats} />
                 ) : null}
@@ -93,13 +95,13 @@ export default function DashboardHomePage() {
                 <div className="rounded-3xl bg-white/40 backdrop-blur-md p-6 border border-slate-200 sm:p-8 text-left">
                     <div>
                         <span className="inline-flex items-center rounded-full bg-white/60 border border-white/40 px-3 py-1 text-xs font-semibold text-brand-muted">
-                            Recommendations
+                            {t("recommendations")}
                         </span>
                         <h3 className="mt-3.5 text-xl font-bold text-slate-900 tracking-tight">
-                            Suggested Sri Lanka destinations
+                            {t("suggestedDestinations")}
                         </h3>
                         <p className="mt-1 text-sm font-medium text-brand-muted">
-                            Our team recommends these iconic places for your next escape.
+                            {t("ourTeamRecommends")}
                         </p>
                     </div>
                     <div className="mt-8 grid gap-5 sm:grid-cols-2">
@@ -142,17 +144,17 @@ export default function DashboardHomePage() {
                     <div className="absolute top-0 right-0 h-48 w-48 rounded-full bg-slate-700/10 blur-2xl pointer-events-none" />
 
                     <span className="inline-flex items-center rounded-full bg-white/60 px-3 py-1 text-xs font-semibold text-slate-650 border border-white/50 self-start">
-                        Support
+                        {t("support")}
                     </span>
-                    <h3 className="mt-4 text-xl font-bold text-slate-900 tracking-tight">Need help planning?</h3>
+                    <h3 className="mt-4 text-xl font-bold text-slate-900 tracking-tight">{t("needHelp")}</h3>
                     <p className="mt-2 text-sm leading-relaxed text-slate-600 font-medium">
-                        Our Ceylon travel specialists can tailor the itinerary around your preferences and schedule.
+                        {t("specialistsTailor")}
                     </p>
                     <div className="mt-6 flex-grow space-y-3 relative z-10">
                         {[
-                            "Best beaches and surf spots",
-                            "Scenic train routes and tea country",
-                            "Wildlife safaris and cultural heritage",
+                            t("tip1"),
+                            t("tip2"),
+                            t("tip3"),
                         ].map((tip) => (
                             <div
                                 key={tip}
@@ -168,42 +170,42 @@ export default function DashboardHomePage() {
 
             {/* Quick Settings & Controls */}
             <section className="grid gap-6 lg:grid-cols-2">
-                <SettingsCard title="Quick settings" description="Access your account controls from the main dashboard.">
+                <SettingsCard title={t("quickSettings")} description={t("accessControls")}>
                     <div className="space-y-4 text-left">
                         <p className="text-sm font-medium text-brand-muted">
                             {session?.user?.name
-                                ? `Signed in as ${session.user.name}`
-                                : "Signed in to your Horizon Travel account."}
+                                ? t("signedInAs", { name: session.user.name })
+                                : t("signedInHorizon")}
                         </p>
                         <div className="flex flex-wrap gap-3 pt-1">
                             <Link
                                 href="/dashboard/settings"
                                 className="rounded-xl bg-slate-900 px-5 py-3 text-xs font-bold text-white transition-colors duration-200 hover:bg-slate-850 shadow-md"
                             >
-                                Open Full Settings
+                                {t("openFullSettings")}
                             </Link>
                             <button
                                 onClick={() => signOut({ callbackUrl: "/login" })}
                                 className="rounded-xl border border-white/40 bg-white/20 px-5 py-3 text-xs font-bold text-slate-700 transition-colors duration-200 hover:bg-white/60 hover:border-white/50 backdrop-blur-sm"
                             >
-                                Logout
+                                {t("logout")}
                             </button>
                         </div>
                     </div>
                 </SettingsCard>
 
-                <SettingsCard title="Account status" description="See how your dashboard account is connected.">
+                <SettingsCard title={t("accountStatus")} description={t("seeConnected")}>
                     <div className="space-y-4 text-sm text-brand-muted text-left">
                         <div className="rounded-xl border border-white/30 bg-white/25 backdrop-blur-sm p-4">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-brand-muted">Sign-in method</p>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-brand-muted">{t("signinMethod")}</p>
                             <p className="mt-1 font-bold text-slate-800">
-                                {(session?.user as { provider?: string } | undefined)?.provider === "google"
-                                    ? "Google Account Connection"
-                                    : "Email & Password Secure Login"}
+                                {provider === "google"
+                                    ? t("googleConnection")
+                                    : t("passwordLogin")}
                             </p>
                         </div>
                         <p className="text-xs font-medium text-brand-muted">
-                            Use the full settings page for password changes and other account actions.
+                            {t("fullSettingsNotice")}
                         </p>
                     </div>
                 </SettingsCard>
