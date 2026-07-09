@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import dayjs from "dayjs";
-import { sriLankaPackages } from "@/data/packages";
 import { useTravelRequest } from "@/context/TravelRequestContext";
 import { useToast } from "@/context/ToastContext";
 import {
@@ -88,6 +87,7 @@ export default function TravelRequestAntD({ isModal = false }: TravelRequestAntD
     selectPackageById,
     resetForm,
     closeFormModal,
+    packages,
   } = useTravelRequest();
   const { addToast } = useToast();
 
@@ -95,7 +95,7 @@ export default function TravelRequestAntD({ isModal = false }: TravelRequestAntD
   const [submitStatus, setSubmitStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const allPackages = [...sriLankaPackages, customPackagePlaceholder];
+  const allPackages = [...packages, customPackagePlaceholder];
 
   // Dynamic invoice calculations
   const selectedPackageId = formData.packageId;
