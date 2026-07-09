@@ -24,9 +24,14 @@ export async function PATCH(request: Request) {
             return NextResponse.json({ error: "A valid name is required" }, { status: 400 });
         }
 
+        const updateData: any = { name: name.trim() };
+        if (typeof image === "string" && !image.startsWith("/api/user/avatar/")) {
+            updateData.image = image;
+        }
+
         const updatedUser = await User.findByIdAndUpdate(
             userId,
-            { name: name.trim(), image: typeof image === "string" ? image : undefined },
+            updateData,
             { new: true }
         );
 

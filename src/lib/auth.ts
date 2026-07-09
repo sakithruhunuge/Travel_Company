@@ -84,8 +84,23 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
-    async jwt({ token, user, account }) {
-      if (account && user) {
+    async jwt({ token, user, account, trigger, session }) {
+      if (trigger === "update") {
+        try {
+          await dbConnect();
+          const dbUser = await User.findOne({ email: token.email });
+          if (dbUser) {
+            token.name = dbUser.name;
+            if (dbUser.image && dbUser.image.startsWith("data:image/")) {
+              token.picture = `/api/user/avatar/${dbUser._id}?t=${Date.now()}`;
+            } else {
+              token.picture = dbUser.image;
+            }
+          }
+        } catch (error) {
+          console.warn("Error in NextAuth jwt callback (update):", error);
+        }
+      } else if (account && user) {
         try {
           await dbConnect();
           const dbUser = await User.findOne({ email: token.email });
@@ -93,6 +108,12 @@ export const authOptions: NextAuthOptions = {
             token.id = dbUser._id.toString();
             token.provider = dbUser.provider;
             token.createdAt = dbUser.createdAt?.toISOString();
+            token.name = dbUser.name;
+            if (dbUser.image && dbUser.image.startsWith("data:image/")) {
+              token.picture = `/api/user/avatar/${dbUser._id}?t=${Date.now()}`;
+            } else {
+              token.picture = dbUser.image;
+            }
           }
         } catch (error) {
           // eslint-disable-next-line no-console
@@ -107,6 +128,8 @@ export const authOptions: NextAuthOptions = {
         sessionUser.id = token.id as string;
         sessionUser.provider = token.provider as string;
         sessionUser.createdAt = (token.createdAt as string | undefined) || null;
+        if (token.name) sessionUser.name = token.name;
+        if (token.picture) sessionUser.image = token.picture;
       }
       return session;
     },

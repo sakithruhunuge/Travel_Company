@@ -94,12 +94,30 @@ export default function ProfilePage() {
                             <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-brand-muted">
                                 {t("photoUrl")}
                             </label>
-                            <input
-                                value={image}
-                                onChange={(e) => setImage(e.target.value)}
-                                className={inputClassName}
-                                placeholder="https://..."
-                            />
+                            <div className="flex items-center gap-4">
+                                {image && (
+                                    <img
+                                        src={image}
+                                        alt="Profile preview"
+                                        className="h-16 w-16 rounded-full object-cover border border-brand-light/70 shrink-0"
+                                    />
+                                )}
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => {
+                                                setImage(reader.result as string);
+                                            };
+                                            reader.readAsDataURL(file);
+                                        }
+                                    }}
+                                    className={`${inputClassName} !p-1 file:mr-4 file:rounded-lg file:border-0 file:bg-brand-primary/10 file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-brand-primary hover:file:bg-brand-primary/20`}
+                                />
+                            </div>
                         </div>
                     </div>
                     <div className="mt-5 flex flex-wrap gap-3">
