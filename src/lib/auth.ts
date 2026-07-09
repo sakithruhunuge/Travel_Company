@@ -43,12 +43,18 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid password");
         }
 
+        if (user.status === "suspended") {
+          throw new Error("Your account has been suspended. Please contact support.");
+        }
+
         return {
           id: user._id.toString(),
           name: user.name,
           email: user.email,
           image: user.image || null,
           provider: user.provider,
+          role: user.role || "customer",
+          status: user.status || "active",
         };
       },
     }),
@@ -72,7 +78,13 @@ export const authOptions: NextAuthOptions = {
               email: user.email,
               image: user.image || "",
               provider: "google",
+              role: "customer",
+              status: "active",
             });
+          } else {
+            if (existingUser.status === "suspended") {
+              return false; // Reject sign in
+            }
           }
           return true;
         } catch (error) {
@@ -84,7 +96,7 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
-    async jwt({ token, user, account, trigger, session }) {
+    async jwt({ token, user, account, trigger }) {
       if (trigger === "update") {
         try {
           await dbConnect();
@@ -96,6 +108,8 @@ export const authOptions: NextAuthOptions = {
             } else {
               token.picture = dbUser.image;
             }
+            token.role = dbUser.role;
+            token.status = dbUser.status;
           }
         } catch (error) {
           console.warn("Error in NextAuth jwt callback (update):", error);
@@ -114,22 +128,52 @@ export const authOptions: NextAuthOptions = {
             } else {
               token.picture = dbUser.image;
             }
+            token.role = dbUser.role;
+            token.status = dbUser.status;
           }
         } catch (error) {
           // eslint-disable-next-line no-console
           console.warn("Error in NextAuth jwt callback:", error);
         }
+      } else {
+        // Enforce suspension checking on active sessions
+        try {
+          await dbConnect();
+          const dbUser = await User.findOne({ email: token.email }).select("status role");
+          if (dbUser) {
+            token.role = dbUser.role;
+            token.status = dbUser.status;
+          }
+        } catch {
+          // Silently skip if query fails
+        }
       }
       return token;
     },
     async session({ session, token }) {
-      const sessionUser = session.user as { id?: string; name?: string | null; email?: string | null; image?: string | null; provider?: string; createdAt?: string | null };
+      const sessionUser = session.user as { 
+        id?: string; 
+        name?: string | null; 
+        email?: string | null; 
+        image?: string | null; 
+        provider?: string; 
+        role?: string;
+        status?: string;
+        createdAt?: string | null 
+      };
+      
       if (sessionUser) {
+        if (token.status === "suspended") {
+          // Return null to invalidate the session entirely
+          return null as unknown as typeof session;
+        }
         sessionUser.id = token.id as string;
         sessionUser.provider = token.provider as string;
         sessionUser.createdAt = (token.createdAt as string | undefined) || null;
         if (token.name) sessionUser.name = token.name;
         if (token.picture) sessionUser.image = token.picture;
+        sessionUser.role = (token.role as string) || "customer";
+        sessionUser.status = (token.status as string) || "active";
       }
       return session;
     },

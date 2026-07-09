@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { signIn, SignInResponse } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { signIn, SignInResponse, getSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import { useToast } from "@/context/ToastContext";
+import { useLocale } from "next-intl";
 
 /**
  * LoginForm
@@ -28,8 +29,8 @@ export default function LoginForm(): JSX.Element {
   const [password, setPassword] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
-  const router = useRouter();
   const searchParams = useSearchParams();
+  const locale = useLocale();
 
   // Raw values from URL. Don't default early — we need to decide fallbacks based on restoreForm.
   const rawCallback = searchParams.get("callbackUrl");
@@ -37,8 +38,8 @@ export default function LoginForm(): JSX.Element {
   const rawFormState = searchParams.get("formState");
   const { addToast } = useToast();
 
-  const DEFAULT_FORM_URL = "/plan-trip"; // default page to restore incomplete forms to
-  const DEFAULT_FALLBACK = "/dashboard"; // fallback when not restoring a form
+  const DEFAULT_FORM_URL = `/${locale}/plan-trip`; // default page to restore incomplete forms to
+  const DEFAULT_FALLBACK = `/${locale}/dashboard`; // fallback when not restoring a form
 
   // Only allow relative URLs to prevent open-redirect vulnerabilities. Adjust policy as needed.
   const isValidRedirectUrl = (u: string): boolean => {
@@ -92,6 +93,10 @@ export default function LoginForm(): JSX.Element {
       // Integrations should write pending form state to sessionStorage under `pendingFormState`.
       const preservedFormState = rawFormState || sessionStorage.getItem("pendingFormState");
 
+      // Fetch the authenticated session to check role
+      const session = await getSession();
+      const userRole = (session?.user as { role?: string })?.role || "customer";
+
       // Decide redirect target according to restoreForm flag and callback validity.
       let callbackUrl = rawCallback && isValidRedirectUrl(rawCallback) ? rawCallback : null;
       if (restoreForm && (!callbackUrl || callbackUrl === "/dashboard" || callbackUrl === "/login" || callbackUrl === "/signup")) {
@@ -103,15 +108,18 @@ export default function LoginForm(): JSX.Element {
         // When restoring a form, prefer the provided callbackUrl, else fall back to DEFAULT_FORM_URL
         targetUrl = buildRedirectUrl(callbackUrl || DEFAULT_FORM_URL, preservedFormState);
       } else {
-        // Not restoring: go to callback if valid, otherwise dashboard
-        targetUrl = callbackUrl ? buildRedirectUrl(callbackUrl, null) : DEFAULT_FALLBACK;
+        if (userRole === "super_admin" || userRole === "admin" || userRole === "staff") {
+          targetUrl = `/${locale}/admin`;
+        } else {
+          // Not restoring: go to callback if valid, otherwise dashboard
+          targetUrl = callbackUrl ? buildRedirectUrl(callbackUrl, null) : DEFAULT_FALLBACK;
+        }
       }
 
       // Clean up any saved pending state after consuming it.
       if (sessionStorage.getItem("pendingFormState")) sessionStorage.removeItem("pendingFormState");
 
-      router.push(targetUrl);
-      router.refresh();
+      window.location.href = targetUrl;
     } catch {
       addToast("error", "An unexpected error occurred. Please try again.");
       setError("An unexpected error occurred. Please try again.");
