@@ -2,29 +2,37 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { dbConnect } from "@/lib/mongodb";
-import TravelRequest from "@/models/TravelRequest";
+import { tenantScope } from "@/lib/tenantContext";
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
-    try {
-        const session = await getServerSession(authOptions);
-        if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        await dbConnect();
-        const userId = (session.user as { id?: string }).id;
-        if (!userId) {
-            return NextResponse.json({ error: "Missing user identity" }, { status: 400 });
-        }
-
-        const requestDoc = await TravelRequest.findOne({ _id: params.id, userId }).lean();
-        if (!requestDoc) {
-            return NextResponse.json({ error: "Request not found" }, { status: 404 });
-        }
-
-        return NextResponse.json({ request: requestDoc });
-    } catch (error) {
-        console.error(error);
-        return NextResponse.json({ error: "Failed to load request details" }, { status: 500 });
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    await dbConnect();
+    const sessionUser = session.user as any;
+    const userId = sessionUser.id;
+    const tenantId = sessionUser.tenantId;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Missing user identity" }, { status: 400 });
+    }
+
+    if (!tenantId) {
+      return NextResponse.json({ error: "Tenant context is required" }, { status: 400 });
+    }
+
+    const db = tenantScope(tenantId);
+    const requestDoc = await db.TravelRequest.findOne({ _id: params.id, userId }).lean();
+    if (!requestDoc) {
+      return NextResponse.json({ error: "Request not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ request: requestDoc });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: "Failed to load request details" }, { status: 500 });
+  }
 }

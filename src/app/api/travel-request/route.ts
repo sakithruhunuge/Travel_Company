@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { dbConnect } from "@/lib/mongodb";
-import TravelRequest from "@/models/TravelRequest";
+import { tenantScope } from "@/lib/tenantContext";
 
 export async function POST(request: Request) {
   try {
@@ -10,6 +10,19 @@ export async function POST(request: Request) {
     const session = await getServerSession(authOptions);
     if (!session || !session.user) {
       return NextResponse.json({ message: "Authentication required" }, { status: 401 });
+    }
+
+    const sessionUser = session.user as any;
+    const userRole = sessionUser.role;
+    const tenantId = sessionUser.tenantId;
+
+    // SuperAdmins cannot submit standard customer requests
+    if (userRole === "super_admin") {
+      return NextResponse.json({ error: "Administrators cannot create travel requests" }, { status: 403 });
+    }
+
+    if (!tenantId) {
+      return NextResponse.json({ error: "Tenant context is required" }, { status: 400 });
     }
 
     await dbConnect();
@@ -34,14 +47,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "A valid preferred start date is required" }, { status: 400 });
     }
 
-    const sessionUser = session.user as { id?: string; name?: string | null; email?: string | null };
-
     if (!sessionUser.id || !sessionUser.email || !sessionUser.name) {
       return NextResponse.json({ error: "Missing required user profile information in session" }, { status: 400 });
     }
 
-    // Save customized travel request to MongoDB
-    const newRequest = await TravelRequest.create({
+    // Save customized travel request to MongoDB scoped to Tenant
+    const db = tenantScope(tenantId);
+    const newRequest = await db.TravelRequest.create({
       userId: sessionUser.id,
       userName: sessionUser.name,
       userEmail: sessionUser.email,

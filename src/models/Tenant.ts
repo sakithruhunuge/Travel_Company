@@ -13,6 +13,7 @@ export interface ITenant extends Document {
   plan: "free" | "basic" | "premium" | "enterprise";
   status: "active" | "suspended" | "inactive";
   isolation: "shared" | "dedicated";
+  allowRegistration: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -45,6 +46,11 @@ const TenantSchema: Schema = new Schema(
       type: String,
       enum: ["shared", "dedicated"],
       default: "shared",
+      required: true,
+    },
+    allowRegistration: {
+      type: Boolean,
+      default: true,
       required: true,
     },
   },
