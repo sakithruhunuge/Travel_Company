@@ -72,6 +72,18 @@ export const authOptions: NextAuthOptions = {
 
         // 1. Resolve SuperAdmin context if authenticated under the Admin portal
         if (tenant.isAdmin) {
+          if (process.env.NODE_ENV === "development") {
+            const adminCount = await SuperAdmin.countDocuments();
+            if (adminCount === 0) {
+              const salt = await bcrypt.genSalt(10);
+              const hashedPassword = await bcrypt.hash("superadminpassword", salt);
+              await SuperAdmin.create({
+                name: "System Super Admin",
+                email: "admin@travelcompany.com",
+                password: hashedPassword,
+              });
+            }
+          }
           const superAdmin = await SuperAdmin.findOne({
             email: credentials.email.toLowerCase().trim(),
           });
