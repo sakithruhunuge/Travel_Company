@@ -15,6 +15,7 @@ export async function GET() {
     const sessionUser = session.user as any;
     const userId = sessionUser.id;
     const tenantId = sessionUser.tenantId;
+    const userRole = sessionUser.role;
 
     if (!userId) {
       return NextResponse.json({ error: "Missing user identity" }, { status: 400 });
@@ -25,7 +26,9 @@ export async function GET() {
     }
 
     const db = tenantScope(tenantId);
-    const requests = await db.TravelRequest.find({ userId }).sort({ createdAt: -1 }).lean();
+    // Dual-scoping: Tenant Admin views all bookings, Customer views only their own
+    const query = userRole === "tenant_admin" ? {} : { userId };
+    const requests = await db.TravelRequest.find(query).sort({ createdAt: -1 }).lean();
 
     return NextResponse.json({ requests });
   } catch (error) {
