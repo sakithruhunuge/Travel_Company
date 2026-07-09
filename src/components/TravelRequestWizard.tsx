@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { sriLankaPackages } from "@/data/packages";
 import { useTravelRequest } from "@/context/TravelRequestContext";
 import { useToast } from "@/context/ToastContext";
 import Input from "@/components/ui/Input";
@@ -50,6 +49,7 @@ export default function TravelRequestWizard({ isModal = false }: TravelRequestWi
     selectPackageById,
     resetForm,
     closeFormModal,
+    packages,
   } = useTravelRequest();
   const { addToast } = useToast();
 
@@ -261,7 +261,7 @@ export default function TravelRequestWizard({ isModal = false }: TravelRequestWi
                   error={formErrors.packageId}
                   placeholder="Choose a package..."
                 >
-                  {sriLankaPackages.map((pkg) => (
+                  {packages.map((pkg) => (
                     <option key={pkg.id} value={pkg.id}>
                       {pkg.name} ({pkg.duration})
                     </option>

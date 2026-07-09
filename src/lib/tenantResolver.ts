@@ -18,6 +18,7 @@ export interface ResolvedTenant {
   name: string;
   status: "active" | "suspended" | "inactive";
   isolation: "shared" | "dedicated";
+  plan: "free" | "basic" | "premium" | "enterprise";
   branding?: {
     logoUrl?: string;
     primaryColor?: string;
@@ -100,6 +101,7 @@ export async function resolveTenant(options: {
       name: "Global Platform Admin",
       status: "active",
       isolation: "shared",
+      plan: "enterprise",
       isAdmin: true,
     };
   }
@@ -153,6 +155,7 @@ export async function resolveTenant(options: {
       name: (tenantDoc as any).name,
       status: (tenantDoc as any).status,
       isolation: (tenantDoc as any).isolation,
+      plan: (tenantDoc as any).plan,
       branding: (tenantDoc as any).branding,
     };
   }
@@ -163,6 +166,7 @@ export async function resolveTenant(options: {
     name: resolvedData.name,
     status: resolvedData.status,
     isolation: resolvedData.isolation,
+    plan: resolvedData.plan,
     branding: resolvedData.branding,
   };
 

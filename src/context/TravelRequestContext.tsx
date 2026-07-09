@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { sriLankaPackages } from "@/data/packages";
 
 export interface TravelRequestFormData {
   packageId: string;
@@ -31,6 +30,7 @@ interface TravelRequestContextType {
   isFormModalOpen: boolean;
   openFormModal: (packageId?: string) => void;
   closeFormModal: () => void;
+  packages: any[];
 }
 
 const defaultFormData: TravelRequestFormData = {
@@ -50,11 +50,24 @@ export function TravelRequestProvider({ children }: { children: React.ReactNode 
   const [currentStep, setCurrentStep] = useState(0);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isDraftLoaded, setIsDraftLoaded] = useState(false);
+  const [packages, setPackages] = useState<any[]>([]);
 
-  // Load package metadata helper
+  // 1. Fetch dynamic packages from API resolved per active tenant
+  useEffect(() => {
+    fetch("/api/packages")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.packages) {
+          setPackages(data.packages);
+        }
+      })
+      .catch((err) => console.error("Failed to load packages in wizard context:", err));
+  }, []);
+
+  // Load package metadata helper from state packages list
   const getPackageMetadata = (pkgId: string): PackageMetadata | null => {
     if (!pkgId || pkgId === "custom") return null;
-    const pkg = sriLankaPackages.find((p) => p.id === pkgId);
+    const pkg = packages.find((p) => p.id === pkgId);
     if (!pkg) return null;
     return {
       duration: pkg.duration,
@@ -63,7 +76,7 @@ export function TravelRequestProvider({ children }: { children: React.ReactNode 
     };
   };
 
-  // 1. Load draft from sessionStorage on mount
+  // 2. Load draft from sessionStorage on mount
   useEffect(() => {
     try {
       const savedDraft = sessionStorage.getItem("travel_request_draft");
@@ -78,20 +91,18 @@ export function TravelRequestProvider({ children }: { children: React.ReactNode 
         if (parsed.currentStep !== undefined) {
           setCurrentStep(parsed.currentStep);
         }
-        // Do not auto-open on login or signup pages on initial mount
         if (parsed.isFormModalOpen !== undefined && window.location.pathname !== "/login" && window.location.pathname !== "/signup") {
           setIsFormModalOpen(parsed.isFormModalOpen);
         }
       }
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.warn("Failed to load travel request draft from sessionStorage:", e);
     } finally {
       setIsDraftLoaded(true);
     }
   }, []);
 
-  // 2. Listen to route transitions to dynamically manage the modal visibility (e.g. closing on login page, opening when redirected back)
+  // 3. Listen to route transitions to dynamically manage the modal visibility
   useEffect(() => {
     if (!isDraftLoaded) return;
 
@@ -107,16 +118,14 @@ export function TravelRequestProvider({ children }: { children: React.ReactNode 
           }
         }
       } catch (e) {
-        // eslint-disable-next-line no-console
         console.warn("Failed to restore modal state on path change:", e);
       }
     }
   }, [pathname, isDraftLoaded]);
 
-  // 3. Persist draft to sessionStorage on state changes
+  // 4. Persist draft to sessionStorage on state changes
   useEffect(() => {
     if (!isDraftLoaded) return;
-    // Do not save draft status when on login/signup pages to avoid overwriting modal visibility state
     if (pathname === "/login" || pathname === "/signup") return;
 
     try {
@@ -125,7 +134,6 @@ export function TravelRequestProvider({ children }: { children: React.ReactNode 
         JSON.stringify({ formData, currentStep, isFormModalOpen })
       );
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.warn("Failed to save travel request draft to sessionStorage:", e);
     }
   }, [formData, currentStep, isFormModalOpen, isDraftLoaded, pathname]);
@@ -164,13 +172,13 @@ export function TravelRequestProvider({ children }: { children: React.ReactNode 
       return;
     }
 
-    const pkg = sriLankaPackages.find((p) => p.id === id);
+    const pkg = packages.find((p) => p.id === id);
     if (pkg) {
       setFormData((prev) => ({
         ...prev,
         packageId: pkg.id,
         packageName: pkg.name,
-        customDestinations: [], // Clear custom destinations if a pre-defined package is chosen
+        customDestinations: [],
       }));
     }
   };
@@ -193,7 +201,6 @@ export function TravelRequestProvider({ children }: { children: React.ReactNode 
     try {
       sessionStorage.removeItem("travel_request_draft");
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.warn("Failed to clear travel request draft from sessionStorage:", e);
     }
   };
@@ -214,6 +221,7 @@ export function TravelRequestProvider({ children }: { children: React.ReactNode 
         isFormModalOpen,
         openFormModal,
         closeFormModal,
+        packages,
       }}
     >
       {children}
