@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import LogoUpload from "@/components/LogoUpload";
 
 interface TenantData {
   id: string;
@@ -618,13 +619,12 @@ export default function SuperAdminPage() {
               )}
 
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Logo Image URL</label>
-                <input
-                  type="url"
-                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 transition"
-                  placeholder="https://example.com/logo.png"
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Logo Image</label>
+                <LogoUpload
                   value={brandLogo}
-                  onChange={(e) => setBrandLogo(e.target.value)}
+                  onChange={setBrandLogo}
+                  disabled={isSavingBranding}
+                  theme="dark"
                 />
               </div>
 

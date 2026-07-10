@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useTenant } from "@/context/TenantBrandingContext";
 import EmptyState from "@/components/dashboard/EmptyState";
+import LogoUpload from "@/components/LogoUpload";
 
 export default function TenantBrandingPage() {
   const { data: session } = useSession();
@@ -104,13 +105,12 @@ export default function TenantBrandingPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-550 uppercase tracking-wider mb-2">Logo Image URL</label>
-            <input
-              type="url"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-slate-800 transition"
-              placeholder="https://example.com/images/logo.png"
+            <label className="block text-xs font-bold text-slate-550 uppercase tracking-wider mb-2">Logo Image</label>
+            <LogoUpload
               value={logoUrl}
-              onChange={(e) => setLogoUrl(e.target.value)}
+              onChange={setLogoUrl}
+              disabled={isSaving}
+              theme="light"
             />
           </div>
 

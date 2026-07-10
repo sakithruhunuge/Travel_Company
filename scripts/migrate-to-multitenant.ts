@@ -125,7 +125,7 @@ async function run() {
             duration: "5 Days",
             destinations: ["Kandy", "Nuwara Eliya", "Ella"],
             includes: ["Scenic Train Ride", "Tea Plantation Tour", "Boutique Stays", "Half Board"],
-            image: "https://images.unsplash.com/photo-1588598126744-8d4889c3683a?auto=format&fit=crop&q=80&w=800",
+            image: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&q=80&w=800",
             priceRange: "$699 - $999",
             rating: "4.8",
             status: "active",
