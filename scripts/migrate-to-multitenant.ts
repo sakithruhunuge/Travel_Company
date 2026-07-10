@@ -32,7 +32,7 @@ async function run() {
     // PHASE 1: Resolve / Create Default Tenant
     // -------------------------------------------------------------
     let defaultTenant: any = null;
-    const defaultSlug = "horizon-travel";
+    const defaultSlug = "default-tenant";
 
     const existingTenant = await Tenant.findOne({ slug: defaultSlug });
 

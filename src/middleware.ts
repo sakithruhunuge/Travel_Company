@@ -18,9 +18,12 @@ export async function middleware(request: NextRequest) {
     const origin = url.origin;
     const tenant = await resolveTenant({ hostname, origin });
 
-    // If super admin portal, continue
+    // If super admin portal, internally rewrite all page routes to /admin single-page component (excluding API endpoints)
     if (tenant.isAdmin) {
-      return NextResponse.next();
+      if (!url.pathname.startsWith("/api")) {
+        url.pathname = "/admin";
+        return NextResponse.rewrite(url);
+      }
     }
 
     // Attach tenant context to downstream headers

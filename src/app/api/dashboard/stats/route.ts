@@ -15,6 +15,7 @@ export async function GET() {
     const sessionUser = session.user as any;
     const userId = sessionUser.id;
     const tenantId = sessionUser.tenantId;
+    const userRole = sessionUser.role;
 
     if (!userId) {
       return NextResponse.json({ error: "Missing user identity" }, { status: 400 });
@@ -25,11 +26,13 @@ export async function GET() {
     }
 
     const db = tenantScope(tenantId);
+    const query = userRole === "tenant_admin" ? {} : { userId };
+
     const [total, pending, approved, rejected] = await Promise.all([
-      db.TravelRequest.countDocuments({ userId }),
-      db.TravelRequest.countDocuments({ userId, status: "pending" }),
-      db.TravelRequest.countDocuments({ userId, status: "approved" }),
-      db.TravelRequest.countDocuments({ userId, status: "rejected" }),
+      db.TravelRequest.countDocuments(query),
+      db.TravelRequest.countDocuments({ ...query, status: "pending" }),
+      db.TravelRequest.countDocuments({ ...query, status: "approved" }),
+      db.TravelRequest.countDocuments({ ...query, status: "rejected" }),
     ]);
 
     return NextResponse.json({

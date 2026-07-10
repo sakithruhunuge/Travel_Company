@@ -221,6 +221,11 @@ export const authOptions: NextAuthOptions = {
               token.role = "super_admin";
               token.tenantId = null;
               token.slug = "admin";
+            } else {
+              token.id = "";
+              token.role = null as any;
+              token.tenantId = null;
+              token.slug = null;
             }
           } else {
             const dbUser = await User.findOne({
@@ -234,6 +239,11 @@ export const authOptions: NextAuthOptions = {
               token.tenantId = tenant.id;
               token.slug = tenant.slug;
               token.createdAt = dbUser.createdAt?.toISOString();
+            } else {
+              token.id = "";
+              token.role = null as any;
+              token.tenantId = null;
+              token.slug = null;
             }
           }
         } catch (error) {
