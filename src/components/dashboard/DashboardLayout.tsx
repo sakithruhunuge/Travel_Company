@@ -49,7 +49,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <div className={`hidden lg:flex ${isCollapsed ? "w-20" : "w-64"} transition-all duration-300 ease-in-out flex-shrink-0 h-screen fixed top-0 left-0 z-20`}>
                     <Sidebar 
                         onNavigate={() => undefined} 
-                        onLogout={() => signOut({ callbackUrl: "/login" })} 
+                        onLogout={() => signOut({ callbackUrl: `${window.location.origin}/login` })} 
                         isCollapsed={isCollapsed}
                         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
                     />
@@ -88,7 +88,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             <div className="absolute inset-y-0 left-0 w-64 bg-white/90 backdrop-blur-lg shadow-lg">
                                 <Sidebar
                                     onNavigate={() => setMobileSidebarOpen(false)}
-                                    onLogout={() => signOut({ callbackUrl: "/login" })}
+                                    onLogout={() => signOut({ callbackUrl: `${window.location.origin}/login` })}
                                     isCollapsed={false}
                                 />
                             </div>

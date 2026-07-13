@@ -18,6 +18,9 @@ export default function GoogleButton() {
       if (restoreForm && (callbackUrl === "/dashboard" || callbackUrl === "/login" || callbackUrl === "/signup")) {
         callbackUrl = "/plan-trip";
       }
+      if (callbackUrl.startsWith("/")) {
+        callbackUrl = `${window.location.origin}${callbackUrl}`;
+      }
       await signIn("google", { callbackUrl });
     } catch {
       addToast("error", "Sign-in failed. Please try again.");

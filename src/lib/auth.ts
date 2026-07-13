@@ -197,7 +197,7 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       if (user) {
         // Initial sign-in: transfer database fields to the JWT token payload
         const u = user as any;
@@ -264,6 +264,41 @@ export const authOptions: NextAuthOptions = {
         sessionUser.slug = token.slug;
       }
       return session;
+    },
+    async redirect({ url, baseUrl }) {
+      // 1. If it's a relative URL, resolve against the default baseUrl
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
+
+      // 2. If it's an absolute URL, check if the host is trusted
+      try {
+        const urlObj = new URL(url);
+        const baseObj = new URL(baseUrl);
+
+        const hostname = urlObj.hostname;
+        const baseHostname = baseObj.hostname;
+        const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || "travelcompany.com";
+
+        // Allow if same domain or subdomain as NEXTAUTH_URL (e.g. localhost, *.localhost)
+        if (hostname === baseHostname || hostname.endsWith("." + baseHostname)) {
+          return url;
+        }
+
+        // Allow localhost and local subdomains explicitly
+        if (hostname === "localhost" || hostname.endsWith(".localhost") || hostname === "127.0.0.1") {
+          return url;
+        }
+
+        // Allow production main domain and subdomains
+        if (hostname === mainDomain || hostname.endsWith("." + mainDomain)) {
+          return url;
+        }
+      } catch {
+        // Fallback for invalid URLs
+      }
+
+      return baseUrl;
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
