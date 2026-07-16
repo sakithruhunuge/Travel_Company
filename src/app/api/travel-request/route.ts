@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { dbConnect } from "@/lib/mongodb";
 import { tenantScope } from "@/lib/tenantContext";
+import { calculateTripPricing } from "@/lib/pricingEngine";
 
 export async function POST(request: Request) {
   try {
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    const { packageId, packageName, numberOfTravelers, preferredStartDate, specialRequests } = body;
+    const { packageId, packageName, numberOfTravelers, preferredStartDate, specialRequests, pricingInputs, submittedTotal } = body;
 
     // Input Validations
     if (!packageName || typeof packageName !== "string" || packageName.trim() === "") {
@@ -51,6 +52,63 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing required user profile information in session" }, { status: 400 });
     }
 
+    let finalSpecialRequests = specialRequests || "";
+
+    // Server-Side Pricing Verification (Data Integrity Guard)
+    if (pricingInputs && typeof submittedTotal === "number") {
+      // Validate structure of pricingInputs
+      const { duration, destinations, hotelClass, transportMode, season, activities } = pricingInputs;
+
+      if (
+        typeof duration !== "number" || duration <= 0 ||
+        !Array.isArray(destinations) ||
+        !["budget", "standard", "luxury", "premium-boutique"].includes(hotelClass) ||
+        !["self-drive", "private-driver", "first-class-train", "charter-flight"].includes(transportMode) ||
+        !["off-peak", "shoulder", "peak"].includes(season) ||
+        !Array.isArray(activities)
+      ) {
+        return NextResponse.json({ error: "Invalid pricing inputs parameters" }, { status: 400 });
+      }
+
+      // Re-verify traveler count alignment
+      if (pricingInputs.numberOfTravelers !== numberOfTravelers) {
+        return NextResponse.json({ error: "Travelers count mismatch between booking details and pricing engine" }, { status: 400 });
+      }
+
+      // Run Server Pricing Engine
+      const calculated = calculateTripPricing(pricingInputs);
+
+      // Verify Total Price
+      if (calculated.totalPrice !== submittedTotal) {
+        return NextResponse.json({
+          error: "Pricing verification failed: client total price does not match server-validated cost breakdown",
+          details: `Client submitted: $${submittedTotal}, Server calculated: $${calculated.totalPrice}`
+        }, { status: 400 });
+      }
+
+      // Format pricing and configurations in Markdown (Architecture Compliance - Zero DB Migrations)
+      const formattedPricingMarkdown = `### 🌟 Custom Calculator Specifications
+- **Duration**: ${duration} Days
+- **Selected Destinations**: ${destinations.join(", ") || "None"}
+- **Hotel Tier**: ${hotelClass.toUpperCase()}
+- **Transport Mode**: ${transportMode.replace("-", " ").toUpperCase()}
+- **Travel Season**: ${season.toUpperCase()}
+- **Custom Inclusions**: ${activities.join(", ") || "None"}
+
+### 💵 Invoice Cost Breakdown (Server Verified)
+- **Base Cost**: $${calculated.baseCost.toLocaleString()}
+- **Accommodation Surcharge**: $${calculated.accommodationCost.toLocaleString()}
+- **Transportation Cost**: $${calculated.transportCost.toLocaleString()}
+- **Destination Tickets & Entry Surcharges**: $${calculated.destinationSurcharges.toLocaleString()}
+- **Selected Inclusions Cost**: $${calculated.activityCost.toLocaleString()}
+- **Subtotal**: $${calculated.subtotal.toLocaleString()}
+- **Group size discount**: -$${calculated.discount.toLocaleString()}
+- **Local Taxes & Fees (12%)**: $${calculated.taxes.toLocaleString()}
+- **Grand Total**: $${calculated.totalPrice.toLocaleString()} USD`;
+
+      finalSpecialRequests = `${formattedPricingMarkdown}\n\n### 📝 Traveler Special Requests\n${specialRequests || "None"}`;
+    }
+
     // Save customized travel request to MongoDB scoped to Tenant
     const db = tenantScope(tenantId);
     const newRequest = await db.TravelRequest.create({
@@ -61,7 +119,7 @@ export async function POST(request: Request) {
       packageName: packageName.trim(),
       numberOfTravelers,
       preferredStartDate: new Date(preferredStartDate),
-      specialRequests: specialRequests || "",
+      specialRequests: finalSpecialRequests,
       status: "pending",
     });
 

@@ -11,6 +11,7 @@ const navLinks = [
   { label: "About", href: "/#about" },
   { label: "Destinations", href: "/#destinations" },
   { label: "Packages", href: "/#packages" },
+  { label: "Pricing Calculator", href: "/pricing-calculator" },
   { label: "Why Choose Us", href: "/#why-choose-us" },
   { label: "Contact", href: "/#contact" },
 ];
