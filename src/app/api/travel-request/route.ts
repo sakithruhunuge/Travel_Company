@@ -57,15 +57,20 @@ export async function POST(request: Request) {
     // Server-Side Pricing Verification (Data Integrity Guard)
     if (pricingInputs && typeof submittedTotal === "number") {
       // Validate structure of pricingInputs
-      const { duration, destinations, hotelClass, transportMode, season, activities } = pricingInputs;
+      const { duration, destinations, hotelClass, transportMode, season, activities, extraNights, addOns } = pricingInputs;
+
+      const validAddons = ["breakfast", "dinner", "airport-transfer", "guide"];
 
       if (
         typeof duration !== "number" || duration <= 0 ||
+        typeof extraNights !== "number" || extraNights < 0 ||
         !Array.isArray(destinations) ||
         !["budget", "standard", "luxury", "premium-boutique"].includes(hotelClass) ||
         !["self-drive", "private-driver", "first-class-train", "charter-flight"].includes(transportMode) ||
         !["off-peak", "shoulder", "peak"].includes(season) ||
-        !Array.isArray(activities)
+        !Array.isArray(activities) ||
+        !Array.isArray(addOns) ||
+        !addOns.every((a: any) => typeof a === "string" && validAddons.includes(a))
       ) {
         return NextResponse.json({ error: "Invalid pricing inputs parameters" }, { status: 400 });
       }
@@ -88,19 +93,21 @@ export async function POST(request: Request) {
 
       // Format pricing and configurations in Markdown (Architecture Compliance - Zero DB Migrations)
       const formattedPricingMarkdown = `### 🌟 Custom Calculator Specifications
-- **Duration**: ${duration} Days
+- **Duration**: ${duration} Days (+${extraNights} Extra Nights)
 - **Selected Destinations**: ${destinations.join(", ") || "None"}
 - **Hotel Tier**: ${hotelClass.toUpperCase()}
 - **Transport Mode**: ${transportMode.replace("-", " ").toUpperCase()}
 - **Travel Season**: ${season.toUpperCase()}
-- **Custom Inclusions**: ${activities.join(", ") || "None"}
+- **Custom Excursions**: ${activities.join(", ") || "None"}
+- **Selected Add-ons**: ${addOns.map((a: string) => a.replace("-", " ").toUpperCase()).join(", ") || "None"}
 
 ### 💵 Invoice Cost Breakdown (Server Verified)
 - **Base Cost**: $${calculated.baseCost.toLocaleString()}
 - **Accommodation Surcharge**: $${calculated.accommodationCost.toLocaleString()}
 - **Transportation Cost**: $${calculated.transportCost.toLocaleString()}
 - **Destination Tickets & Entry Surcharges**: $${calculated.destinationSurcharges.toLocaleString()}
-- **Selected Inclusions Cost**: $${calculated.activityCost.toLocaleString()}
+- **Selected Excursions Cost**: $${calculated.activityCost.toLocaleString()}
+- **Custom Add-ons Cost**: $${calculated.addOnsCost.toLocaleString()}
 - **Subtotal**: $${calculated.subtotal.toLocaleString()}
 - **Group size discount**: -$${calculated.discount.toLocaleString()}
 - **Local Taxes & Fees (12%)**: $${calculated.taxes.toLocaleString()}

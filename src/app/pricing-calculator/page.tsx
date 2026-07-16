@@ -50,6 +50,8 @@ export default function PricingCalculatorPage() {
     transportMode: "private-driver",
     season: "shoulder",
     activities: [],
+    extraNights: 0,
+    addOns: [],
   });
 
   const [preferredStartDate, setPreferredStartDate] = useState<string>("");
