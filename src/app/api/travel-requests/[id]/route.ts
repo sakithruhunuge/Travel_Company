@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { dbConnect } from "@/lib/mongodb";
 import { tenantScope } from "@/lib/tenantContext";
+import { updateRequestPricing } from "@/lib/pricingParser";
 
 // GET /api/travel-requests/[id] - Load request details
 export async function GET(request: Request, { params }: { params: { id: string } }) {
@@ -42,7 +43,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-// PUT /api/travel-requests/[id] - Tenant Admin updates travel request status (Approve / Reject)
+// PUT /api/travel-requests/[id] - Tenant Admin updates travel request status or updates pricing breakdown
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
@@ -54,7 +55,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const userRole = sessionUser.role;
     const tenantId = sessionUser.tenantId;
 
-    // Guard: Only Tenant Admin is authorized to change request status
+    // Guard: Only Tenant Admin is authorized to modify travel requests
     if (userRole !== "tenant_admin") {
       return NextResponse.json({ error: "Access Denied: Tenant Admin role required" }, { status: 403 });
     }
@@ -72,23 +73,42 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    const { status } = body;
-    if (!status || !["pending", "approved", "rejected", "cancelled"].includes(status)) {
+    const { status, customCharges, additionalTaxes } = body;
+    if (status && !["pending", "approved", "rejected", "cancelled"].includes(status)) {
       return NextResponse.json({ error: "Invalid status value" }, { status: 400 });
     }
 
     const db = tenantScope(tenantId);
 
-    // Scoped update prevents leakage
-    const updatedRequest = await db.TravelRequest.findOneAndUpdate(
-      { _id: params.id },
-      { status },
-      { new: true }
-    );
-
-    if (!updatedRequest) {
+    // Fetch existing request to update its pricing notes
+    const existingRequest = await db.TravelRequest.findOne({ _id: params.id });
+    if (!existingRequest) {
       return NextResponse.json({ error: "Request not found under this tenant" }, { status: 404 });
     }
+
+    const updateFields: any = {};
+    if (status) {
+      updateFields.status = status;
+    }
+
+    // Apply custom agency calculations if values are supplied
+    if (customCharges !== undefined || additionalTaxes !== undefined) {
+      try {
+        const updatedMarkdown = updateRequestPricing(existingRequest.specialRequests || "", {
+          customCharges: customCharges !== undefined ? parseFloat(customCharges) : undefined,
+          additionalTaxes: additionalTaxes !== undefined ? parseFloat(additionalTaxes) : undefined,
+        });
+        updateFields.specialRequests = updatedMarkdown;
+      } catch (err) {
+        return NextResponse.json({ error: "Failed to recalculate pricing specs metadata" }, { status: 400 });
+      }
+    }
+
+    const updatedRequest = await db.TravelRequest.findOneAndUpdate(
+      { _id: params.id },
+      updateFields,
+      { new: true }
+    );
 
     return NextResponse.json({ success: true, request: updatedRequest });
   } catch (error) {

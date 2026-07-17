@@ -1,5 +1,6 @@
 import Link from "next/link";
 import StatusBadge from "@/components/dashboard/StatusBadge";
+import { parseRequestPricing } from "@/lib/pricingParser";
 
 export type RequestCardData = {
     _id: string;
@@ -20,13 +21,14 @@ type RequestCardProps = {
 };
 
 export default function RequestCard({ request, showActions = true, onCancel, isCancelling = false }: RequestCardProps) {
+    const parsed = request.specialRequests ? parseRequestPricing(request.specialRequests) : null;
+    
     return (
         <div className="rounded-2xl bg-white/60 backdrop-blur-sm p-6 border border-slate-200 transition-transform hover:-translate-y-0.5">
             <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-brand-muted">Package</p>
-                    <h3 className="mt-1 text-lg font-semibold text-brand-dark">{request.packageName}</h3>
-                </div>
+                <h3 className="font-bold text-brand-dark sm:text-lg">
+                    {request.packageName}
+                </h3>
                 <StatusBadge status={request.status} />
             </div>
 
@@ -47,9 +49,25 @@ export default function RequestCard({ request, showActions = true, onCancel, isC
                         {new Date(request.createdAt).toLocaleDateString()}
                     </p>
                 </div>
-                <div>
+                <div className="sm:col-span-2">
                     <p className="text-xs font-medium uppercase tracking-wider text-brand-muted">Special requests</p>
-                    <p className="mt-1 font-medium text-brand-dark">{request.specialRequests || "None"}</p>
+                    <div className="mt-1">
+                        {parsed ? (
+                            <div className="flex flex-col gap-1.5">
+                                {parsed.isCustomCalc && (
+                                    <span className="inline-flex w-max items-center px-2 py-0.5 rounded text-[10px] font-bold bg-sky-100 text-sky-700 uppercase tracking-wider">
+                                      <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                      </svg>
+                                      Custom Calculated Route
+                                    </span>
+                                )}
+                                <p className="font-medium text-brand-dark">{parsed.notes || "None"}</p>
+                            </div>
+                        ) : (
+                            <p className="font-medium text-brand-dark">None</p>
+                        )}
+                    </div>
                 </div>
             </div>
 

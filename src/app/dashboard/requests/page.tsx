@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import EmptyState from "@/components/dashboard/EmptyState";
 import StatsOverviewCard from "@/components/dashboard/StatsOverviewCard";
 import Image from "next/image";
+import { parseRequestPricing } from "@/lib/pricingParser";
 import {
   CheckOutlined,
   CloseOutlined,
@@ -18,6 +19,8 @@ import {
   CompassOutlined,
   FileTextOutlined,
   ArrowRightOutlined,
+  CopyOutlined,
+  LinkOutlined,
 } from "@ant-design/icons";
 
 interface RequestData {
@@ -87,6 +90,25 @@ export default function TenantRequestsPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  // Custom adjustments and Link Copy state
+  const [customCharges, setCustomCharges] = useState<number>(0);
+  const [additionalTaxes, setAdditionalTaxes] = useState<number>(0);
+  const [paymentLinkCopied, setPaymentLinkCopied] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (selectedRequest) {
+      const { metrics } = parseRequestPricing(selectedRequest.specialRequests || "");
+      setCustomCharges(metrics.customCharges || 0);
+      setAdditionalTaxes(metrics.additionalTaxes || 0);
+      setPaymentLinkCopied(false);
+    }
+  }, [selectedRequest]);
+
+  const parsedData = selectedRequest ? parseRequestPricing(selectedRequest.specialRequests || "") : null;
+  const metrics = parsedData?.metrics;
+  const isCustomCalc = parsedData?.isCustomCalc;
+  const travelerNotes = parsedData?.notes;
+
   useEffect(() => {
     if (userRole === "tenant_admin") {
       loadRequests();
@@ -137,6 +159,39 @@ export default function TenantRequestsPage() {
     } catch (err) {
       console.error(err);
       setActionError(err instanceof Error ? err.message : "Failed to execute request action.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRecalculateAndApprove = async () => {
+    if (!selectedRequest) return;
+    setActionLoading(true);
+    setActionError(null);
+    try {
+      const res = await fetch(`/api/travel-requests/${selectedRequest._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "approved",
+          customCharges,
+          additionalTaxes,
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to update pricing adjustments.");
+      }
+
+      // Update requests locally
+      setRequests((prev) =>
+        prev.map((req) => (req._id === selectedRequest._id ? data.request : req))
+      );
+      setSelectedRequest(data.request);
+    } catch (err) {
+      console.error(err);
+      setActionError(err instanceof Error ? err.message : "Recalculation and approval failed.");
     } finally {
       setActionLoading(false);
     }
@@ -456,43 +511,89 @@ export default function TenantRequestsPage() {
                     <span>Cost Breakdown & Details</span>
                   </div>
                   <div className="p-4 space-y-4 text-xs font-semibold text-slate-700 max-h-[300px] overflow-y-auto">
-                    {selectedRequest.specialRequests?.includes("### 💵 Invoice Cost Breakdown") ? (
-                      // Render dynamic verified estimate formatted
+                    {isCustomCalc && metrics ? (
                       <div className="space-y-4">
-                        <div className="prose prose-sm max-w-none text-slate-650 leading-relaxed">
-                          {selectedRequest.specialRequests.split("### 💵 Invoice Cost Breakdown")[0].replace("### 🌟 Custom Calculator Specifications", "").trim().split("\n").map((line, idx) => {
+                        {/* Specifications details */}
+                        <div className="space-y-1 text-slate-650">
+                          {selectedRequest.specialRequests?.split("### 💵 Invoice Cost Breakdown")[0]?.replace("### 🌟 Custom Calculator Specifications", "").trim().split("\n").map((line: string, idx: number) => {
                             if (line.startsWith("- **")) {
-                              const cleaned = line.replace(/[-\s*]/g, "").split(":");
-                              return (
-                                <div key={idx} className="flex justify-between py-1 border-b border-slate-100 last:border-0">
-                                  <span className="text-slate-450 uppercase text-[10px] font-bold">{cleaned[0]}</span>
-                                  <span className="text-slate-800 font-black">{cleaned[1]}</span>
-                                </div>
-                              );
-                            }
-                            return null;
-                          })}
-                        </div>
-
-                        <div className="bg-slate-900 text-slate-100 rounded-2xl p-4 space-y-2">
-                          <span className="block text-[10px] text-cyan-400 font-black uppercase tracking-wider border-b border-white/10 pb-1.5">
-                            Verified Invoice
-                          </span>
-                          {selectedRequest.specialRequests.split("### 💵 Invoice Cost Breakdown")[1].replace("### 📝 Traveler Special Requests", "").trim().split("\n").map((line, idx) => {
-                            if (line.startsWith("- **")) {
-                              const matchPair = line.match(/\*\*(.*)\*\*:\s*(.*)/);
+                              const matchPair = line.match(/\*\*(.*)\*\*(.*)/);
                               if (matchPair) {
-                                const isTotal = matchPair[1].toLowerCase().includes("total");
                                 return (
-                                  <div key={idx} className={`flex justify-between py-0.5 text-xs ${isTotal ? "font-black text-cyan-400 border-t border-white/10 pt-2 mt-2" : "text-slate-300"}`}>
-                                    <span>{matchPair[1]}</span>
-                                    <span>{matchPair[2]}</span>
+                                  <div key={idx} className="flex justify-between py-1 border-b border-slate-100 last:border-0">
+                                    <span className="text-slate-450 uppercase text-[9px] font-bold">{matchPair[1].replace(":", "")}</span>
+                                    <span className="text-slate-800 font-extrabold">{matchPair[2].replace(/[:-\s*]/g, "").trim()}</span>
                                   </div>
                                 );
                               }
                             }
                             return null;
                           })}
+                        </div>
+
+                        {/* Verified cost breakdown */}
+                        <div className="bg-slate-900 text-slate-100 rounded-2xl p-4 space-y-2.5">
+                          <span className="block text-[10px] text-cyan-400 font-black uppercase tracking-wider border-b border-white/10 pb-1.5">
+                            Verified Invoice Details
+                          </span>
+                          <div className="flex justify-between text-xs text-slate-300">
+                            <span>Base Tour Cost</span>
+                            <span>${metrics.baseCost.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between text-xs text-slate-300">
+                            <span>Accommodation Surcharge</span>
+                            <span>${metrics.accommodationCost.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between text-xs text-slate-300">
+                            <span>Transportation Logistics</span>
+                            <span>${metrics.transportCost.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between text-xs text-slate-300">
+                            <span>Destinations Entry Tickets</span>
+                            <span>${metrics.destinationSurcharges.toLocaleString()}</span>
+                          </div>
+                          {metrics.activityCost > 0 && (
+                            <div className="flex justify-between text-xs text-slate-300">
+                              <span>Excursions Cost</span>
+                              <span>${metrics.activityCost.toLocaleString()}</span>
+                            </div>
+                          )}
+                          {metrics.addOnsCost > 0 && (
+                            <div className="flex justify-between text-xs text-slate-300">
+                              <span>Add-ons Cost</span>
+                              <span>${metrics.addOnsCost.toLocaleString()}</span>
+                            </div>
+                          )}
+                          {metrics.customCharges > 0 && (
+                            <div className="flex justify-between text-xs text-slate-300 font-bold text-amber-300">
+                              <span>Custom Agency Fee</span>
+                              <span>+${metrics.customCharges.toLocaleString()}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-xs text-slate-300 border-t border-white/5 pt-1.5 mt-1">
+                            <span>Subtotal</span>
+                            <span>${metrics.subtotal.toLocaleString()}</span>
+                          </div>
+                          {metrics.discount > 0 && (
+                            <div className="flex justify-between text-xs text-emerald-400">
+                              <span>Group Discount</span>
+                              <span>-${metrics.discount.toLocaleString()}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-xs text-slate-300">
+                            <span>Local Taxes & Fees</span>
+                            <span>${metrics.taxes.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between text-sm font-black text-cyan-400 border-t border-white/10 pt-2.5 mt-2">
+                            <span>Grand Total</span>
+                            <span>${metrics.totalPrice.toLocaleString()} USD</span>
+                          </div>
+                          <div className="flex justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wide">
+                            <span>Payment Status</span>
+                            <span className={metrics.paymentStatus === "PAID" ? "text-emerald-400 animate-pulse font-extrabold" : "text-amber-400 font-extrabold"}>
+                              {metrics.paymentStatus}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     ) : (
@@ -523,6 +624,87 @@ export default function TenantRequestsPage() {
 
                   </div>
                 </div>
+
+                {/* Cost Adjustments Panel (only editable when status is 'pending') */}
+                {selectedRequest.status === "pending" && isCustomCalc && (
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                    <span className="block text-[10px] font-black uppercase text-slate-800 tracking-wider">
+                      🛠️ Agency Cost Adjustments
+                    </span>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[9px] text-slate-500 font-black uppercase">
+                          Custom Agency Fee ($)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={customCharges}
+                          onChange={(e) => setCustomCharges(Math.max(0, parseFloat(e.target.value) || 0))}
+                          className="w-full px-2.5 py-1.5 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-secondary text-xs font-semibold text-slate-850 bg-white"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[9px] text-slate-500 font-black uppercase">
+                          Additional Taxes ($)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={additionalTaxes}
+                          onChange={(e) => setAdditionalTaxes(Math.max(0, parseFloat(e.target.value) || 0))}
+                          className="w-full px-2.5 py-1.5 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-secondary text-xs font-semibold text-slate-850 bg-white"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handleRecalculateAndApprove}
+                      disabled={actionLoading}
+                      className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-xl transition uppercase tracking-wider flex items-center justify-center gap-1.5"
+                    >
+                      {actionLoading ? "Processing Calculation..." : "Recalculate & Approve"}
+                    </button>
+                  </div>
+                )}
+
+                {/* Customer Payment Invoice Link */}
+                {selectedRequest.status === "approved" && (
+                  <div className="bg-emerald-50 border border-emerald-250 rounded-2xl p-4 space-y-3">
+                    <span className="block text-[10px] text-emerald-800 font-black uppercase tracking-wider flex items-center gap-1.5">
+                      <LinkOutlined /> Customer Payment Invoice Link
+                    </span>
+                    <p className="text-[10px] text-emerald-700 leading-normal font-semibold">
+                      This request has been approved. Copy the link below to share with the traveler.
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={
+                          typeof window !== "undefined"
+                            ? `${window.location.protocol}//${window.location.host}/invoice/${selectedRequest._id}`
+                            : `/invoice/${selectedRequest._id}`
+                        }
+                        className="flex-grow px-3 py-1.5 bg-white border border-emerald-200 rounded-xl text-[10px] font-semibold text-slate-800 focus:outline-none"
+                      />
+                      <button
+                        onClick={() => {
+                          const link = `${window.location.protocol}//${window.location.host}/invoice/${selectedRequest._id}`;
+                          navigator.clipboard.writeText(link);
+                          setPaymentLinkCopied(true);
+                          setTimeout(() => setPaymentLinkCopied(false), 2000);
+                        }}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-[10px] tracking-wide transition flex items-center gap-1"
+                      >
+                        <CopyOutlined />
+                        <span>{paymentLinkCopied ? "Copied" : "Copy"}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Selected Destination Image Visualizer */}
                 <div className="space-y-3">

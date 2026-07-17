@@ -91,6 +91,25 @@ export async function POST(request: Request) {
         }, { status: 400 });
       }
 
+      const initialMetrics = {
+        baseCost: calculated.baseCost,
+        accommodationCost: calculated.accommodationCost,
+        transportCost: calculated.transportCost,
+        destinationSurcharges: calculated.destinationSurcharges,
+        activityCost: calculated.activityCost,
+        addOnsCost: calculated.addOnsCost,
+        customCharges: 0,
+        additionalTaxes: 0,
+        subtotal: calculated.subtotal,
+        discountRate: calculated.discountRate,
+        discount: calculated.discount,
+        taxes: calculated.taxes,
+        totalPrice: calculated.totalPrice,
+        paymentStatus: "UNPAID"
+      };
+
+      const jsonBlock = `\`\`\`json\n${JSON.stringify(initialMetrics, null, 2)}\n\`\`\``;
+
       // Format pricing and configurations in Markdown (Architecture Compliance - Zero DB Migrations)
       const formattedPricingMarkdown = `### 🌟 Custom Calculator Specifications
 - **Duration**: ${duration} Days (+${extraNights} Extra Nights)
@@ -111,7 +130,11 @@ export async function POST(request: Request) {
 - **Subtotal**: $${calculated.subtotal.toLocaleString()}
 - **Group size discount**: -$${calculated.discount.toLocaleString()}
 - **Local Taxes & Fees (12%)**: $${calculated.taxes.toLocaleString()}
-- **Grand Total**: $${calculated.totalPrice.toLocaleString()} USD`;
+- **Grand Total**: $${calculated.totalPrice.toLocaleString()} USD
+- **Payment Status**: UNPAID
+
+### 📦 Metadata Store
+${jsonBlock}`;
 
       finalSpecialRequests = `${formattedPricingMarkdown}\n\n### 📝 Traveler Special Requests\n${specialRequests || "None"}`;
     }
