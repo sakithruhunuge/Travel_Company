@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 # Development stage
 FROM base AS dev

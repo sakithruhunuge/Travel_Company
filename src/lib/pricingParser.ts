@@ -172,3 +172,40 @@ ${jsonBlock}`;
 
   return `${updatedPricingMarkdown}\n\n### 📝 Traveler Special Requests\n${notes || "None"}`;
 }
+
+export function parseSpecifications(markdown: string = ""): {
+  duration?: string;
+  extraNights?: string;
+  destinations?: string;
+  hotelTier?: string;
+  transportMode?: string;
+  season?: string;
+  excursions?: string;
+  addOns?: string;
+} {
+  const result: any = {};
+  if (!markdown) return result;
+  
+  const specSection = markdown.match(/### 🌟 Custom Calculator Specifications([\s\S]*?)(?=### 💵|$)/i);
+  if (!specSection) return result;
+  
+  const content = specSection[1];
+  
+  const matchVal = (key: string) => {
+    // Regex matches the bold key followed by a colon and returns text up to the next bullet point or line break
+    const regex = new RegExp(`-\\s*\\*\\*${key}\\*\\*:\\s*([^\\n\\r*-]+)`, 'i');
+    const m = content.match(regex);
+    return m ? m[1].trim() : undefined;
+  };
+  
+  result.duration = matchVal("Duration");
+  result.extraNights = matchVal("Extra Nights");
+  result.destinations = matchVal("Selected Destinations");
+  result.hotelTier = matchVal("Hotel Tier") || matchVal("Hotel");
+  result.transportMode = matchVal("Transport Mode") || matchVal("Transport");
+  result.season = matchVal("Travel Season") || matchVal("Season");
+  result.excursions = matchVal("Custom Excursions") || matchVal("Excursions");
+  result.addOns = matchVal("Selected Add-ons") || matchVal("Add-ons");
+  
+  return result;
+}

@@ -48,6 +48,27 @@ declare module "next-auth/jwt" {
   }
 }
 
+const useSecureCookies = process.env.NODE_ENV === "production";
+const cookiePrefix = useSecureCookies ? "__Secure-" : "";
+const cookieDomain = useSecureCookies
+  ? `.${process.env.NEXT_PUBLIC_MAIN_DOMAIN || "travelcompany.com"}`
+  : ".localhost";
+
+function getOriginalHostname(requestHeaders: Headers): string | null {
+  const cookieStr = requestHeaders.get("cookie") || "";
+  const callbackUrlCookie = cookieStr
+    .split("; ")
+    .find((row) => row.startsWith("next-auth.callback-url=") || row.startsWith("__Secure-next-auth.callback-url="));
+  if (callbackUrlCookie) {
+    try {
+      const encodedUrl = callbackUrlCookie.split("=")[1];
+      const decodedUrl = decodeURIComponent(encodedUrl);
+      return new URL(decodedUrl).host;
+    } catch {}
+  }
+  return null;
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -158,7 +179,8 @@ export const authOptions: NextAuthOptions = {
         if (!user.email) return false;
         try {
           await dbConnect();
-          const hostname = headers().get("host") || "";
+          const requestHeaders = headers();
+          const hostname = getOriginalHostname(requestHeaders) || requestHeaders.get("host") || "";
           const tenant = await resolveTenant({ hostname });
 
           if (tenant.isAdmin) {
@@ -211,7 +233,8 @@ export const authOptions: NextAuthOptions = {
         // Subsequent lookups: check and sync user state with the database
         try {
           await dbConnect();
-          const hostname = headers().get("host") || "";
+          const requestHeaders = headers();
+          const hostname = getOriginalHostname(requestHeaders) || requestHeaders.get("host") || "";
           const tenant = await resolveTenant({ hostname });
 
           if (tenant.isAdmin) {

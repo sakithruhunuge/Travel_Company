@@ -3,7 +3,14 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { dbConnect } from "@/lib/mongodb";
 import { tenantScope } from "@/lib/tenantContext";
-import { updateRequestPricing } from "@/lib/pricingParser";
+import { updateRequestPricing, parseRequestPricing, parseSpecifications } from "@/lib/pricingParser";
+import Tenant from "@/models/Tenant";
+import { sendInvoiceEmail } from "@/lib/emailService";
+import InvoiceDocument from "@/components/pdf/InvoiceDocument";
+import React from "react";
+import { renderToBuffer } from "@react-pdf/renderer";
+
+export const runtime = "nodejs";
 
 // GET /api/travel-requests/[id] - Load request details
 export async function GET(request: Request, { params }: { params: { id: string } }) {
@@ -104,11 +111,85 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       }
     }
 
-    const updatedRequest = await db.TravelRequest.findOneAndUpdate(
+    const updatedRequest = (await db.TravelRequest.findOneAndUpdate(
       { _id: params.id },
       updateFields,
       { new: true }
-    );
+    )) as any;
+
+    // PDF Generation & Email Dispatch Trigger on APPROVED status update
+    if (status === "approved" && updatedRequest) {
+      const runEmailDispatch = async () => {
+        try {
+          console.log(`[PDF/Email Workflow] Launching background invoice pipeline for request ${updatedRequest._id}`);
+          
+          // Fetch tenant branding and name
+          const tenant = await Tenant.findById(tenantId).lean();
+          const tenantName = tenant?.name || "Travel Agency";
+          const primaryColor = tenant?.branding?.primaryColor || "#0B7C8A";
+          const secondaryColor = tenant?.branding?.secondaryColor || "#041A16";
+
+          // Parse metrics and specifications
+          const { metrics } = parseRequestPricing(updatedRequest.specialRequests || "");
+          const specs = parseSpecifications(updatedRequest.specialRequests || "");
+
+          // Format dates
+          const dateStr = new Date().toLocaleDateString(undefined, {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
+          const preferredDateStr = new Date(updatedRequest.preferredStartDate).toLocaleDateString(undefined, {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
+
+          const paymentLink = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/invoice/${updatedRequest._id}`;
+
+          // Create the PDF document component
+          const pdfElement = React.createElement(InvoiceDocument, {
+            invoiceId: updatedRequest._id.toString(),
+            date: dateStr,
+            customerName: updatedRequest.userName,
+            customerEmail: updatedRequest.userEmail,
+            packageName: updatedRequest.packageName,
+            numberOfTravelers: updatedRequest.numberOfTravelers,
+            preferredStartDate: preferredDateStr,
+            metrics,
+            tenantName,
+            primaryColor,
+            secondaryColor,
+            paymentLink,
+            specs,
+          });
+
+          // Render PDF to Buffer
+          console.log(`[PDF] Generating PDF document stream for ${updatedRequest._id}...`);
+          const pdfBuffer = await renderToBuffer(pdfElement as any);
+
+          // Dispatch Invoice Email
+          console.log(`[Email] Sending automated PDF invoice email to ${updatedRequest.userEmail}...`);
+          await sendInvoiceEmail(
+            updatedRequest.userEmail,
+            updatedRequest.userName,
+            updatedRequest._id.toString(),
+            pdfBuffer,
+            paymentLink
+          );
+        } catch (err) {
+          console.error("[PDF/Email Workflow] Background workflow processing failed:", err);
+        }
+      };
+
+      // Asynchronously invoke dispatch without blocking main HTTP thread
+      const reqAny = request as any;
+      if (reqAny.waitUntil) {
+        reqAny.waitUntil(runEmailDispatch());
+      } else {
+        runEmailDispatch();
+      }
+    }
 
     return NextResponse.json({ success: true, request: updatedRequest });
   } catch (error) {
