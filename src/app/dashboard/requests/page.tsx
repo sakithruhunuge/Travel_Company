@@ -237,7 +237,7 @@ export default function TenantRequestsPage() {
 
   return (
     <div className="space-y-8 text-left relative min-h-[75vh]">
-      
+
       {/* Header Area */}
       <div className="bg-white/40 backdrop-blur-md border border-slate-200 p-6 rounded-3xl flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
@@ -259,7 +259,7 @@ export default function TenantRequestsPage() {
 
       {/* Filter and Control Bar */}
       <div className="bg-white/60 backdrop-blur-sm border border-slate-200 rounded-3xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-        
+
         {/* Navigation Tabs */}
         <div className="flex flex-wrap gap-1.5 w-full md:w-auto">
           {(["all", "pending", "approved", "rejected", "cancelled"] as const).map((tab) => {
@@ -272,11 +272,10 @@ export default function TenantRequestsPage() {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-xl text-xs font-black capitalize transition ${
-                  activeTab === tab
+                className={`px-4 py-2 rounded-xl text-xs font-black capitalize transition ${activeTab === tab
                     ? "bg-slate-900 text-white shadow-sm"
                     : "text-slate-500 hover:bg-white/40 hover:text-slate-900"
-                }`}
+                  }`}
               >
                 {tab} ({count})
               </button>
@@ -367,15 +366,14 @@ export default function TenantRequestsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span
-                        className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                          req.status === "approved"
+                        className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${req.status === "approved"
                             ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
                             : req.status === "rejected"
-                            ? "bg-red-500/10 text-red-650 border border-red-500/20"
-                            : req.status === "cancelled"
-                            ? "bg-slate-100 text-slate-500 border border-slate-200"
-                            : "bg-amber-500/10 text-amber-600 border border-amber-500/20"
-                        }`}
+                              ? "bg-red-500/10 text-red-650 border border-red-500/20"
+                              : req.status === "cancelled"
+                                ? "bg-slate-100 text-slate-500 border border-slate-200"
+                                : "bg-amber-500/10 text-amber-600 border border-amber-500/20"
+                          }`}
                       >
                         {req.status}
                       </span>
@@ -420,7 +418,7 @@ export default function TenantRequestsPage() {
               transition={{ type: "tween", duration: 0.35, ease: "easeInOut" }}
               className="fixed top-0 right-0 h-full w-[500px] max-w-[95vw] bg-white border-l border-slate-200 z-[100] shadow-2xl flex flex-col justify-between"
             >
-              
+
               {/* Drawer Header */}
               <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                 <div>
@@ -443,7 +441,7 @@ export default function TenantRequestsPage() {
 
               {/* Drawer Content */}
               <div className="p-6 overflow-y-auto flex-grow space-y-6 text-left">
-                
+
                 {/* Action Feedback Area */}
                 {actionError && (
                   <div className="p-4 bg-rose-50 border border-rose-250 rounded-2xl flex items-start gap-2.5 text-rose-800 text-xs">
@@ -471,15 +469,14 @@ export default function TenantRequestsPage() {
                   </div>
 
                   <span
-                    className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                      selectedRequest.status === "approved"
+                    className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${selectedRequest.status === "approved"
                         ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
                         : selectedRequest.status === "rejected"
-                        ? "bg-red-500/10 text-red-650 border border-red-500/20"
-                        : selectedRequest.status === "cancelled"
-                        ? "bg-slate-100 text-slate-500 border border-slate-200"
-                        : "bg-amber-500/10 text-amber-600 border border-amber-500/20"
-                    }`}
+                          ? "bg-red-500/10 text-red-650 border border-red-500/20"
+                          : selectedRequest.status === "cancelled"
+                            ? "bg-slate-100 text-slate-500 border border-slate-200"
+                            : "bg-amber-500/10 text-amber-600 border border-amber-500/20"
+                      }`}
                   >
                     {selectedRequest.status}
                   </span>
@@ -631,7 +628,7 @@ export default function TenantRequestsPage() {
                     <span className="block text-[10px] font-black uppercase text-slate-800 tracking-wider">
                       🛠️ Agency Cost Adjustments
                     </span>
-                    
+
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <label className="text-[9px] text-slate-500 font-black uppercase">
@@ -712,7 +709,7 @@ export default function TenantRequestsPage() {
                     <CompassOutlined />
                     <span>Selected Route Visualizer</span>
                   </span>
-                  
+
                   <div className="grid grid-cols-2 gap-3.5">
                     {parseDestinations(selectedRequest.specialRequests).length > 0 ? (
                       parseDestinations(selectedRequest.specialRequests).map((dest) => {

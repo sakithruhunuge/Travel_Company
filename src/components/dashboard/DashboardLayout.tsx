@@ -8,8 +8,11 @@ import Sidebar from "@/components/dashboard/Sidebar";
 import TopNavbar from "@/components/dashboard/TopNavbar";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { useTenant } from "@/context/TenantBrandingContext";
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const { data: session, status } = useSession();
+    const tenant = useTenant();
     const router = useRouter();
     const pathname = usePathname();
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -75,7 +78,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 </>
                             )}
                         </button>
-                        <span className="text-sm font-semibold text-slate-800">Horizon Travel</span>
+                        <span className="text-sm font-semibold text-slate-800">{tenant?.name || "Ceylon Travel"}</span>
                     </div>
 
                     {/* Mobile sidebar overlay */}

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { dbConnect } from "@/lib/mongodb";
-import { tenantScope } from "@/lib/tenantContext";
+import { tenantScope, resolveTenantId } from "@/lib/tenantContext";
 import SuperAdmin from "@/models/SuperAdmin";
 
 export async function PATCH(request: Request) {
@@ -13,9 +13,10 @@ export async function PATCH(request: Request) {
     }
 
     await dbConnect();
-    const userId = (session.user as { id?: string }).id;
-    const userRole = (session.user as any).role;
-    const tenantId = (session.user as any).tenantId;
+    const sessionUser = session.user as any;
+    const userId = sessionUser.id;
+    const userRole = sessionUser.role;
+    const tenantId = await resolveTenantId(sessionUser);
 
     if (!userId) {
       return NextResponse.json({ error: "Missing user identity" }, { status: 400 });

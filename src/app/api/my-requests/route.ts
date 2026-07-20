@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { dbConnect } from "@/lib/mongodb";
-import { tenantScope } from "@/lib/tenantContext";
+import { tenantScope, resolveTenantId } from "@/lib/tenantContext";
 
 export async function GET() {
   try {
@@ -13,7 +13,7 @@ export async function GET() {
     }
 
     const sessionUser = session.user as any;
-    const tenantId = sessionUser.tenantId;
+    const tenantId = await resolveTenantId(sessionUser);
 
     if (!sessionUser.id) {
       return NextResponse.json({ error: "Invalid user session ID" }, { status: 400 });

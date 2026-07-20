@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import User from "@/models/User";
 import TravelRequest from "@/models/TravelRequest";
 import Package from "@/models/Package";
+import { resolveTenant } from "@/lib/tenantResolver";
 
 export interface TenantContext {
   tenantId: string | null;
@@ -22,6 +23,30 @@ export function getTenantContext(): TenantContext {
   } catch (error) {
     return { tenantId: null, tenantSlug: null };
   }
+}
+
+/**
+ * Robustly resolves active tenantId across session, x-tenant-id header, and host header lookup.
+ */
+export async function resolveTenantId(sessionUser?: any): Promise<string | null> {
+  if (sessionUser?.tenantId) {
+    return sessionUser.tenantId;
+  }
+  const { tenantId: headerTenantId } = getTenantContext();
+  if (headerTenantId) {
+    return headerTenantId;
+  }
+  try {
+    const requestHeaders = headers();
+    const hostname = requestHeaders.get("host") || "";
+    if (hostname) {
+      const resolved = await resolveTenant({ hostname });
+      return resolved.id;
+    }
+  } catch (err) {
+    console.warn("resolveTenantId failed:", err);
+  }
+  return null;
 }
 
 /**

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useTenant } from "@/context/TenantBrandingContext";
 import {
     AppstoreOutlined,
     SendOutlined,
@@ -30,7 +31,12 @@ type SidebarProps = {
 export default function Sidebar({ onNavigate, onLogout, isCollapsed = false, onToggleCollapse }: SidebarProps) {
     const pathname = usePathname();
     const { data: session } = useSession();
+    const tenant = useTenant();
     const userRole = (session?.user as any)?.role;
+
+    const rawSlug = (session?.user?.slug || tenant?.slug || "ceylon").toUpperCase();
+    const tenantSlug = rawSlug.endsWith("TRAVEL") ? rawSlug.slice(0, -6) : rawSlug;
+    const initial = tenantSlug.charAt(0) || "C";
 
     // Dynamically compile navigation links based on user context roles
     const menuItems = [
@@ -63,12 +69,12 @@ export default function Sidebar({ onNavigate, onLogout, isCollapsed = false, onT
             <div className={`px-4 py-6 border-b border-white/20 bg-white/10 flex ${isCollapsed ? "flex-col items-center gap-4" : "items-center justify-between"}`}>
                 {isCollapsed ? (
                     <Link href="/" className="text-xl font-black tracking-wider text-brand-primary">
-                        H
+                        {initial}
                     </Link>
                 ) : (
                     <Link href="/" className="flex items-center gap-2 group transition-all duration-300 ease-in-out">
                         <span className="text-base font-black tracking-wider text-slate-900 group-hover:text-brand-primary transition-all duration-300 ease-in-out">
-                            {session?.user?.slug ? session.user.slug.toUpperCase() : "HORIZON"}<span className="text-brand-primary group-hover:text-brand-secondary transition-all duration-300 ease-in-out font-medium">TRAVEL</span>
+                            {tenantSlug}<span className="text-brand-primary group-hover:text-brand-secondary transition-all duration-300 ease-in-out font-medium">TRAVEL</span>
                         </span>
                     </Link>
                 )}

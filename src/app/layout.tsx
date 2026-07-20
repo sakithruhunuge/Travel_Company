@@ -20,8 +20,9 @@ export async function generateMetadata(): Promise<Metadata> {
       description: tenant.branding?.tagline || "Discover curated travel packages, premium tours, and unforgettable destinations.",
     };
   } catch (error) {
+    const fallbackName = hostname.includes(".localhost") ? hostname.split(".")[0].toUpperCase() + " TRAVEL" : "Ceylon Travel";
     return {
-      title: "Horizon Travel - Explore Your Next Adventure",
+      title: `${fallbackName} - Explore Your Next Adventure`,
       description: "Discover curated travel packages, premium tours, and unforgettable destinations.",
     };
   }
@@ -39,10 +40,12 @@ export default async function RootLayout({
     tenant = await resolveTenant({ hostname });
   } catch (error) {
     console.error("RootLayout tenant resolution error:", error);
+    const sub = hostname.includes(".localhost") ? hostname.split(".")[0] : "ceylon";
+    const name = sub.charAt(0).toUpperCase() + sub.slice(1) + " Travel";
     tenant = {
       id: null,
-      slug: "default-tenant",
-      name: "Horizon Travel",
+      slug: sub,
+      name: name,
       status: "active" as const,
       isolation: "shared" as const,
       plan: "free" as const,

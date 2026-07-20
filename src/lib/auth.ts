@@ -63,7 +63,16 @@ function getOriginalHostname(requestHeaders: Headers): string | null {
     try {
       const encodedUrl = callbackUrlCookie.split("=")[1];
       const decodedUrl = decodeURIComponent(encodedUrl);
-      return new URL(decodedUrl).host;
+      const urlObj = new URL(decodedUrl);
+
+      // Extract original tenant host if callbackUrl contains target query parameter
+      const targetParam = urlObj.searchParams.get("target");
+      if (targetParam) {
+        try {
+          return new URL(targetParam).host;
+        } catch {}
+      }
+      return urlObj.host;
     } catch {}
   }
   return null;
@@ -192,22 +201,30 @@ export const authOptions: NextAuthOptions = {
             return true;
           }
 
-          const existingUser = await User.findOne({
+          let existingUser = await User.findOne({
             tenantId: tenant.id!,
             email: user.email,
           });
 
           if (!existingUser) {
-            // Register as Customer under the active tenant
-            await User.create({
-              name: user.name || "",
-              email: user.email,
-              image: user.image || "",
-              provider: "google",
-              tenantId: tenant.id!,
-              role: "customer",
-              status: "active",
-            });
+            // Check if user already exists by email under any tenant
+            const existingByEmail = await User.findOne({ email: user.email });
+            if (existingByEmail && !existingByEmail.tenantId) {
+              existingByEmail.tenantId = tenant.id!;
+              await existingByEmail.save();
+              existingUser = existingByEmail;
+            } else if (!existingByEmail) {
+              // Register as Customer under the active tenant
+              await User.create({
+                name: user.name || user.email.split("@")[0],
+                email: user.email,
+                image: user.image || "",
+                provider: "google",
+                tenantId: tenant.id!,
+                role: "customer",
+                status: "active",
+              });
+            }
           } else if (existingUser.status === "suspended" || existingUser.status === "pending") {
             return false;
           }
@@ -219,16 +236,59 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
+      const requestHeaders = headers();
+      const hostname = getOriginalHostname(requestHeaders) || requestHeaders.get("host") || "";
+
       if (user) {
         // Initial sign-in: transfer database fields to the JWT token payload
         const u = user as any;
-        token.id = u.id;
-        token.provider = u.provider;
-        token.role = u.role;
-        token.tenantId = u.tenantId || null;
-        token.slug = u.slug || null;
+        token.id = u.id || token.sub || "";
+        token.provider = u.provider || (account?.provider ? account.provider : "credentials");
         token.createdAt = u.createdAt || null;
+        if (user.name) token.name = user.name;
+        if (user.email) token.email = user.email;
+
+        try {
+          await dbConnect();
+          const tenant = await resolveTenant({ hostname });
+
+          if (tenant.isAdmin) {
+            token.role = u.role || "super_admin";
+            token.tenantId = null;
+            token.slug = "admin";
+          } else {
+            let dbUser = await User.findOne({
+              tenantId: tenant.id!,
+              email: token.email,
+            });
+            if (!dbUser && token.email) {
+              dbUser = await User.findOne({ email: token.email });
+              if (dbUser && !dbUser.tenantId) {
+                dbUser.tenantId = tenant.id!;
+                await dbUser.save();
+              }
+            }
+            if (dbUser) {
+              token.id = dbUser._id.toString();
+              token.provider = dbUser.provider;
+              token.role = dbUser.role;
+              token.tenantId = tenant.id;
+              token.slug = tenant.slug;
+              token.createdAt = dbUser.createdAt?.toISOString();
+              if (dbUser.name) token.name = dbUser.name;
+            } else {
+              token.role = u.role || "customer";
+              token.tenantId = tenant.id;
+              token.slug = tenant.slug;
+            }
+          }
+        } catch (err) {
+          console.warn("Error resolving tenant in initial jwt sign-in callback:", err);
+          token.role = u.role || null;
+          token.tenantId = u.tenantId || null;
+          token.slug = u.slug || null;
+        }
       } else if (token.email) {
         // Subsequent lookups: check and sync user state with the database
         try {
@@ -244,17 +304,19 @@ export const authOptions: NextAuthOptions = {
               token.role = "super_admin";
               token.tenantId = null;
               token.slug = "admin";
-            } else {
-              token.id = "";
-              token.role = null as any;
-              token.tenantId = null;
-              token.slug = null;
             }
           } else {
-            const dbUser = await User.findOne({
+            let dbUser = await User.findOne({
               tenantId: tenant.id!,
               email: token.email,
             });
+            if (!dbUser) {
+              dbUser = await User.findOne({ email: token.email });
+              if (dbUser && !dbUser.tenantId) {
+                dbUser.tenantId = tenant.id!;
+                await dbUser.save();
+              }
+            }
             if (dbUser) {
               token.id = dbUser._id.toString();
               token.provider = dbUser.provider;
@@ -262,11 +324,28 @@ export const authOptions: NextAuthOptions = {
               token.tenantId = tenant.id;
               token.slug = tenant.slug;
               token.createdAt = dbUser.createdAt?.toISOString();
+              if (dbUser.name) token.name = dbUser.name;
             } else {
-              token.id = "";
-              token.role = null as any;
-              token.tenantId = null;
-              token.slug = null;
+              // Auto-provision user record for this tenant workspace if missing
+              try {
+                const newUser = await User.create({
+                  name: token.name || (token.email ? token.email.split("@")[0] : "Customer"),
+                  email: token.email,
+                  image: token.picture || "",
+                  provider: "google",
+                  tenantId: tenant.id!,
+                  role: "customer",
+                  status: "active",
+                });
+                token.id = newUser._id.toString();
+                token.role = "customer";
+                token.tenantId = tenant.id;
+                token.slug = tenant.slug;
+              } catch (e) {
+                token.tenantId = tenant.id;
+                token.slug = tenant.slug;
+                if (!token.role) token.role = "customer";
+              }
             }
           }
         } catch (error) {

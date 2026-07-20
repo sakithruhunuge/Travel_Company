@@ -7,9 +7,11 @@ import { signOut } from "next-auth/react";
 import StatsOverviewCard from "@/components/dashboard/StatsOverviewCard";
 import EmptyState from "@/components/dashboard/EmptyState";
 import SettingsCard from "@/components/dashboard/SettingsCard";
+import { useTenant } from "@/context/TenantBrandingContext";
 
 export default function DashboardHomePage() {
   const { data: session } = useSession();
+  const tenant = useTenant();
   const [stats, setStats] = useState<{ total: number; pending: number; approved: number; rejected: number } | null>(null);
   const [recentRequests, setRecentRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -373,7 +375,7 @@ export default function DashboardHomePage() {
             <p className="text-sm font-medium text-brand-muted">
               {session?.user?.name
                 ? `Signed in as ${session.user.name}`
-                : "Signed in to your Horizon Travel account."}
+                : `Signed in to your ${tenant?.name || "Ceylon Travel"} account.`}
             </p>
             <div className="flex flex-wrap gap-3 pt-1">
               <Link
