@@ -81,13 +81,50 @@ export default function RequestHistoryPage() {
                                 {new Date(selectedRequest.preferredStartDate).toLocaleDateString()}
                             </p>
                         </div>
-                        <div className="rounded-lg border border-brand-light/70 bg-brand-light p-4 md:col-span-2">
-                            <p className="text-xs font-medium uppercase tracking-wider text-brand-muted">
-                                Special Requests
+                        <div className="rounded-lg border border-brand-light/70 bg-brand-light p-5 md:col-span-2">
+                            <p className="text-xs font-medium uppercase tracking-wider text-brand-muted mb-3">
+                                Special Requests & Specifications
                             </p>
-                            <p className="mt-1 text-base font-medium text-brand-dark">
-                                {selectedRequest.specialRequests || "None"}
-                            </p>
+                            <div className="text-sm font-medium text-brand-dark space-y-1 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                                {(() => {
+                                    const text = selectedRequest.specialRequests;
+                                    if (!text) return <p className="text-slate-500 italic">None</p>;
+                                    
+                                    // Strip out the internal JSON metadata block
+                                    const cleanedText = text.replace(/### 📦 Metadata Store\s*```json[\s\S]*?```\s*/i, "");
+                                    
+                                    return cleanedText.split('\n').map((line, idx) => {
+                                        // Headers
+                                        if (line.startsWith('### ')) {
+                                            return <h4 key={idx} className="mt-5 mb-3 font-black text-brand-dark text-sm tracking-wide border-b border-slate-100 pb-2 first:mt-0 flex items-center gap-2">{line.replace('### ', '')}</h4>;
+                                        }
+                                        
+                                        // Bold key-value list items
+                                        if (line.trim().startsWith('- **')) {
+                                            const parts = line.replace('- **', '').split('**:');
+                                            if (parts.length >= 2) {
+                                                return (
+                                                    <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between py-1.5 border-b border-slate-50 border-dashed last:border-0 hover:bg-slate-50/50 px-2 rounded transition-colors">
+                                                        <span className="font-semibold text-slate-700">{parts[0]}</span>
+                                                        <span className="text-slate-600 sm:text-right">{parts.slice(1).join('**:').trim()}</span>
+                                                    </div>
+                                                );
+                                            }
+                                        }
+                                        
+                                        // Normal list items
+                                        if (line.trim().startsWith('- ')) {
+                                            return <div key={idx} className="ml-2 py-1 text-slate-600 flex items-start px-2"><span className="mr-2 text-brand-secondary/50 font-bold">•</span>{line.replace('- ', '')}</div>;
+                                        }
+                                        
+                                        // Empty lines
+                                        if (!line.trim()) return <div key={idx} className="h-2"></div>;
+                                        
+                                        // Normal text
+                                        return <p key={idx} className="text-slate-600 text-sm py-1 px-2">{line}</p>;
+                                    });
+                                })()}
+                            </div>
                         </div>
                     </div>
 

@@ -8,8 +8,11 @@ import Sidebar from "@/components/dashboard/Sidebar";
 import TopNavbar from "@/components/dashboard/TopNavbar";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { useTenant } from "@/context/TenantBrandingContext";
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const { data: session, status } = useSession();
+    const tenant = useTenant();
     const router = useRouter();
     const pathname = usePathname();
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -49,7 +52,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <div className={`hidden lg:flex ${isCollapsed ? "w-20" : "w-64"} transition-all duration-300 ease-in-out flex-shrink-0 h-screen fixed top-0 left-0 z-20`}>
                     <Sidebar 
                         onNavigate={() => undefined} 
-                        onLogout={() => signOut({ callbackUrl: "/login" })} 
+                        onLogout={() => signOut({ callbackUrl: `${window.location.origin}/login` })} 
                         isCollapsed={isCollapsed}
                         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
                     />
@@ -75,7 +78,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 </>
                             )}
                         </button>
-                        <span className="text-sm font-semibold text-slate-800">Horizon Travel</span>
+                        <span className="text-sm font-semibold text-slate-800">{tenant?.name || "Ceylon Travel"}</span>
                     </div>
 
                     {/* Mobile sidebar overlay */}
@@ -88,7 +91,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             <div className="absolute inset-y-0 left-0 w-64 bg-white/90 backdrop-blur-lg shadow-lg">
                                 <Sidebar
                                     onNavigate={() => setMobileSidebarOpen(false)}
-                                    onLogout={() => signOut({ callbackUrl: "/login" })}
+                                    onLogout={() => signOut({ callbackUrl: `${window.location.origin}/login` })}
                                     isCollapsed={false}
                                 />
                             </div>

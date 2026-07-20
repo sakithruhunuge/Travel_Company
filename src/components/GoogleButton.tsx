@@ -18,7 +18,34 @@ export default function GoogleButton() {
       if (restoreForm && (callbackUrl === "/dashboard" || callbackUrl === "/login" || callbackUrl === "/signup")) {
         callbackUrl = "/plan-trip";
       }
-      await signIn("google", { callbackUrl });
+      if (callbackUrl.startsWith("/")) {
+        callbackUrl = `${window.location.origin}${callbackUrl}`;
+      }
+
+      // Check if we are on a subdomain to handle Google Redirect URI restrictions
+      const hostname = window.location.hostname;
+      const port = window.location.port ? `:${window.location.port}` : "";
+      const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || "travelcompany.com";
+      
+      const isLocalhostSubdomain = hostname.endsWith(".localhost");
+      const isProdSubdomain = hostname !== mainDomain && hostname.endsWith("." + mainDomain);
+      const isSubdomain = isLocalhostSubdomain || isProdSubdomain;
+
+      if (isSubdomain) {
+        // Resolve the base main domain URL (http://localhost:3000 or https://travelcompany.com)
+        const targetBase = isLocalhostSubdomain
+          ? `http://localhost${port}`
+          : `https://${mainDomain}`;
+        
+        // NextAuth callback URL on the main domain points to the session-transfer page,
+        // which will forward the token to the subdomain session-sync endpoint.
+        const sessionTransferUrl = `${targetBase}/api/auth/session-transfer?target=${encodeURIComponent(callbackUrl)}`;
+        
+        // Redirect to the main domain's login page with triggerGoogle parameter
+        window.location.href = `${targetBase}/login?callbackUrl=${encodeURIComponent(sessionTransferUrl)}&triggerGoogle=true`;
+      } else {
+        await signIn("google", { callbackUrl });
+      }
     } catch {
       addToast("error", "Sign-in failed. Please try again.");
       setIsLoading(false);

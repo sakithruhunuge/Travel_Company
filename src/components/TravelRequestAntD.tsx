@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import dayjs from "dayjs";
-import { sriLankaPackages } from "@/data/packages";
 import { useTravelRequest } from "@/context/TravelRequestContext";
 import { useToast } from "@/context/ToastContext";
 import {
@@ -63,16 +62,7 @@ const ALL_DESTINATIONS = [
   { value: "Bundala", label: "Bundala" },
 ];
 
-const customPackagePlaceholder = {
-  id: "custom",
-  name: "Custom Tailor-Made Tour",
-  duration: "Flexible Days",
-  destinations: ["Choose your own destinations"],
-  includes: ["Custom itineraries", "Dedicated travel expert", "Private vehicle & driver"],
-  image: "/images/nine_arch.png",
-  priceRange: "$350+ / Person",
-  rating: "5.0",
-};
+
 
 interface TravelRequestAntDProps {
   isModal?: boolean;
@@ -88,6 +78,7 @@ export default function TravelRequestAntD({ isModal = false }: TravelRequestAntD
     selectPackageById,
     resetForm,
     closeFormModal,
+    packages,
   } = useTravelRequest();
   const { addToast } = useToast();
 
@@ -95,7 +86,7 @@ export default function TravelRequestAntD({ isModal = false }: TravelRequestAntD
   const [submitStatus, setSubmitStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const allPackages = [...sriLankaPackages, customPackagePlaceholder];
+  const allPackages = packages;
 
   // Dynamic invoice calculations
   const selectedPackageId = formData.packageId;
@@ -372,6 +363,47 @@ export default function TravelRequestAntD({ isModal = false }: TravelRequestAntD
                       </Col>
                     );
                   })}
+
+                  {/* Professional Customizer Card */}
+                  <Col xs={24} sm={12} md={8}>
+                    <Card
+                      hoverable
+                      onClick={() => {
+                        closeFormModal();
+                        router.push("/customize-tour");
+                      }}
+                      style={{
+                        borderRadius: 14,
+                        overflow: "hidden",
+                        border: "2px dashed #0B7C8A",
+                        background: "rgba(11, 124, 138, 0.02)",
+                        height: "100%",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between"
+                      }}
+                      cover={
+                        <div style={{ height: 110, overflow: "hidden", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: "#f0fdfa" }}>
+                          <CompassOutlined style={{ fontSize: 32, color: "#0B7C8A" }} />
+                        </div>
+                      }
+                      bodyStyle={{ padding: 12, flexGrow: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}
+                    >
+                      <div>
+                        <Title level={5} style={{ margin: "0 0 4px 0", fontSize: 13, fontWeight: 700, color: "#041A16" }}>
+                          Interactive Map Customizer
+                        </Title>
+                        <Paragraph style={{ margin: 0, fontSize: 11, color: "#8c8c8c", lineHeight: "1.3" }}>
+                          Plan your trip, pick map pins, configure meals, and get live quotes.
+                        </Paragraph>
+                      </div>
+                      <div style={{ marginTop: 8 }}>
+                        <Text strong style={{ color: "#0B7C8A", fontSize: 12 }}>
+                          Tailor-Made / Live Price
+                        </Text>
+                      </div>
+                    </Card>
+                  </Col>
                 </Row>
               </div>
 
@@ -426,31 +458,7 @@ export default function TravelRequestAntD({ isModal = false }: TravelRequestAntD
                   </Col>
                 </Row>
 
-                {/* Custom Package Options */}
-                {selectedPackageId === "custom" && (
-                  <div style={{ marginTop: 20 }}>
-                    <Space direction="vertical" size={4} style={{ width: "100%" }}>
-                      <label style={{ fontSize: 12, fontWeight: 700, color: "#555" }}>
-                        <CompassOutlined /> Select Dream Destinations ($100 per city per traveler)
-                      </label>
-                      <Select
-                        mode="multiple"
-                        allowClear
-                        placeholder="Choose cities (e.g. Ella, Galle, Sigiriya)..."
-                        options={ALL_DESTINATIONS}
-                        value={formData.customDestinations}
-                        onChange={(vals) => updateFormField("customDestinations", vals)}
-                        style={{ width: "100%" }}
-                        size="large"
-                      />
-                      {formErrors.customDestinations && (
-                        <Text type="danger" style={{ fontSize: 11 }}>
-                          {formErrors.customDestinations}
-                        </Text>
-                      )}
-                    </Space>
-                  </div>
-                )}
+
 
                 {/* Special Requests */}
                 <div style={{ marginTop: 20 }}>
