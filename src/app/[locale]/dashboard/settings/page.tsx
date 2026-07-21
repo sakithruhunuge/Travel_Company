@@ -97,7 +97,7 @@ export default function SettingsPage() {
 
             <SettingsCard title={t("session")} description={t("sessionDesc")}>
                 <button
-                    onClick={() => signOut({ callbackUrl: "/login" })}
+                    onClick={() => signOut({ callbackUrl: `${window.location.origin}/login` })}
                     className="rounded-lg border border-brand-light/70 px-5 py-2.5 text-sm font-medium text-brand-dark transition-colors duration-200 hover:bg-brand-light"
                 >
                     {t("logout")}

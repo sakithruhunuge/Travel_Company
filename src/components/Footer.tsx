@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { useTenant } from "@/context/TenantBrandingContext";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const tenant = useTenant();
   const t = useTranslations("Footer");
   const tNav = useTranslations("Navbar");
 
@@ -12,15 +14,24 @@ export default function Footer() {
     <footer className="bg-brand-dark text-brand-muted py-16 border-t border-white/10 scroll-mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-          {/* Brand Info */}
+          {/* Dynamic Brand Info */}
           <div className="space-y-4">
             <Link href="/" className="inline-block transition-all duration-300 ease-in-out hover:opacity-80">
-              <span className="text-2xl font-black tracking-tight text-white">
-                HORIZON<span className="text-brand-primary">TRAVEL</span>
-              </span>
+              {tenant.branding?.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={tenant.branding.logoUrl}
+                  alt={tenant.name}
+                  className="h-10 w-auto object-contain brightness-0 invert"
+                />
+              ) : (
+                <span className="text-2xl font-black tracking-tight text-white uppercase">
+                  {tenant.name}
+                </span>
+              )}
             </Link>
             <p className="text-sm leading-relaxed text-brand-muted">
-              {t("desc")}
+              {tenant.branding?.tagline || t("desc")}
             </p>
           </div>
 
@@ -53,7 +64,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Business Hours / Useful Info */}
+          {/* Business Hours */}
           <div>
             <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">
               {t("hours.title")}
@@ -65,7 +76,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Contact Details */}
+          {/* Contacts info */}
           <div>
             <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">
               {t("contact.title")}
@@ -73,15 +84,15 @@ export default function Footer() {
             <ul className="space-y-3 text-sm">
               <li>
                 <span className="block text-white font-semibold">{t("contact.address")}:</span>
-                123 Travel Avenue, Suite 100, Ocean City
+                Colombo, Sri Lanka
               </li>
               <li>
                 <span className="block text-white font-semibold">{t("contact.phone")}:</span>
-                +1 (555) 123-4567
+                +94 11 234 5678
               </li>
               <li>
                 <span className="block text-white font-semibold">{t("contact.email")}:</span>
-                hello@horizontravel.com
+                contact@{tenant.slug || "ceylon"}.travelcompany.com
               </li>
             </ul>
           </div>
@@ -89,7 +100,7 @@ export default function Footer() {
 
         {/* Bottom Bar */}
         <div className="mt-16 pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs">
-          <p>&copy; {currentYear} {t("rights")}</p>
+          <p>&copy; {currentYear} {tenant.name || "Ceylon Travel"}. {t("rights")}</p>
           <div className="flex space-x-6">
             <a href="#" className="hover:text-brand-primary transition-all duration-300 ease-in-out">{t("privacy")}</a>
             <a href="#" className="hover:text-brand-primary transition-all duration-300 ease-in-out">{t("terms")}</a>

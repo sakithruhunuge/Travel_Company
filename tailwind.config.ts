@@ -13,9 +13,9 @@ const config: Config = {
         foreground: "var(--foreground)",
         brand: {
           dark: "#222222",
-          primary: "#FF8B50",
-          secondary: "#25A5FE",
-          accent: "#25A5FE",
+          primary: "var(--brand-primary, #FF8B50)",
+          secondary: "var(--brand-secondary, #25A5FE)",
+          accent: "var(--brand-secondary, #25A5FE)",
           muted: "#777777",
           light: "#F8F9FA",
         },

@@ -112,7 +112,7 @@ export default function TopNavbar({ title, subtitle }: TopNavbarProps) {
                         <p className="text-xs font-semibold text-slate-500">{user?.email}</p>
                     </div>
                     <button
-                        onClick={() => signOut({ callbackUrl: "/login" })}
+                        onClick={() => signOut({ callbackUrl: `${window.location.origin}/login` })}
                         className="inline-flex items-center justify-center rounded-xl border border-white/40 bg-white/20 p-2.5 text-slate-600 transition-all hover:bg-white/50 hover:text-slate-900"
                         title={t("signOut")}
                     >

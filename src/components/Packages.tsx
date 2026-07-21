@@ -1,40 +1,40 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
-import { sriLankaPackages } from "@/data/packages";
 import { useTravelRequest } from "@/context/TravelRequestContext";
 import { useCurrency } from "@/context/CurrencyContext";
 import { useTranslations } from "next-intl";
+
+export interface TravelPackage {
+  id: string;
+  name: string;
+  duration: string;
+  destinations: string[];
+  includes: string[];
+  image: string;
+  priceRange: string;
+  rating: string;
+}
 
 export default function Packages() {
   const { openFormModal } = useTravelRequest();
   const { formatPriceString } = useCurrency();
   const t = useTranslations("Packages");
-  const tDest = useTranslations("Destinations");
+  const [packages, setPackages] = useState<TravelPackage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const getPackageKey = (id: string) => {
-    if (id === "cultural-triangle") return "cultural";
-    if (id === "southern-beach") return "beach";
-    if (id === "hill-country") return "hill";
-    if (id === "wildlife-safari") return "safari";
-    if (id === "grand-tour") return "grand";
-    return "";
-  };
-
-  const getDestName = (dest: string) => {
-    const lower = dest.toLowerCase();
-    if (lower.includes("sigiriya")) return tDest("items.sigiriya");
-    if (lower.includes("dambulla")) return tDest("items.dambulla");
-    if (lower.includes("kandy")) return tDest("items.kandy");
-    if (lower.includes("nuwara eliya")) return tDest("items.tea");
-    if (lower.includes("ella")) return tDest("items.bridge");
-    if (lower.includes("yala")) return tDest("items.safari");
-    if (lower.includes("mirissa")) return tDest("items.mirissa");
-    if (lower.includes("galle")) return tDest("items.galle");
-    if (lower.includes("bentota")) return tDest("items.bentota");
-    if (lower.includes("colombo")) return tDest("items.colombo");
-    return dest;
-  };
+  useEffect(() => {
+    fetch("/api/packages")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.packages) {
+          setPackages(data.packages);
+        }
+      })
+      .catch((err) => console.error("Failed to load packages:", err))
+      .finally(() => setIsLoading(false));
+  }, []);
 
   return (
     <section id="packages" className="py-24 bg-white scroll-mt-20">
@@ -52,16 +52,20 @@ export default function Packages() {
           </p>
         </div>
 
-        {/* Destination Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {sriLankaPackages.map((pkg, idx) => {
-            const pkgKey = getPackageKey(pkg.id);
-            const name = pkgKey ? t(`items.${pkgKey}.name`) : pkg.name;
-            const duration = pkgKey ? t(`items.${pkgKey}.duration`) : pkg.duration;
-            const priceRange = pkgKey ? t(`items.${pkgKey}.priceRange`) : pkg.priceRange;
-            const inclusions = pkgKey ? t.raw(`items.${pkgKey}.inclusions`) as string[] : pkg.includes;
-
-            return (
+        {/* Loaders and Grid */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="bg-slate-50 border border-slate-100 rounded-3xl h-96 animate-pulse" />
+            ))}
+          </div>
+        ) : packages.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-slate-400 font-semibold">No packages available at this time. Check back soon!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {packages.map((pkg, idx) => (
               <div
                 key={pkg.id}
                 className="group bg-white/80 backdrop-blur-sm rounded-3xl overflow-hidden border border-white/60 shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 ease-in-out flex flex-col h-full animate-fade-in-up"
@@ -71,7 +75,7 @@ export default function Packages() {
                 <div className="relative h-64 w-full overflow-hidden">
                   <Image
                     src={pkg.image}
-                    alt={name}
+                    alt={pkg.name}
                     fill
                     className="object-cover group-hover:scale-105 transition-all duration-300 ease-in-out"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -93,19 +97,19 @@ export default function Packages() {
                   <div className="flex justify-between items-start gap-2">
                     <div>
                       <h3 className="text-lg font-black text-brand-dark group-hover:text-brand-secondary transition-all duration-300 ease-in-out leading-tight">
-                        {name}
+                        {pkg.name}
                       </h3>
                       <div className="flex items-center gap-1.5 mt-2.5 text-brand-muted">
                         <svg className="w-4 h-4 text-brand-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span className="text-xs font-bold text-brand-muted">{duration}</span>
+                        <span className="text-xs font-bold text-brand-muted">{pkg.duration}</span>
                       </div>
                     </div>
                     <div className="text-right">
                       <span className="block text-[9px] font-bold text-brand-muted uppercase tracking-wider">{t("from")}</span>
                       <span className="text-lg font-black text-brand-secondary whitespace-nowrap">
-                        {formatPriceString(priceRange)}
+                        {formatPriceString(pkg.priceRange)}
                       </span>
                     </div>
                   </div>
@@ -116,7 +120,7 @@ export default function Packages() {
                     <div className="flex flex-wrap gap-1.5 pt-0.5">
                       {pkg.destinations.map((dest, i) => (
                         <span key={i} className="inline-flex bg-brand-light text-brand-dark text-[11px] px-2.5 py-1 rounded-full font-semibold border border-brand-light">
-                          {getDestName(dest)}
+                          {dest}
                         </span>
                       ))}
                     </div>
@@ -126,7 +130,7 @@ export default function Packages() {
                   <div className="space-y-2 flex-grow">
                     <span className="block text-[9px] font-bold text-brand-muted uppercase tracking-wider">{t("includes")}</span>
                     <div className="grid grid-cols-1 gap-1.5 pt-1">
-                      {inclusions.map((item, i) => (
+                      {pkg.includes.map((item, i) => (
                         <div key={i} className="flex items-center gap-2 text-xs text-brand-muted font-semibold">
                           <svg className="w-3.5 h-3.5 text-brand-secondary" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path d="M16.7 5.3a1 1 0 010 1.4l-7.3 7.3a1 1 0 01-1.4 0l-3.3-3.3a1 1 0 011.4-1.4l2.6 2.6 6.6-6.6a1 1 0 011.4 0z" />
@@ -141,16 +145,16 @@ export default function Packages() {
                     <button
                       type="button"
                       onClick={() => openFormModal(pkg.id)}
-                      className="block w-full text-center py-3 bg-brand-primary/10 hover:bg-brand-primary hover:text-white text-brand-primary rounded-full font-bold shadow-[0_4px_20px_rgb(255,139,80,0.15)] hover:shadow-[0_8px_30px_rgb(255,139,80,0.3)] hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out cursor-pointer"
+                      className="block w-full text-center py-3 bg-brand-primary/10 hover:bg-brand-primary hover:text-white text-brand-primary rounded-full font-bold shadow-[0_4px_20px_rgba(var(--brand-primary),0.15)] hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out cursor-pointer"
                     >
                       {t("select")}
                     </button>
                   </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/context/ToastContext";
 import Link from "next/link";
+import { parseRequestPricing } from "@/lib/pricingParser";
 
 interface TravelRequestData {
   _id: string;
@@ -136,11 +137,27 @@ export default function MyRequestsPage() {
                     <tr key={req._id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="px-6 py-4 text-left">
                         <span className="block font-bold text-slate-900">{req.packageName}</span>
-                        {req.specialRequests && (
-                          <span className="block text-xs text-slate-400 mt-1 max-w-xs truncate">
-                            Note: {req.specialRequests}
-                          </span>
-                        )}
+                        {(() => {
+                          if (!req.specialRequests) return null;
+                          const parsed = parseRequestPricing(req.specialRequests);
+                          return (
+                            <div className="mt-1.5 flex flex-col gap-1.5">
+                              {parsed.isCustomCalc && (
+                                <span className="inline-flex w-max items-center px-2 py-0.5 rounded text-[10px] font-bold bg-sky-100 text-sky-700 uppercase tracking-wider">
+                                  <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                  </svg>
+                                  Custom Quote
+                                </span>
+                              )}
+                              {parsed.notes && (
+                                <span className="block text-xs text-slate-500 max-w-xs truncate" title={parsed.notes}>
+                                  Note: {parsed.notes}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-600 text-left">
                         {new Date(req.createdAt).toLocaleDateString(undefined, {

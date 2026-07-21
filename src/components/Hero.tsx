@@ -2,14 +2,16 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTravelRequest } from "@/context/TravelRequestContext";
 import { useTranslations } from "next-intl";
 import { useCurrency } from "@/context/CurrencyContext";
 
-const DESTINATIONS = ["Kandy", "Ella", "Mirissa", "Sigiriya", "Galle", "Nuwara Eliya", "Trincomalee", "Jaffna"];
+const DESTINATIONS = ["Interactive Map Customizer (Build Custom Route)", "Kandy", "Ella", "Mirissa", "Sigiriya", "Galle", "Nuwara Eliya", "Trincomalee", "Jaffna"];
 const BUDGETS = ["$100 - $300", "$300 - $600", "$600 - $1000", "$1000+", "$2000+ Luxury"];
 
 export default function Hero() {
+  const router = useRouter();
   const { openFormModal } = useTravelRequest();
   const { formatPriceString } = useCurrency();
   const [destination, setDestination] = useState(DESTINATIONS[0]);
@@ -60,7 +62,11 @@ export default function Hero() {
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  openFormModal();
+                  if (destination.includes("Interactive Map Customizer")) {
+                    router.push("/customize-tour");
+                  } else {
+                    openFormModal();
+                  }
                 }}
                 className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-white rounded-2xl border border-black/10 shadow-[0_10px_40px_rgba(0,0,0,0.08)] p-3 sm:p-2 sm:pl-4 max-w-2xl w-full"
               >

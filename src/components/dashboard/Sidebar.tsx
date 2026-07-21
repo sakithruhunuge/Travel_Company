@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useTenant } from "@/context/TenantBrandingContext";
 import {
     AppstoreOutlined,
     SendOutlined,
@@ -12,6 +14,11 @@ import {
     MenuFoldOutlined,
     MenuUnfoldOutlined,
     HomeOutlined,
+    GiftOutlined,
+    CheckCircleOutlined,
+    BgColorsOutlined,
+    TeamOutlined,
+    LineChartOutlined,
 } from "@ant-design/icons";
 import { useLocale, useTranslations } from "next-intl";
 
@@ -26,27 +33,50 @@ export default function Sidebar({ onNavigate, onLogout, isCollapsed = false, onT
     const pathname = usePathname();
     const locale = useLocale();
     const t = useTranslations("Dashboard.Sidebar");
+    const { data: session } = useSession();
+    const tenant = useTenant();
+    const userRole = (session?.user as any)?.role;
+
+    const rawSlug = (session?.user?.slug || tenant?.slug || "ceylon").toUpperCase();
+    const tenantSlug = rawSlug.endsWith("TRAVEL") ? rawSlug.slice(0, -6) : rawSlug;
+    const initial = tenantSlug.charAt(0) || "C";
 
     const menuItems = [
         { href: `/${locale}`, label: t("home"), icon: HomeOutlined },
         { href: `/${locale}/dashboard`, label: t("dashboard"), icon: AppstoreOutlined },
-        { href: `/${locale}/dashboard/my-requests`, label: t("myRequests"), icon: SendOutlined },
-        { href: `/${locale}/dashboard/request-history`, label: t("requestHistory"), icon: HistoryOutlined },
-        { href: `/${locale}/dashboard/profile`, label: t("profile"), icon: UserOutlined },
-        { href: `/${locale}/dashboard/settings`, label: t("settings"), icon: SettingOutlined },
     ];
+
+    if (userRole === "tenant_admin") {
+        menuItems.push(
+            { href: `/${locale}/dashboard/packages`, label: "Manage Packages", icon: GiftOutlined },
+            { href: `/${locale}/dashboard/requests`, label: "Approve Bookings", icon: CheckCircleOutlined },
+            { href: `/${locale}/dashboard/branding`, label: "Customizer", icon: BgColorsOutlined },
+            { href: `/${locale}/dashboard/users`, label: "Manage Users", icon: TeamOutlined },
+            { href: `/${locale}/dashboard/analytics`, label: "Analytics", icon: LineChartOutlined }
+        );
+    } else {
+        menuItems.push(
+            { href: `/${locale}/dashboard/my-requests`, label: t("myRequests"), icon: SendOutlined },
+            { href: `/${locale}/dashboard/request-history`, label: t("requestHistory"), icon: HistoryOutlined }
+        );
+    }
+
+    menuItems.push(
+        { href: `/${locale}/dashboard/profile`, label: t("profile"), icon: UserOutlined },
+        { href: `/${locale}/dashboard/settings`, label: t("settings"), icon: SettingOutlined }
+    );
 
     return (
         <aside className="flex h-full w-full flex-col bg-white/35 backdrop-blur-lg text-slate-700 border-r border-white/20 shadow-xl overflow-hidden">
             <div className={`px-4 py-6 border-b border-white/20 bg-white/10 flex ${isCollapsed ? "flex-col items-center gap-4" : "items-center justify-between"}`}>
                 {isCollapsed ? (
                     <Link href={`/${locale}`} className="text-xl font-black tracking-wider text-brand-primary">
-                        {t("brand").slice(0, 1)}
+                        {initial}
                     </Link>
                 ) : (
                     <Link href={`/${locale}`} className="flex items-center gap-2 group transition-all duration-300 ease-in-out">
                         <span className="text-base font-black tracking-wider text-slate-900 group-hover:text-brand-primary transition-all duration-300 ease-in-out">
-                            {t("brand")}<span className="text-brand-primary group-hover:text-brand-secondary transition-all duration-300 ease-in-out font-medium">TRAVEL</span>
+                            {tenantSlug}<span className="text-brand-primary group-hover:text-brand-secondary transition-all duration-300 ease-in-out font-medium">TRAVEL</span>
                         </span>
                     </Link>
                 )}

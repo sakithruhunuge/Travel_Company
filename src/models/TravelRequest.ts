@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface ITravelRequest extends Document {
+  tenantId?: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
   userName: string;
   userEmail: string;
@@ -16,7 +17,8 @@ export interface ITravelRequest extends Document {
 
 const TravelRequestSchema: Schema = new Schema(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    tenantId: { type: Schema.Types.ObjectId, ref: "Tenant", required: false },
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     userName: { type: String, required: true },
     userEmail: { type: String, required: true },
     packageId: { type: String },
@@ -35,6 +37,12 @@ const TravelRequestSchema: Schema = new Schema(
     timestamps: true,
   }
 );
+
+// Indexes for tenant isolation and queries
+TravelRequestSchema.index({ tenantId: 1 });
+TravelRequestSchema.index({ tenantId: 1, userId: 1 });
+TravelRequestSchema.index({ tenantId: 1, status: 1 });
+TravelRequestSchema.index({ tenantId: 1, createdAt: -1 });
 
 const TravelRequest: Model<ITravelRequest> =
   mongoose.models.TravelRequest || mongoose.model<ITravelRequest>("TravelRequest", TravelRequestSchema);

@@ -7,10 +7,12 @@ import ProfileDropdown from "@/components/ProfileDropdown";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { useCurrency, Currency } from "@/context/CurrencyContext";
+import { useTenant } from "@/context/TenantBrandingContext";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const { data: session } = useSession();
+  const tenant = useTenant();
 
   const router = useRouter();
   const pathname = usePathname();
@@ -23,6 +25,7 @@ export default function Navbar() {
     { label: t("about"), href: `/${locale}/#about` },
     { label: t("destinations"), href: `/${locale}/#destinations` },
     { label: t("packages"), href: `/${locale}/#packages` },
+    { label: "Customize Tour", href: `/${locale}/customize-tour` },
     { label: t("whyChooseUs"), href: `/${locale}/#why-choose-us` },
     { label: t("contact"), href: `/${locale}/#contact` },
   ];
@@ -46,12 +49,21 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 bg-white/70 backdrop-blur-md border-b border-white/20 transition-all duration-300 ease-in-out shadow-sm shadow-black/[0.03]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
-          {/* Logo */}
+          {/* Dynamic Logo / Brand Name */}
           <div className="flex-shrink-0 flex items-center">
             <Link href={`/${locale}`} className="flex items-center gap-2 group transition-all duration-300 ease-in-out">
-              <span className="text-2xl font-black tracking-wider text-brand-dark group-hover:text-brand-primary transition-all duration-300 ease-in-out">
-                HORIZON<span className="text-brand-primary group-hover:text-brand-secondary transition-all duration-300 ease-in-out font-medium">TRAVEL</span>
-              </span>
+              {tenant.branding?.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={tenant.branding.logoUrl}
+                  alt={tenant.name}
+                  className="h-10 w-auto object-contain"
+                />
+              ) : (
+                <span className="text-2xl font-black tracking-wider text-brand-dark group-hover:text-brand-primary transition-all duration-300 ease-in-out uppercase">
+                  {tenant.name}
+                </span>
+              )}
             </Link>
           </div>
 
@@ -102,7 +114,7 @@ export default function Navbar() {
             ) : (
               <Link
                 href={`/${locale}/login`}
-                className="inline-flex items-center justify-center px-6 py-2.5 rounded-full text-sm font-bold text-white bg-brand-primary hover:bg-brand-primary/90 shadow-[0_8px_30px_rgb(255,139,80,0.3)] hover:shadow-[0_12px_36px_rgb(255,139,80,0.4)] hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out"
+                className="inline-flex items-center justify-center px-6 py-2.5 rounded-full text-sm font-bold text-white bg-brand-primary hover:bg-brand-primary/90 shadow-[0_8px_30px_rgba(var(--brand-primary),0.3)] hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out"
               >
                 {t("login")}
               </Link>
@@ -163,7 +175,12 @@ export default function Navbar() {
                   <option value="de">German (DE)</option>
                   <option value="si">Sinhala (SI)</option>
                 </select>
-                <select aria-label="Mobile Currency Selector" className="flex-1 bg-white border border-black/10 rounded-2xl px-4 py-2.5 text-sm font-bold text-brand-muted outline-none focus:border-brand-primary">
+                <select
+                  aria-label="Mobile Currency Selector"
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value as Currency)}
+                  className="flex-1 bg-white border border-black/10 rounded-2xl px-4 py-2.5 text-sm font-bold text-brand-muted outline-none focus:border-brand-primary"
+                >
                   <option value="USD">USD ($)</option>
                   <option value="LKR">LKR (Rs)</option>
                   <option value="EUR">EUR (€)</option>
@@ -178,7 +195,7 @@ export default function Navbar() {
                 <Link
                   href={`/${locale}/login`}
                   onClick={() => setIsOpen(false)}
-                  className="block w-full text-center px-6 py-3 rounded-full text-base font-bold text-white bg-brand-primary hover:bg-brand-primary/90 shadow-[0_8px_30px_rgb(255,139,80,0.3)] hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out"
+                  className="block w-full text-center px-6 py-3 rounded-full text-base font-bold text-white bg-brand-primary hover:bg-brand-primary/90 shadow-[0_8px_30px_rgba(var(--brand-primary),0.3)] hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out"
                 >
                   {t("login")}
                 </Link>
