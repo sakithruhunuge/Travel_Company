@@ -16,6 +16,7 @@
     "packages": "Packages",
     "whyChooseUs": "Why Choose Us",
     "contact": "Contact",
+    "customize": "Customize Tour",
     "login": "Login"
   },
   "About": {
@@ -326,6 +327,84 @@
       "deleteDesc": "This action is irreversible and removes your account and travel requests.",
       "placeholder": "Type DELETE to confirm",
       "deleteButton": "Delete account"
+    }
+  },
+  "CustomizeTour": {
+    "subtitle": "Itinerary Architect",
+    "title": "Interactive Tour Customizer",
+    "description": "Choose a starting base tour, then use the live map pins to dynamically route destinations. Configure travelers, nights, and meals with instant estimates.",
+    "step1": "1. Select Base Package Template",
+    "step2": "2. Interactive Route Builder Map",
+    "step3": "3. Travelers & Extra Nights",
+    "step4": "4. Choose Accommodation Level",
+    "step5": "5. Transport Mode",
+    "step6": "6. Meal Add-ons & Extras",
+    "baseDays": "{duration} Days Base",
+    "mapInstruction": "Click pins on the map to add/remove cities. Visual lines connect chosen routes in sequence.",
+    "citiesSelected": "{count} Cities Selected",
+    "activeRoute": "Your Active Route",
+    "hoverPin": "Hover over any pin to preview highlights.",
+    "clickPinEdit": "Click Map Pin to Edit Route",
+    "addToRoute": "Add to Route",
+    "removeFromRoute": "Remove Destination",
+    "travelersCount": "Travelers Headcount",
+    "guests": "{count} Guests",
+    "guest": "1 Guest",
+    "extraNights": "Extra Nights",
+    "nights": "+{count} Nights",
+    "zeroNights": "0 Nights",
+    "summaryTitle": "Summary & Custom Estimate",
+    "baseSelected": "Base Selected",
+    "totalNights": "Total Nights",
+    "baseCost": "Base Cost ({duration} Days)",
+    "hotelSurcharges": "Hotel Surcharges ({nights} Nights)",
+    "transportLogistics": "Transportation logistics",
+    "destinationTickets": "Destination ticket entries ({count} cities)",
+    "mealAddOns": "Meal Add-ons & Extras",
+    "groupDiscount": "Group discount (-{rate}%)",
+    "taxesFees": "Local taxes & service fees (12%)",
+    "totalQuote": "Total Quote",
+    "departureDate": "Departure Date",
+    "travelerPreferences": "Traveler Preferences & Special Requests",
+    "placeholderPreferences": "E.g. dietary instructions, airport pick-up flight info, hotel notes...",
+    "planningAsGuest": "Planning as guest. Submit booking redirects to login to authorize your custom request.",
+    "savingQuote": "Saving Quote...",
+    "signInSubmit": "Sign In & Submit Booking",
+    "submitCustom": "Submit Custom Booking Request",
+    "itinerarySaved": "Itinerary Saved!",
+    "savedDesc": "Your customized itinerary is successfully stored as a request in our databases. An agency coordinator will review the pricing breakdown and confirm your slots.",
+    "viewDashboardRequests": "View Dashboard Requests",
+    "configureAnother": "Configure Another Route",
+    "selectStartDate": "Please select a preferred start date.",
+    "futureDate": "Departure date must be in the future.",
+    "correctErrors": "Please correct validation issues before booking.",
+    "redirectLogin": "Redirecting to secure login. Your configuration is preserved.",
+    "customizedTourSaved": "Your customized Ceylon tour is saved.",
+    "baseTours": {
+      "cultural": "Ancient Cultural Triangle",
+      "culturalDesc": "A 5-day historic route visiting ancient capitals and temples.",
+      "southern": "Southern Beach & Wildlife Safari",
+      "southernDesc": "A 6-day coastal escape focusing on sun, history, and safari.",
+      "hill": "Hill Country Scenic Trail",
+      "hillDesc": "A 6-day misty mountain loops, train tours, and waterfalls.",
+      "custom": "Custom Tailor-Made Route",
+      "customDesc": "Build your own itinerary from scratch utilizing the map pins."
+    },
+    "hotelTiers": {
+      "budget": "3-Star Standard Comfort",
+      "standard": "4-Star Luxury Hotels",
+      "luxury": "5-Star Resort Collection",
+      "premiumBoutique": "Boutique & Villa Private Retainers"
+    },
+    "transportModes": {
+      "selfDrive": "Self-Drive Vehicle Rental",
+      "privateDriver": "Private AC Car & Dedicated Driver",
+      "firstClassTrain": "First-Class Scenic Train & Private Transits",
+      "charterFlight": "Helicopter & Charter Domestic Flights"
+    },
+    "addOnLabels": {
+      "breakfast": "Full Daily Buffet Breakfast",
+      "dinner": "3-Course Gourmet Dinner Package"
     }
   }
 }

@@ -25,7 +25,7 @@ export default function Navbar() {
     { label: t("about"), href: `/${locale}/#about` },
     { label: t("destinations"), href: `/${locale}/#destinations` },
     { label: t("packages"), href: `/${locale}/#packages` },
-    { label: "Customize Tour", href: `/${locale}/customize-tour` },
+    { label: t("customize"), href: `/${locale}/customize-tour` },
     { label: t("whyChooseUs"), href: `/${locale}/#why-choose-us` },
     { label: t("contact"), href: `/${locale}/#contact` },
   ];

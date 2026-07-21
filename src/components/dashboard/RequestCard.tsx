@@ -1,6 +1,7 @@
 import Link from "next/link";
 import StatusBadge from "@/components/dashboard/StatusBadge";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { useCurrency } from "@/context/CurrencyContext";
 import { parseRequestPricing } from "@/lib/pricingParser";
 
 export type RequestCardData = {
@@ -22,7 +23,9 @@ type RequestCardProps = {
 };
 
 export default function RequestCard({ request, showActions = true, onCancel, isCancelling = false }: RequestCardProps) {
+    const locale = useLocale();
     const t = useTranslations("Dashboard.MyRequests");
+    const { formatPriceString } = useCurrency();
     const parsed = request.specialRequests ? parseRequestPricing(request.specialRequests) : null;
 
     return (
@@ -65,10 +68,10 @@ export default function RequestCard({ request, showActions = true, onCancel, isC
                                       Custom Calculated Route
                                     </span>
                                 )}
-                                <p className="font-medium text-brand-dark">{parsed.notes || t("none")}</p>
+                                <p className="font-medium text-brand-dark">{parsed.notes ? formatPriceString(parsed.notes) : t("none")}</p>
                             </div>
                         ) : (
-                            <p className="font-medium text-brand-dark">{request.specialRequests || t("none")}</p>
+                            <p className="font-medium text-brand-dark">{request.specialRequests ? formatPriceString(request.specialRequests) : t("none")}</p>
                         )}
                     </div>
                 </div>
@@ -77,7 +80,7 @@ export default function RequestCard({ request, showActions = true, onCancel, isC
             {showActions ? (
                 <div className="mt-5 flex flex-wrap gap-3 border-t border-white/10 pt-5">
                     <Link
-                        href={`/dashboard/request-history?id=${request._id}`}
+                        href={`/${locale}/dashboard/request-history?id=${request._id}`}
                         className="rounded-md bg-white/10 border border-white/10 px-4 py-2 text-sm font-medium text-brand-dark transition-colors duration-200 hover:bg-white/20"
                     >
                         {t("viewDetails")}

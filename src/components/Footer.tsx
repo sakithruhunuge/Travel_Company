@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useTenant } from "@/context/TenantBrandingContext";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
   const tenant = useTenant();
+  const locale = useLocale();
   const t = useTranslations("Footer");
   const tNav = useTranslations("Navbar");
 
@@ -16,7 +17,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* Dynamic Brand Info */}
           <div className="space-y-4">
-            <Link href="/" className="inline-block transition-all duration-300 ease-in-out hover:opacity-80">
+            <Link href={`/${locale}`} className="inline-block transition-all duration-300 ease-in-out hover:opacity-80">
               {tenant.branding?.logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img

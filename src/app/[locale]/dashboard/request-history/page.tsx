@@ -7,6 +7,7 @@ import LoadingSkeleton from "@/components/dashboard/LoadingSkeleton";
 import EmptyState from "@/components/dashboard/EmptyState";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import { useTranslations } from "next-intl";
+import { useCurrency } from "@/context/CurrencyContext";
 
 export default function RequestHistoryPage() {
     const searchParams = useSearchParams();
@@ -16,6 +17,7 @@ export default function RequestHistoryPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const t = useTranslations("Dashboard.RequestHistory");
+    const { formatPriceString } = useCurrency();
 
     useEffect(() => {
         const loadRequests = async () => {
@@ -98,7 +100,7 @@ export default function RequestHistoryPage() {
                                     return cleanedText.split('\n').map((line, idx) => {
                                         // Headers
                                         if (line.startsWith('### ')) {
-                                            return <h4 key={idx} className="mt-5 mb-3 font-black text-brand-dark text-sm tracking-wide border-b border-slate-100 pb-2 first:mt-0 flex items-center gap-2">{line.replace('### ', '')}</h4>;
+                                            return <h4 key={idx} className="mt-5 mb-3 font-black text-brand-dark text-sm tracking-wide border-b border-slate-100 pb-2 first:mt-0 flex items-center gap-2">{formatPriceString(line.replace('### ', ''))}</h4>;
                                         }
                                         
                                         // Bold key-value list items
@@ -108,7 +110,7 @@ export default function RequestHistoryPage() {
                                                 return (
                                                     <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between py-1.5 border-b border-slate-50 border-dashed last:border-0 hover:bg-slate-50/50 px-2 rounded transition-colors">
                                                         <span className="font-semibold text-slate-700">{parts[0]}</span>
-                                                        <span className="text-slate-600 sm:text-right">{parts.slice(1).join('**:').trim()}</span>
+                                                        <span className="text-slate-600 sm:text-right">{formatPriceString(parts.slice(1).join('**:').trim())}</span>
                                                     </div>
                                                 );
                                             }
@@ -116,14 +118,14 @@ export default function RequestHistoryPage() {
                                         
                                         // Normal list items
                                         if (line.trim().startsWith('- ')) {
-                                            return <div key={idx} className="ml-2 py-1 text-slate-600 flex items-start px-2"><span className="mr-2 text-brand-secondary/50 font-bold">•</span>{line.replace('- ', '')}</div>;
+                                            return <div key={idx} className="ml-2 py-1 text-slate-600 flex items-start px-2"><span className="mr-2 text-brand-secondary/50 font-bold">•</span>{formatPriceString(line.replace('- ', ''))}</div>;
                                         }
                                         
                                         // Empty lines
                                         if (!line.trim()) return <div key={idx} className="h-2"></div>;
                                         
                                         // Normal text
-                                        return <p key={idx} className="text-slate-600 text-sm py-1 px-2">{line}</p>;
+                                        return <p key={idx} className="text-slate-600 text-sm py-1 px-2">{formatPriceString(line)}</p>;
                                     });
                                 })()}
                             </div>

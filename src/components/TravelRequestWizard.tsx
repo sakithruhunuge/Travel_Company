@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useLocale } from "next-intl";
 import { useTravelRequest } from "@/context/TravelRequestContext";
 import { useToast } from "@/context/ToastContext";
 import Input from "@/components/ui/Input";
@@ -39,6 +40,7 @@ interface TravelRequestWizardProps {
 export default function TravelRequestWizard({ isModal = false }: TravelRequestWizardProps) {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
+  const locale = useLocale();
 
   const {
     formData,
@@ -123,7 +125,7 @@ export default function TravelRequestWizard({ isModal = false }: TravelRequestWi
       }
 
       // 3. Redirect to login
-      router.push(`/login?callbackUrl=${encodeURIComponent(currentPage)}&restoreForm=true`);
+      router.push(`/${locale}/login?callbackUrl=${encodeURIComponent(currentPage)}&restoreForm=true`);
       return;
     }
 
@@ -221,7 +223,7 @@ export default function TravelRequestWizard({ isModal = false }: TravelRequestWi
           </div>
           <div className="flex flex-col sm:flex-row justify-center gap-3 pt-4">
             <Link
-              href="/my-requests"
+              href={`/${locale}/dashboard/my-requests`}
               onClick={closeFormModal}
               className="px-6 py-3 bg-brand-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-primary/95 transition-all shadow-md"
             >
@@ -230,7 +232,7 @@ export default function TravelRequestWizard({ isModal = false }: TravelRequestWi
             <button
               onClick={() => {
                 closeFormModal();
-                router.push("/");
+                router.push(`/${locale}`);
               }}
               className="px-6 py-3 bg-white border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-all"
             >
