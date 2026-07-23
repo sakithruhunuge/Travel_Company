@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useTravelRequest } from "@/context/TravelRequestContext";
+import { useCurrency } from "@/context/CurrencyContext";
+import { useTranslations } from "next-intl";
 
 export interface TravelPackage {
   id: string;
@@ -17,6 +19,8 @@ export interface TravelPackage {
 
 export default function Packages() {
   const { openFormModal } = useTravelRequest();
+  const { formatPriceString } = useCurrency();
+  const t = useTranslations("Packages");
   const [packages, setPackages] = useState<TravelPackage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -38,13 +42,13 @@ export default function Packages() {
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-4 animate-fade-in-up">
           <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">
-            Curated Escapes
+            {t("tagline")}
           </span>
           <h2 className="text-3xl sm:text-5xl font-black text-brand-dark tracking-tight">
-            Featured Travel Packages
+            {t("title")}
           </h2>
           <p className="text-base text-brand-muted">
-            Handpicked premium tours that combine comfort, adventure, and immersive local experiences. Explore the world with our carefully crafted travel packages.
+            {t("description")}
           </p>
         </div>
 
@@ -103,16 +107,16 @@ export default function Packages() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className="block text-[9px] font-bold text-brand-muted uppercase tracking-wider">From</span>
+                      <span className="block text-[9px] font-bold text-brand-muted uppercase tracking-wider">{t("from")}</span>
                       <span className="text-lg font-black text-brand-secondary whitespace-nowrap">
-                        {pkg.priceRange}
+                        {formatPriceString(pkg.priceRange)}
                       </span>
                     </div>
                   </div>
 
                   {/* Destinations */}
                   <div className="space-y-1.5">
-                    <span className="block text-[9px] font-bold text-brand-muted uppercase tracking-wider">Destinations</span>
+                    <span className="block text-[9px] font-bold text-brand-muted uppercase tracking-wider">{t("destinations")}</span>
                     <div className="flex flex-wrap gap-1.5 pt-0.5">
                       {pkg.destinations.map((dest, i) => (
                         <span key={i} className="inline-flex bg-brand-light text-brand-dark text-[11px] px-2.5 py-1 rounded-full font-semibold border border-brand-light">
@@ -124,7 +128,7 @@ export default function Packages() {
 
                   {/* Inclusions */}
                   <div className="space-y-2 flex-grow">
-                    <span className="block text-[9px] font-bold text-brand-muted uppercase tracking-wider">Includes</span>
+                    <span className="block text-[9px] font-bold text-brand-muted uppercase tracking-wider">{t("includes")}</span>
                     <div className="grid grid-cols-1 gap-1.5 pt-1">
                       {pkg.includes.map((item, i) => (
                         <div key={i} className="flex items-center gap-2 text-xs text-brand-muted font-semibold">
@@ -143,7 +147,7 @@ export default function Packages() {
                       onClick={() => openFormModal(pkg.id)}
                       className="block w-full text-center py-3 bg-brand-primary/10 hover:bg-brand-primary hover:text-white text-brand-primary rounded-full font-bold shadow-[0_4px_20px_rgba(var(--brand-primary),0.15)] hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out cursor-pointer"
                     >
-                      Select this Package
+                      {t("select")}
                     </button>
                   </div>
                 </div>

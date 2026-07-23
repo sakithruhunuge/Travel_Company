@@ -5,12 +5,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { useToast } from "@/context/ToastContext";
+import { useLocale } from "next-intl";
 
 export default function ProfileDropdown() {
     const { data: session } = useSession();
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement | null>(null);
     const { addToast } = useToast();
+    const locale = useLocale();
 
     useEffect(() => {
         function onDoc(event: MouseEvent) {
@@ -26,8 +28,7 @@ export default function ProfileDropdown() {
         try {
             await signOut({ redirect: false });
             addToast("info", "Signed out");
-            // reload will be handled by parent navigation if needed
-            window.location.href = "/";
+            window.location.href = `/${locale}`;
         } catch {
             addToast("error", "Could not sign out. Please try again.");
         }
@@ -65,8 +66,8 @@ export default function ProfileDropdown() {
                         <div className="text-xxs text-slate-500 truncate">{session.user?.email}</div>
                     </div>
                     <div className="flex flex-col py-2">
-                        <Link href="/dashboard" className="px-4 py-2 text-sm hover:bg-slate-50">Dashboard</Link>
-                        <Link href="/dashboard/profile" className="px-4 py-2 text-sm hover:bg-slate-50">Profile</Link>
+                        <Link href={`/${locale}/dashboard`} className="px-4 py-2 text-sm hover:bg-slate-50">Dashboard</Link>
+                        <Link href={`/${locale}/dashboard/profile`} className="px-4 py-2 text-sm hover:bg-slate-50">Profile</Link>
                         <button onClick={handleSignOut} className="text-left px-4 py-2 text-sm hover:bg-slate-50">Sign Out</button>
                     </div>
                 </div>

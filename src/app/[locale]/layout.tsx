@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css";
-import Providers from "./Providers";
+import "../globals.css";
+import Providers from "../Providers";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import LayoutWrapper from "@/components/LayoutWrapper";
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages } from "next-intl/server";
 import { headers } from "next/headers";
 import { resolveTenant } from "@/lib/tenantResolver";
 import { TenantBrandingProvider } from "@/context/TenantBrandingContext";
@@ -30,8 +32,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({
   children,
+  params: { locale }
 }: Readonly<{
   children: React.ReactNode;
+  params: { locale: string };
 }>) {
   const hostname = headers().get("host") || "";
   let tenant = null;
@@ -59,9 +63,10 @@ export default async function RootLayout({
 
   const primaryColor = tenant.branding?.primaryColor || "#FF8B50";
   const secondaryColor = tenant.branding?.secondaryColor || "#25A5FE";
+  const messages = await getMessages();
 
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang={locale} className="scroll-smooth">
       <head>
         <style
           dangerouslySetInnerHTML={{
@@ -75,13 +80,15 @@ export default async function RootLayout({
         />
       </head>
       <body className={`${inter.className} bg-brand-light text-brand-dark antialiased min-h-screen flex flex-col`}>
-        <AntdRegistry>
-          <TenantBrandingProvider tenant={tenant}>
-            <Providers>
-              <LayoutWrapper>{children}</LayoutWrapper>
-            </Providers>
-          </TenantBrandingProvider>
-        </AntdRegistry>
+        <NextIntlClientProvider messages={messages}>
+          <AntdRegistry>
+            <TenantBrandingProvider tenant={tenant}>
+              <Providers>
+                <LayoutWrapper>{children}</LayoutWrapper>
+              </Providers>
+            </TenantBrandingProvider>
+          </AntdRegistry>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

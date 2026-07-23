@@ -4,6 +4,8 @@ import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTravelRequest } from "@/context/TravelRequestContext";
+import { useTranslations } from "next-intl";
+import { useCurrency } from "@/context/CurrencyContext";
 
 const DESTINATIONS = ["Interactive Map Customizer (Build Custom Route)", "Kandy", "Ella", "Mirissa", "Sigiriya", "Galle", "Nuwara Eliya", "Trincomalee", "Jaffna"];
 const BUDGETS = ["$100 - $300", "$300 - $600", "$600 - $1000", "$1000+", "$2000+ Luxury"];
@@ -11,9 +13,11 @@ const BUDGETS = ["$100 - $300", "$300 - $600", "$600 - $1000", "$1000+", "$2000+
 export default function Hero() {
   const router = useRouter();
   const { openFormModal } = useTravelRequest();
+  const { formatPriceString } = useCurrency();
   const [destination, setDestination] = useState(DESTINATIONS[0]);
   const [date, setDate] = useState("");
   const [budget, setBudget] = useState(BUDGETS[0]);
+  const t = useTranslations("Hero");
 
   return (
     <section
@@ -28,10 +32,10 @@ export default function Hero() {
               className="text-4xl sm:text-6xl font-black tracking-tight text-brand-dark leading-[1.1] animate-fade-in-up"
               style={{ animationDelay: "300ms", animationFillMode: "both" }}
             >
-              Explore Beautiful
+              {t("title")}
               <br />
               <span className="relative inline-block text-transparent bg-clip-text bg-gradient-to-r from-brand-primary to-orange-400">
-                Sri Lanka
+                {t("country")}
                 <svg
                   className="absolute -top-2 -right-8 w-6 h-6 text-brand-primary"
                   viewBox="0 0 24 24"
@@ -47,9 +51,7 @@ export default function Hero() {
               className="text-lg text-brand-dark/60 leading-relaxed max-w-xl animate-fade-in-up"
               style={{ animationDelay: "450ms", animationFillMode: "both" }}
             >
-              From ancient kingdoms and misty mountains to golden beaches and
-              unforgettable wildlife experiences, explore Sri Lanka with
-              carefully crafted travel packages.
+              {t("description")}
             </p>
 
             {/* Search / filter bar */}
@@ -70,7 +72,7 @@ export default function Hero() {
               >
                 <label className="flex-1 sm:pr-3 sm:border-r sm:border-black/10">
                   <span className="block text-[10px] font-bold uppercase tracking-wider text-brand-primary">
-                    Destination
+                    {t("destination")}
                   </span>
                   <select
                     value={destination}
@@ -87,7 +89,7 @@ export default function Hero() {
 
                 <label className="flex-1 sm:px-3 sm:border-r sm:border-black/10">
                   <span className="block text-[10px] font-bold uppercase tracking-wider text-brand-primary">
-                    Travel Date
+                    {t("travelDate")}
                   </span>
                   <input
                     type="date"
@@ -99,7 +101,7 @@ export default function Hero() {
 
                 <label className="flex-[1.2] sm:min-w-[150px] sm:px-3">
                   <span className="block text-[10px] font-bold uppercase tracking-wider text-brand-primary">
-                    Budget
+                    {t("budget")}
                   </span>
                   <select
                     value={budget}
@@ -108,7 +110,7 @@ export default function Hero() {
                   >
                     {BUDGETS.map((b) => (
                       <option key={b} value={b}>
-                        {b}
+                        {formatPriceString(b)}
                       </option>
                     ))}
                   </select>
@@ -118,7 +120,7 @@ export default function Hero() {
                   type="submit"
                   className="shrink-0 px-6 py-2.5 rounded-full text-sm font-bold text-white bg-brand-primary hover:bg-brand-primary/90 hover:scale-[1.03] active:scale-95 transition-all duration-300 ease-in-out cursor-pointer"
                 >
-                  Plan My Trip
+                  {t("planTrip")}
                 </button>
               </form>
             </div>
@@ -131,7 +133,7 @@ export default function Hero() {
                 href="#packages"
                 className="text-sm font-bold text-brand-dark underline decoration-brand-primary decoration-2 underline-offset-4 hover:text-brand-primary transition-colors"
               >
-                Browse all packages
+                {t("browsePackages")}
               </a>
             </div>
           </div>

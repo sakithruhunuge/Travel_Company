@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import ProfileCard from "@/components/dashboard/ProfileCard";
 import SettingsCard from "@/components/dashboard/SettingsCard";
+import { useTranslations } from "next-intl";
 
 type SessionUser = {
     name?: string | null;
@@ -23,6 +24,7 @@ export default function ProfilePage() {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const t = useTranslations("Dashboard.Profile");
 
     useEffect(() => {
         if (session?.user) {
@@ -45,11 +47,11 @@ export default function ProfilePage() {
                 body: JSON.stringify({ name, image }),
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Failed to update profile");
+            if (!res.ok) throw new Error(data.error || t("error"));
             await update();
-            setMessage("Profile updated successfully.");
+            setMessage(t("success"));
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to update profile");
+            setError(err instanceof Error ? err.message : t("error"));
         } finally {
             setLoading(false);
         }
@@ -66,11 +68,11 @@ export default function ProfilePage() {
             />
 
             <form onSubmit={handleUpdateProfile} className="space-y-6">
-                <SettingsCard title="Profile details" description="Update your public profile information.">
+                <SettingsCard title={t("title")} description={t("description")}>
                     <div className="grid gap-4 md:grid-cols-2">
                         <div>
                             <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-slate-500">
-                                Full name
+                                {t("fullName")}
                             </label>
                             <input
                                 value={name}
@@ -80,7 +82,7 @@ export default function ProfilePage() {
                         </div>
                         <div>
                             <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-slate-500">
-                                Email
+                                {t("email")}
                             </label>
                             <input
                                 value={session?.user?.email || ""}
@@ -90,7 +92,7 @@ export default function ProfilePage() {
                         </div>
                         <div className="md:col-span-2">
                             <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-brand-muted">
-                                Profile photo URL
+                                {t("photoUrl")}
                             </label>
                             <input
                                 value={image}
@@ -106,7 +108,7 @@ export default function ProfilePage() {
                             disabled={loading}
                             className="rounded-lg bg-brand-primary px-5 py-2.5 text-sm font-medium text-white transition-colors duration-200 hover:bg-brand-primary/90 disabled:cursor-not-allowed disabled:bg-brand-light/40"
                         >
-                            {loading ? "Saving..." : "Save changes"}
+                            {loading ? t("saving") : t("saveChanges")}
                         </button>
                     </div>
                     {message ? <p className="mt-4 text-sm font-medium text-brand-secondary">{message}</p> : null}

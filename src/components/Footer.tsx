@@ -1,11 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations, useLocale } from "next-intl";
 import { useTenant } from "@/context/TenantBrandingContext";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
   const tenant = useTenant();
+  const locale = useLocale();
+  const t = useTranslations("Footer");
+  const tNav = useTranslations("Navbar");
 
   return (
     <footer className="bg-brand-dark text-brand-muted py-16 border-t border-white/10 scroll-mt-20">
@@ -13,7 +17,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* Dynamic Brand Info */}
           <div className="space-y-4">
-            <Link href="/" className="inline-block transition-all duration-300 ease-in-out hover:opacity-80">
+            <Link href={`/${locale}`} className="inline-block transition-all duration-300 ease-in-out hover:opacity-80">
               {tenant.branding?.logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -28,33 +32,34 @@ export default function Footer() {
               )}
             </Link>
             <p className="text-sm leading-relaxed text-brand-muted">
-              {tenant.branding?.tagline ||
-                "Crafting premium travel experiences and lifelong memories. Explore the world's most breathtaking destinations with our dedicated team of travel experts."}
+              {tenant.branding?.tagline || t("desc")}
             </p>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Explore</h3>
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">
+              {t("explore")}
+            </h3>
             <ul className="space-y-3">
               <li>
                 <a href="#home" className="text-sm hover:text-brand-primary transition-all duration-300 ease-in-out">
-                  Home
+                  {tNav("home")}
                 </a>
               </li>
               <li>
                 <a href="#about" className="text-sm hover:text-brand-primary transition-all duration-300 ease-in-out">
-                  About
+                  {tNav("about")}
                 </a>
               </li>
               <li>
                 <a href="#packages" className="text-sm hover:text-brand-primary transition-all duration-300 ease-in-out">
-                  Packages
+                  {tNav("packages")}
                 </a>
               </li>
               <li>
                 <a href="#why-choose-us" className="text-sm hover:text-brand-primary transition-all duration-300 ease-in-out">
-                  Why Choose Us
+                  {tNav("whyChooseUs")}
                 </a>
               </li>
             </ul>
@@ -62,30 +67,44 @@ export default function Footer() {
 
           {/* Business Hours */}
           <div>
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Business Hours</h3>
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">
+              {t("hours.title")}
+            </h3>
             <ul className="space-y-3 text-sm">
-              <li>Monday - Friday: 9:00 AM - 6:00 PM</li>
-              <li>Saturday: 10:00 AM - 4:00 PM</li>
-              <li>Sunday: Closed</li>
+              <li>{t("hours.monFri")}</li>
+              <li>{t("hours.sat")}</li>
+              <li>{t("hours.sun")}</li>
             </ul>
           </div>
 
           {/* Contacts info */}
           <div>
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Contact Info</h3>
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">
+              {t("contact.title")}
+            </h3>
             <ul className="space-y-3 text-sm">
-              <li>Colombo, Sri Lanka</li>
-              <li>Email: contact@{tenant.slug}.travelcompany.com</li>
-              <li>Phone: +94 11 234 5678</li>
+              <li>
+                <span className="block text-white font-semibold">{t("contact.address")}:</span>
+                Colombo, Sri Lanka
+              </li>
+              <li>
+                <span className="block text-white font-semibold">{t("contact.phone")}:</span>
+                +94 11 234 5678
+              </li>
+              <li>
+                <span className="block text-white font-semibold">{t("contact.email")}:</span>
+                contact@{tenant.slug || "ceylon"}.travelcompany.com
+              </li>
             </ul>
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-xs">
-          <p>&copy; {currentYear} {tenant.name}. All rights reserved.</p>
-          <div className="flex gap-6">
-            <a href="#" className="hover:text-white transition-all">Privacy Policy</a>
-            <a href="#" className="hover:text-white transition-all">Terms of Service</a>
+        {/* Bottom Bar */}
+        <div className="mt-16 pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs">
+          <p>&copy; {currentYear} {tenant.name || "Ceylon Travel"}. {t("rights")}</p>
+          <div className="flex space-x-6">
+            <a href="#" className="hover:text-brand-primary transition-all duration-300 ease-in-out">{t("privacy")}</a>
+            <a href="#" className="hover:text-brand-primary transition-all duration-300 ease-in-out">{t("terms")}</a>
           </div>
         </div>
       </div>

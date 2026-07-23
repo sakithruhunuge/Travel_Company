@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 
 type ProfileCardProps = {
     name: string;
@@ -9,6 +10,7 @@ type ProfileCardProps = {
 };
 
 export default function ProfileCard({ name, email, image, provider, createdAt }: ProfileCardProps) {
+    const t = useTranslations("Dashboard.Profile");
     return (
         <div className="rounded-2xl bg-white/60 backdrop-blur-sm p-6 border border-slate-200">
             <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
@@ -24,10 +26,10 @@ export default function ProfileCard({ name, email, image, provider, createdAt }:
                     <p className="text-sm text-brand-muted">{email}</p>
                     <div className="mt-3 flex flex-wrap justify-center gap-2 sm:justify-start">
                         <span className="rounded-md border border-white/10 bg-white/10 px-2.5 py-1 text-xs font-medium uppercase tracking-wider text-brand-dark">
-                            {provider === "google" ? "Google" : "Email/Password"}
+                            {provider === "google" ? "Google" : t("emailPassword")}
                         </span>
                         <span className="rounded-md border border-brand-secondary/20 bg-brand-secondary/10 px-2.5 py-1 text-xs font-medium text-brand-secondary">
-                            Joined {new Date(createdAt).toLocaleDateString()}
+                            {t("joined")} {new Date(createdAt).toLocaleDateString()}
                         </span>
                     </div>
                 </div>

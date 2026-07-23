@@ -1,8 +1,11 @@
 "use client";
 
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 
 export default function About() {
+  const t = useTranslations("About");
+
   return (
     <section id="about" className="py-24 bg-white scroll-mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -59,34 +62,34 @@ export default function About() {
           {/* Text Content (Right) */}
           <div className="lg:col-span-6 space-y-6 text-left animate-fade-in-up" style={{ animationDelay: "250ms", animationFillMode: "both" }}>
             <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">
-              Wonder of Asia
+              {t("wonder")}
             </span>
             <h2 className="text-3xl sm:text-5xl font-black text-brand-dark tracking-tight leading-tight">
-              Why Visit Sri Lanka?
+              {t("title")}
             </h2>
             <p className="text-base text-brand-muted leading-relaxed">
-              Sri Lanka is an island paradise packing diverse, breathtaking travel experiences into a compact destination. Known as the &quot;Pearl of the Indian Ocean,&quot; it caters to every type of global traveler.
+              {t("description")}
             </p>
             <div className="space-y-4 pt-2">
               <div className="flex gap-4 group transition-all duration-300 ease-in-out">
                 <div className="w-10 h-10 rounded-2xl bg-brand-primary/10 border border-brand-primary/20 flex-shrink-0 flex items-center justify-center font-bold text-brand-primary group-hover:scale-110 transition-all duration-300 ease-in-out">1</div>
                 <div>
-                  <h4 className="text-sm font-bold text-brand-dark">Ancient World Heritage</h4>
-                  <p className="text-xs text-brand-muted mt-1">Explore over 2,500 years of civilization, featuring 8 UNESCO World Heritage Sites including Sigiriya and Kandy.</p>
+                  <h4 className="text-sm font-bold text-brand-dark">{t("heritage.title")}</h4>
+                  <p className="text-xs text-brand-muted mt-1">{t("heritage.desc")}</p>
                 </div>
               </div>
               <div className="flex gap-4 group transition-all duration-300 ease-in-out">
                 <div className="w-10 h-10 rounded-2xl bg-brand-secondary/10 border border-brand-secondary/20 flex-shrink-0 flex items-center justify-center font-bold text-brand-secondary group-hover:scale-110 transition-all duration-300 ease-in-out">2</div>
                 <div>
-                  <h4 className="text-sm font-bold text-brand-dark">Scenic Misty mountains</h4>
-                  <p className="text-xs text-brand-muted mt-1">Ride the world-famous blue train through cascading tea estates, green hills, and waterfalls in Ella and Nuwara Eliya.</p>
+                  <h4 className="text-sm font-bold text-brand-dark">{t("highlands.title")}</h4>
+                  <p className="text-xs text-brand-muted mt-1">{t("highlands.desc")}</p>
                 </div>
               </div>
               <div className="flex gap-4 group transition-all duration-300 ease-in-out">
                 <div className="w-10 h-10 rounded-2xl bg-brand-primary/10 border border-brand-primary/20 flex-shrink-0 flex items-center justify-center font-bold text-brand-primary group-hover:scale-110 transition-all duration-300 ease-in-out">3</div>
                 <div>
-                  <h4 className="text-sm font-bold text-brand-dark">Rich Wildlife Safaris</h4>
-                  <p className="text-xs text-brand-muted mt-1">Embark on open jeep safaris in Yala or Udawalawe to see high leopard densities, sloth bears, and giant elephant herds.</p>
+                  <h4 className="text-sm font-bold text-brand-dark">{t("wildlife.title")}</h4>
+                  <p className="text-xs text-brand-muted mt-1">{t("wildlife.desc")}</p>
                 </div>
               </div>
             </div>

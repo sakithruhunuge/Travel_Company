@@ -5,12 +5,10 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslations, useLocale } from "next-intl";
+import { useCurrency } from "@/context/CurrencyContext";
 import {
   calculateTripPricing,
-  HOTEL_LABELS,
-  TRANSPORT_LABELS,
-  SEASON_LABELS,
-  ADDONS_LABELS,
   PricingInputs,
 } from "@/lib/pricingEngine";
 import { useToast } from "@/context/ToastContext";
@@ -48,37 +46,40 @@ const LOCATIONS: MapLocation[] = [
 const BASE_TOURS = [
   {
     id: "cultural-triangle",
-    name: "Ancient Cultural Triangle",
+    nameKey: "cultural",
+    descKey: "culturalDesc",
     duration: 5,
     destinations: ["Colombo", "Dambulla", "Sigiriya", "Kandy"],
-    desc: "A 5-day historic route visiting ancient capitals and temples.",
   },
   {
     id: "southern-beach",
-    name: "Southern Beach & Wildlife Safari",
+    nameKey: "southern",
+    descKey: "southernDesc",
     duration: 6,
     destinations: ["Colombo", "Bentota", "Galle", "Yala"],
-    desc: "A 6-day coastal escape focusing on sun, history, and safari.",
   },
   {
     id: "hill-country",
-    name: "Hill Country Scenic Trail",
+    nameKey: "hill",
+    descKey: "hillDesc",
     duration: 6,
     destinations: ["Kandy", "Nuwara Eliya", "Ella", "Galle"],
-    desc: "A 6-day misty mountain loops, train tours, and waterfalls.",
   },
   {
     id: "custom",
-    name: "Custom Tailor-Made Route",
+    nameKey: "custom",
+    descKey: "customDesc",
     duration: 7,
     destinations: ["Colombo"],
-    desc: "Build your own itinerary from scratch utilizing the map pins.",
   },
 ];
 
 export default function InteractiveTourCustomizer() {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
+  const locale = useLocale();
+  const t = useTranslations("CustomizeTour");
+  const { formatPrice, currency } = useCurrency();
   const { addToast } = useToast();
 
   // Inputs state
@@ -108,7 +109,7 @@ export default function InteractiveTourCustomizer() {
   const polylineRef = useRef<any>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
 
-  // 1. Load draft from sessionStorage on mount
+  // Load draft from sessionStorage on mount
   useEffect(() => {
     try {
       const saved = sessionStorage.getItem("tour_customizer_draft");
@@ -118,14 +119,13 @@ export default function InteractiveTourCustomizer() {
         if (parsed.preferredStartDate) setPreferredStartDate(parsed.preferredStartDate);
         if (parsed.specialRequests) setSpecialRequests(parsed.specialRequests);
         if (parsed.selectedTour) setSelectedTour(parsed.selectedTour);
-        // Clear draft from sessionStorage as required by directives
         sessionStorage.removeItem("tour_customizer_draft");
-        addToast("success", "Restored your custom trip draft details.");
+        addToast("success", t("customizedTourSaved"));
       }
     } catch (e) {
       console.warn("Failed to load tour customizer draft:", e);
     }
-  }, [addToast]);
+  }, [addToast, t]);
 
   // Toggle location selection
   const handleToggleLocation = (locId: string) => {
@@ -160,7 +160,7 @@ export default function InteractiveTourCustomizer() {
   // Calculate dynamic costs
   const pricing = calculateTripPricing(inputs);
 
-  // 2. SSR-Safe Client-side Leaflet Initialization
+  // SSR-Safe Client-side Leaflet Initialization
   useEffect(() => {
     let L: any;
     const initMap = async () => {
@@ -168,7 +168,6 @@ export default function InteractiveTourCustomizer() {
       // @ts-ignore
       await import("leaflet/dist/leaflet.css");
 
-      // Explicitly handle default icon asset pathing issues (from Execution Directives)
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
@@ -176,12 +175,11 @@ export default function InteractiveTourCustomizer() {
         shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
       });
 
-      if (mapRef.current) return; // already initialized
+      if (mapRef.current) return;
 
       const container = document.getElementById("sri-lanka-map");
       if (!container) return;
 
-      // Initialize Map
       const map = L.map("sri-lanka-map", {
         center: [7.8731, 80.7718],
         zoom: 7.5,
@@ -194,10 +192,8 @@ export default function InteractiveTourCustomizer() {
         attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(map);
 
-      // Initialize markers
       const markers: Record<string, any> = {};
       LOCATIONS.forEach((loc) => {
-        // Create custom popup element containing destination preview image
         const popupContent = document.createElement("div");
         popupContent.style.width = "180px";
         popupContent.className = "flex flex-col gap-2 p-1 text-slate-800 text-left font-sans";
@@ -223,7 +219,7 @@ export default function InteractiveTourCustomizer() {
 
         const btn = document.createElement("button");
         btn.className = "mt-2 py-1.5 w-full bg-slate-900 text-white rounded-lg font-bold text-[10px] uppercase text-center hover:bg-slate-800 transition select-none cursor-pointer";
-        btn.innerText = "Add to Route";
+        btn.innerText = t("addToRoute");
 
         popupContent.appendChild(imgContainer);
         popupContent.appendChild(title);
@@ -242,9 +238,8 @@ export default function InteractiveTourCustomizer() {
       });
       markersRef.current = markers;
 
-      // Initialize routing Polyline
       const polyline = L.polyline([], {
-        color: "#FF8B50", // Brand primary
+        color: "#FF8B50",
         weight: 4,
         dashArray: "5, 10",
       }).addTo(map);
@@ -265,7 +260,7 @@ export default function InteractiveTourCustomizer() {
     };
   }, []);
 
-  // 3. Sync React state changes to Leaflet layers dynamically (ensuring no stale closures)
+  // Sync React state changes to Leaflet layers dynamically
   useEffect(() => {
     if (!mapLoaded) return;
 
@@ -281,7 +276,7 @@ export default function InteractiveTourCustomizer() {
         if (content) {
           const btn = content.querySelector("button");
           if (btn) {
-            btn.innerText = isSelected ? "Remove Destination" : "Add to Route";
+            btn.innerText = isSelected ? t("removeFromRoute") : t("addToRoute");
             btn.className = isSelected
               ? "mt-2 py-1.5 w-full bg-rose-600 text-white rounded-lg font-bold text-[10px] uppercase text-center hover:bg-rose-500 transition select-none cursor-pointer"
               : "mt-2 py-1.5 w-full bg-slate-900 text-white rounded-lg font-bold text-[10px] uppercase text-center hover:bg-slate-800 transition select-none cursor-pointer";
@@ -294,7 +289,6 @@ export default function InteractiveTourCustomizer() {
       }
     });
 
-    // Update Polyline Path mapping
     if (polylineRef.current && mapRef.current) {
       const selectedCoords = inputs.destinations
         .map((id) => LOCATIONS.find((loc) => loc.id === id))
@@ -303,7 +297,7 @@ export default function InteractiveTourCustomizer() {
 
       polylineRef.current.setLatLngs(selectedCoords);
     }
-  }, [inputs.destinations, mapLoaded]);
+  }, [inputs.destinations, mapLoaded, t]);
 
   // Handle base tour template click
   const handleBaseTourChange = (tourId: string) => {
@@ -321,11 +315,11 @@ export default function InteractiveTourCustomizer() {
   const validateForm = () => {
     const tempErrors: Record<string, string> = {};
     if (!preferredStartDate) {
-      tempErrors.preferredStartDate = "Please select a preferred start date.";
+      tempErrors.preferredStartDate = t("selectStartDate");
     } else {
       const today = new Date().toISOString().split("T")[0];
       if (preferredStartDate < today) {
-        tempErrors.preferredStartDate = "Departure date must be in the future.";
+        tempErrors.preferredStartDate = t("futureDate");
       }
     }
     setErrors(tempErrors);
@@ -335,7 +329,7 @@ export default function InteractiveTourCustomizer() {
   // Submit customized booking
   const handleSubmitBooking = async () => {
     if (!validateForm()) {
-      addToast("error", "Please correct validation issues before booking.");
+      addToast("error", t("correctErrors"));
       return;
     }
 
@@ -349,8 +343,8 @@ export default function InteractiveTourCustomizer() {
         console.warn("Failed to store customizer state draft:", e);
       }
 
-      addToast("info", "Redirecting to secure login. Your configuration is preserved.");
-      router.push(`/login?callbackUrl=/customize-tour`);
+      addToast("info", t("redirectLogin"));
+      router.push(`/${locale}/login?callbackUrl=/${locale}/customize-tour`);
       return;
     }
 
@@ -358,8 +352,8 @@ export default function InteractiveTourCustomizer() {
     try {
       const selectedBaseTour = BASE_TOURS.find((t) => t.id === selectedTour);
       const packageName = selectedBaseTour
-        ? `Customized ${selectedBaseTour.name}`
-        : "Interactive Tailor-Made Tour";
+        ? `Customized ${t(`baseTours.${selectedBaseTour.nameKey}` as any)}`
+        : t("baseTours.custom");
 
       const payload = {
         packageId: selectedTour === "custom" ? "" : selectedTour,
@@ -383,7 +377,7 @@ export default function InteractiveTourCustomizer() {
       }
 
       setSubmitSuccess(true);
-      addToast("success", "Your customized Ceylon tour is saved.");
+      addToast("success", t("customizedTourSaved"));
       sessionStorage.removeItem("tour_customizer_draft");
     } catch (err) {
       console.error(err);
@@ -404,22 +398,22 @@ export default function InteractiveTourCustomizer() {
           <div className="mx-auto w-16 h-16 rounded-full bg-emerald-50 border-2 border-emerald-500/30 text-emerald-500 flex items-center justify-center text-3xl">
             <CheckOutlined />
           </div>
-          <h2 className="text-2xl font-black text-slate-900 leading-tight">Itinerary Saved!</h2>
+          <h2 className="text-2xl font-black text-slate-900 leading-tight">{t("itinerarySaved")}</h2>
           <p className="text-slate-550 text-sm leading-relaxed">
-            Your customized itinerary is successfully stored as a request in our databases. An agency coordinator will review the pricing breakdown and confirm your slots.
+            {t("savedDesc")}
           </p>
           <div className="pt-4 border-t border-slate-100 flex flex-col gap-3">
             <button
-              onClick={() => router.push("/dashboard/my-requests")}
+              onClick={() => router.push(`/${locale}/dashboard/my-requests`)}
               className="py-3 px-6 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm transition-all"
             >
-              View Dashboard Requests
+              {t("viewDashboardRequests")}
             </button>
             <button
               onClick={() => setSubmitSuccess(false)}
               className="py-3 px-6 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl font-bold text-sm transition-all"
             >
-              Configure Another Route
+              {t("configureAnother")}
             </button>
           </div>
         </motion.div>
@@ -438,13 +432,13 @@ export default function InteractiveTourCustomizer() {
         {/* Title Block */}
         <div className="space-y-3">
           <span className="text-xs font-black uppercase tracking-widest text-brand-primary">
-            Itinerary Architect
+            {t("subtitle")}
           </span>
           <h1 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight leading-none animate-fade-in-up">
-            Interactive Tour Customizer
+            {t("title")}
           </h1>
           <p className="text-slate-500 text-sm max-w-xl font-semibold animate-fade-in-up">
-            Choose a starting base tour, then use the live map pins to dynamically route destinations. Configure travelers, nights, and meals with instant estimates.
+            {t("description")}
           </p>
         </div>
 
@@ -457,7 +451,7 @@ export default function InteractiveTourCustomizer() {
             <section className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
               <h3 className="text-base font-black text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
                 <CompassOutlined className="text-brand-secondary" />
-                <span>1. Select Base Package Template</span>
+                <span>{t("step1")}</span>
               </h3>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -473,11 +467,11 @@ export default function InteractiveTourCustomizer() {
                           : "border-slate-200 bg-white"
                       }`}
                     >
-                      <span className="block text-sm font-extrabold text-slate-900">{tour.name}</span>
-                      <span className="block text-[11px] text-slate-500 mt-1 font-medium leading-normal">{tour.desc}</span>
+                      <span className="block text-sm font-extrabold text-slate-900">{t(`baseTours.${tour.nameKey}` as any)}</span>
+                      <span className="block text-[11px] text-slate-500 mt-1 font-medium leading-normal">{t(`baseTours.${tour.descKey}` as any)}</span>
                       {tour.id !== "custom" && (
                         <span className="inline-block mt-3 text-[10px] font-black text-brand-secondary bg-sky-100/50 px-2 py-0.5 rounded-md uppercase">
-                          {tour.duration} Days Base
+                          {t("baseDays", { duration: tour.duration })}
                         </span>
                       )}
                     </button>
@@ -492,21 +486,19 @@ export default function InteractiveTourCustomizer() {
                 <div>
                   <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                     <EnvironmentOutlined className="text-brand-secondary" />
-                    <span>2. Interactive Route Builder Map</span>
+                    <span>{t("step2")}</span>
                   </h3>
-                  <p className="text-[11px] text-slate-500 font-semibold mt-0.5">Click pins on the map to add/remove cities. Visual lines connect chosen routes in sequence.</p>
+                  <p className="text-[11px] text-slate-500 font-semibold mt-0.5">{t("mapInstruction")}</p>
                 </div>
-                <span className="text-xs font-black text-slate-400 uppercase">{inputs.destinations.length} Cities Selected</span>
+                <span className="text-xs font-black text-slate-400 uppercase">{t("citiesSelected", { count: inputs.destinations.length })}</span>
               </div>
 
               <div className="grid md:grid-cols-[1.2fr_0.8fr] gap-6 items-center">
                 
-                {/* Fixed, responsive Map container with Tailwind (h-96 w-full) */}
                 <div className="relative h-96 w-full rounded-2xl overflow-hidden shadow-sm border border-slate-200 bg-sky-50/30">
                   <div id="sri-lanka-map" className="w-full h-full z-10" />
                 </div>
 
-                {/* Info Card / Visual Preview details */}
                 <div className="space-y-4">
                   <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4 h-48 flex flex-col justify-between relative overflow-hidden">
                     <AnimatePresence mode="wait">
@@ -533,7 +525,7 @@ export default function InteractiveTourCustomizer() {
                             </div>
                           </div>
                           <span className="text-[9px] font-black text-brand-primary uppercase tracking-widest mt-2">
-                            Click Map Pin to Edit Route
+                            {t("clickPinEdit")}
                           </span>
                         </motion.div>
                       ) : (
@@ -544,15 +536,14 @@ export default function InteractiveTourCustomizer() {
                           className="h-full flex flex-col justify-center items-center text-center text-slate-400 space-y-2 p-4"
                         >
                           <EnvironmentOutlined className="text-xl" />
-                          <p className="text-xs font-semibold leading-normal">Hover over any pin to preview highlights.</p>
+                          <p className="text-xs font-semibold leading-normal">{t("hoverPin")}</p>
                         </motion.div>
                       )}
                     </AnimatePresence>
                   </div>
 
-                  {/* Destinations Queue */}
                   <div className="space-y-2">
-                    <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Your Active Route</span>
+                    <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider">{t("activeRoute")}</span>
                     <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pt-0.5">
                       {selectedLocs.map((loc, idx) => (
                         <div
@@ -580,7 +571,7 @@ export default function InteractiveTourCustomizer() {
             <section className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                 <TeamOutlined className="text-brand-secondary" />
-                <span>3. Travelers & Extra Nights</span>
+                <span>{t("step3")}</span>
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pt-2">
@@ -588,8 +579,8 @@ export default function InteractiveTourCustomizer() {
                 {/* Travelers Headcount */}
                 <div className="space-y-4">
                   <div className="flex justify-between items-baseline">
-                    <label className="text-xs font-black text-slate-700 uppercase tracking-wider">Travelers Headcount</label>
-                    <span className="text-base font-black text-brand-primary">{inputs.numberOfTravelers} Guests</span>
+                    <label className="text-xs font-black text-slate-700 uppercase tracking-wider">{t("travelersCount")}</label>
+                    <span className="text-base font-black text-brand-primary">{t("guests", { count: inputs.numberOfTravelers })}</span>
                   </div>
                   <input
                     type="range"
@@ -600,17 +591,17 @@ export default function InteractiveTourCustomizer() {
                     className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-primary"
                   />
                   <div className="flex justify-between text-[10px] text-slate-400 font-bold uppercase">
-                    <span>1 Guest</span>
-                    <span>10 Guests</span>
-                    <span>20 Guests</span>
+                    <span>{t("guest")}</span>
+                    <span>{t("guests", { count: 10 })}</span>
+                    <span>{t("guests", { count: 20 })}</span>
                   </div>
                 </div>
 
                 {/* Extra Nights */}
                 <div className="space-y-4">
                   <div className="flex justify-between items-baseline">
-                    <label className="text-xs font-black text-slate-700 uppercase tracking-wider">Extra Nights</label>
-                    <span className="text-base font-black text-brand-primary">+{inputs.extraNights} Nights</span>
+                    <label className="text-xs font-black text-slate-700 uppercase tracking-wider">{t("extraNights")}</label>
+                    <span className="text-base font-black text-brand-primary">{t("nights", { count: inputs.extraNights })}</span>
                   </div>
                   <input
                     type="range"
@@ -621,9 +612,9 @@ export default function InteractiveTourCustomizer() {
                     className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-primary"
                   />
                   <div className="flex justify-between text-[10px] text-slate-400 font-bold uppercase">
-                    <span>0 Nights</span>
-                    <span>7 Nights</span>
-                    <span>14 Nights</span>
+                    <span>{t("zeroNights")}</span>
+                    <span>{t("nights", { count: 7 })}</span>
+                    <span>{t("nights", { count: 14 })}</span>
                   </div>
                 </div>
 
@@ -634,13 +625,13 @@ export default function InteractiveTourCustomizer() {
             <section className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                 <CompassOutlined className="text-brand-secondary" />
-                <span>4. Choose Accommodation Level</span>
+                <span>{t("step4")}</span>
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {(["budget", "standard", "luxury", "premium-boutique"] as const).map((tier) => {
                   const isSelected = inputs.hotelClass === tier;
-                  const label = HOTEL_LABELS[tier];
+                  const tierKey = tier === "premium-boutique" ? "premiumBoutique" : tier;
                   return (
                     <button
                       key={tier}
@@ -652,7 +643,7 @@ export default function InteractiveTourCustomizer() {
                       }`}
                     >
                       <span className="block text-xs font-black text-slate-800 uppercase tracking-wider capitalize">{tier.replace("-", " ")}</span>
-                      <span className="block text-[10px] font-black text-brand-secondary uppercase mt-0.5">{label}</span>
+                      <span className="block text-[10px] font-black text-brand-secondary uppercase mt-0.5">{t(`hotelTiers.${tierKey}` as any)}</span>
                     </button>
                   );
                 })}
@@ -663,13 +654,13 @@ export default function InteractiveTourCustomizer() {
             <section className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                 <CompassOutlined className="text-brand-secondary" />
-                <span>5. Transport Mode</span>
+                <span>{t("step5")}</span>
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {(["self-drive", "private-driver", "first-class-train", "charter-flight"] as const).map((mode) => {
                   const isSelected = inputs.transportMode === mode;
-                  const label = TRANSPORT_LABELS[mode];
+                  const modeKey = mode === "self-drive" ? "selfDrive" : mode === "private-driver" ? "privateDriver" : mode === "first-class-train" ? "firstClassTrain" : "charterFlight";
                   return (
                     <button
                       key={mode}
@@ -681,7 +672,7 @@ export default function InteractiveTourCustomizer() {
                       }`}
                     >
                       <span className="block text-xs font-black text-slate-800 uppercase tracking-wider capitalize">{mode.replace("-", " ")}</span>
-                      <span className="block text-[10px] font-black text-brand-secondary uppercase mt-0.5">{label}</span>
+                      <span className="block text-[10px] font-black text-brand-secondary uppercase mt-0.5">{t(`transportModes.${modeKey}` as any)}</span>
                     </button>
                   );
                 })}
@@ -692,13 +683,12 @@ export default function InteractiveTourCustomizer() {
             <section className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                 <CoffeeOutlined className="text-brand-secondary" />
-                <span>6. Meal Add-ons & Extras</span>
+                <span>{t("step6")}</span>
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {(["breakfast", "dinner"] as const).map((addon) => {
                   const isSelected = inputs.addOns.includes(addon);
-                  const label = ADDONS_LABELS[addon];
                   return (
                     <button
                       key={addon}
@@ -711,7 +701,7 @@ export default function InteractiveTourCustomizer() {
                     >
                       <div>
                         <span className="block text-xs font-black text-slate-800 uppercase capitalize">{addon}</span>
-                        <span className="block text-[10px] text-slate-400 font-bold mt-0.5">{label}</span>
+                        <span className="block text-[10px] text-slate-400 font-bold mt-0.5">{t(`addOnLabels.${addon}` as any)}</span>
                       </div>
                       <div
                         className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold border transition ${
@@ -736,18 +726,23 @@ export default function InteractiveTourCustomizer() {
               <div className="absolute top-0 left-0 right-0 h-1.5 bg-brand-primary" />
 
               <h3 className="text-lg font-black text-slate-900 border-b border-slate-100 pb-4">
-                Summary & Custom Estimate
+                {t("summaryTitle")}
               </h3>
 
               {/* Selection Summary details */}
               <div className="space-y-4 pt-2">
                 <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 text-xs font-semibold space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-slate-400 uppercase text-[9px] font-bold">Base Selected</span>
-                    <span className="text-slate-850 font-black">{BASE_TOURS.find((t) => t.id === selectedTour)?.name}</span>
+                    <span className="text-slate-400 uppercase text-[9px] font-bold">{t("baseSelected")}</span>
+                    <span className="text-slate-850 font-black">
+                      {(() => {
+                        const tour = BASE_TOURS.find((t) => t.id === selectedTour);
+                        return tour ? t(`baseTours.${tour.nameKey}` as any) : t("baseTours.custom");
+                      })()}
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400 uppercase text-[9px] font-bold">Total Nights</span>
+                    <span className="text-slate-400 uppercase text-[9px] font-bold">{t("totalNights")}</span>
                     <span className="text-slate-850 font-black">{inputs.duration + inputs.extraNights} Nights</span>
                   </div>
                 </div>
@@ -756,45 +751,45 @@ export default function InteractiveTourCustomizer() {
               {/* Dynamic cost list */}
               <div className="mt-6 border-t border-slate-100 pt-6 space-y-3 text-xs font-semibold text-slate-550">
                 <div className="flex justify-between">
-                  <span>Base Cost ({inputs.duration} Days)</span>
-                  <span className="text-slate-800 font-bold">${pricing.baseCost.toLocaleString()}</span>
+                  <span>{t("baseCost", { duration: inputs.duration })}</span>
+                  <span className="text-slate-800 font-bold">{formatPrice(pricing.baseCost)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Hotel Surcharges ({inputs.duration + inputs.extraNights} Nights)</span>
-                  <span className="text-slate-800 font-bold">${pricing.accommodationCost.toLocaleString()}</span>
+                  <span>{t("hotelSurcharges", { nights: inputs.duration + inputs.extraNights })}</span>
+                  <span className="text-slate-800 font-bold">{formatPrice(pricing.accommodationCost)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Transportation logistics</span>
-                  <span className="text-slate-800 font-bold">${pricing.transportCost.toLocaleString()}</span>
+                  <span>{t("transportLogistics")}</span>
+                  <span className="text-slate-800 font-bold">{formatPrice(pricing.transportCost)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Destination ticket entries (${inputs.destinations.length} cities)</span>
-                  <span className="text-slate-800 font-bold">${pricing.destinationSurcharges.toLocaleString()}</span>
+                  <span>{t("destinationTickets", { count: inputs.destinations.length })}</span>
+                  <span className="text-slate-800 font-bold">{formatPrice(pricing.destinationSurcharges)}</span>
                 </div>
                 {pricing.addOnsCost > 0 && (
                   <div className="flex justify-between">
-                    <span>Meal Add-ons & Extras</span>
-                    <span className="text-slate-800 font-bold">${pricing.addOnsCost.toLocaleString()}</span>
+                    <span>{t("mealAddOns")}</span>
+                    <span className="text-slate-800 font-bold">{formatPrice(pricing.addOnsCost)}</span>
                   </div>
                 )}
                 {pricing.discount > 0 && (
                   <div className="flex justify-between text-emerald-600">
-                    <span>Group discount (-{(pricing.discountRate * 100).toFixed(0)}%)</span>
-                    <span>-${pricing.discount.toLocaleString()}</span>
+                    <span>{t("groupDiscount", { rate: (pricing.discountRate * 100).toFixed(0) })}</span>
+                    <span>-{formatPrice(pricing.discount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span>Local taxes & service fees (12%)</span>
-                  <span className="text-slate-800 font-bold">${pricing.taxes.toLocaleString()}</span>
+                  <span>{t("taxesFees")}</span>
+                  <span className="text-slate-800 font-bold">{formatPrice(pricing.taxes)}</span>
                 </div>
               </div>
 
               {/* Grand Total */}
               <div className="mt-6 border-t border-slate-100 pt-6 flex justify-between items-baseline">
-                <span className="text-sm font-black text-slate-900">Total Quote</span>
+                <span className="text-sm font-black text-slate-900">{t("totalQuote")}</span>
                 <div className="text-right">
-                  <span className="text-2xl font-black text-brand-secondary">${pricing.totalPrice.toLocaleString()}</span>
-                  <span className="text-xs text-slate-400 font-bold uppercase ml-1">USD</span>
+                  <span className="text-2xl font-black text-brand-secondary">{formatPrice(pricing.totalPrice)}</span>
+                  <span className="text-xs text-slate-400 font-bold uppercase ml-1.5">{currency}</span>
                 </div>
               </div>
 
@@ -804,7 +799,7 @@ export default function InteractiveTourCustomizer() {
                 {/* Preferred Date */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-700 uppercase flex items-center gap-1.5">
-                    <CalendarOutlined /> Departure Date
+                    <CalendarOutlined /> {t("departureDate")}
                   </label>
                   <input
                     type="date"
@@ -821,11 +816,11 @@ export default function InteractiveTourCustomizer() {
                 {/* Traveler Notes */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-700 uppercase">
-                    Traveler Preferences & Special Requests
+                    {t("travelerPreferences")}
                   </label>
                   <textarea
                     rows={3}
-                    placeholder="E.g. dietary instructions, airport pick-up flight info, hotel notes..."
+                    placeholder={t("placeholderPreferences")}
                     value={specialRequests}
                     onChange={(e) => setSpecialRequests(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-secondary text-xs font-semibold resize-none"
@@ -835,7 +830,7 @@ export default function InteractiveTourCustomizer() {
                 {sessionStatus !== "authenticated" && (
                   <div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-2xl flex items-start gap-2 text-amber-700 text-left text-[11px] leading-normal">
                     <InfoCircleOutlined className="text-sm mt-0.5" />
-                    <span>Planning as guest. Submit booking redirects to login to authorize your custom request.</span>
+                    <span>{t("planningAsGuest")}</span>
                   </div>
                 )}
 
@@ -849,10 +844,10 @@ export default function InteractiveTourCustomizer() {
                   }`}
                 >
                   {isSubmitting
-                    ? "Saving Quote..."
+                    ? t("savingQuote")
                     : sessionStatus !== "authenticated"
-                    ? "Sign In & Submit Booking"
-                    : "Submit Custom Booking Request"}
+                    ? t("signInSubmit")
+                    : t("submitCustom")}
                 </button>
               </div>
 

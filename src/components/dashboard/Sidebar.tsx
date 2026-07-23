@@ -20,6 +20,7 @@ import {
     TeamOutlined,
     LineChartOutlined,
 } from "@ant-design/icons";
+import { useLocale, useTranslations } from "next-intl";
 
 type SidebarProps = {
     onNavigate?: () => void;
@@ -30,6 +31,8 @@ type SidebarProps = {
 
 export default function Sidebar({ onNavigate, onLogout, isCollapsed = false, onToggleCollapse }: SidebarProps) {
     const pathname = usePathname();
+    const locale = useLocale();
+    const t = useTranslations("Dashboard.Sidebar");
     const { data: session } = useSession();
     const tenant = useTenant();
     const userRole = (session?.user as any)?.role;
@@ -38,41 +41,40 @@ export default function Sidebar({ onNavigate, onLogout, isCollapsed = false, onT
     const tenantSlug = rawSlug.endsWith("TRAVEL") ? rawSlug.slice(0, -6) : rawSlug;
     const initial = tenantSlug.charAt(0) || "C";
 
-    // Dynamically compile navigation links based on user context roles
     const menuItems = [
-        { href: "/", label: "Home", icon: HomeOutlined },
-        { href: "/dashboard", label: "Dashboard", icon: AppstoreOutlined },
+        { href: `/${locale}`, label: t("home"), icon: HomeOutlined },
+        { href: `/${locale}/dashboard`, label: t("dashboard"), icon: AppstoreOutlined },
     ];
 
     if (userRole === "tenant_admin") {
         menuItems.push(
-            { href: "/dashboard/packages", label: "Manage Packages", icon: GiftOutlined },
-            { href: "/dashboard/requests", label: "Approve Bookings", icon: CheckCircleOutlined },
-            { href: "/dashboard/branding", label: "Customizer", icon: BgColorsOutlined },
-            { href: "/dashboard/users", label: "Manage Users", icon: TeamOutlined },
-            { href: "/dashboard/analytics", label: "Analytics", icon: LineChartOutlined }
+            { href: `/${locale}/dashboard/packages`, label: "Manage Packages", icon: GiftOutlined },
+            { href: `/${locale}/dashboard/requests`, label: "Approve Bookings", icon: CheckCircleOutlined },
+            { href: `/${locale}/dashboard/branding`, label: "Customizer", icon: BgColorsOutlined },
+            { href: `/${locale}/dashboard/users`, label: "Manage Users", icon: TeamOutlined },
+            { href: `/${locale}/dashboard/analytics`, label: "Analytics", icon: LineChartOutlined }
         );
     } else {
         menuItems.push(
-            { href: "/dashboard/my-requests", label: "My Travel Requests", icon: SendOutlined },
-            { href: "/dashboard/request-history", label: "Request History", icon: HistoryOutlined }
+            { href: `/${locale}/dashboard/my-requests`, label: t("myRequests"), icon: SendOutlined },
+            { href: `/${locale}/dashboard/request-history`, label: t("requestHistory"), icon: HistoryOutlined }
         );
     }
 
     menuItems.push(
-        { href: "/dashboard/profile", label: "Profile", icon: UserOutlined },
-        { href: "/dashboard/settings", label: "Settings", icon: SettingOutlined }
+        { href: `/${locale}/dashboard/profile`, label: t("profile"), icon: UserOutlined },
+        { href: `/${locale}/dashboard/settings`, label: t("settings"), icon: SettingOutlined }
     );
 
     return (
         <aside className="flex h-full w-full flex-col bg-white/35 backdrop-blur-lg text-slate-700 border-r border-white/20 shadow-xl overflow-hidden">
             <div className={`px-4 py-6 border-b border-white/20 bg-white/10 flex ${isCollapsed ? "flex-col items-center gap-4" : "items-center justify-between"}`}>
                 {isCollapsed ? (
-                    <Link href="/" className="text-xl font-black tracking-wider text-brand-primary">
+                    <Link href={`/${locale}`} className="text-xl font-black tracking-wider text-brand-primary">
                         {initial}
                     </Link>
                 ) : (
-                    <Link href="/" className="flex items-center gap-2 group transition-all duration-300 ease-in-out">
+                    <Link href={`/${locale}`} className="flex items-center gap-2 group transition-all duration-300 ease-in-out">
                         <span className="text-base font-black tracking-wider text-slate-900 group-hover:text-brand-primary transition-all duration-300 ease-in-out">
                             {tenantSlug}<span className="text-brand-primary group-hover:text-brand-secondary transition-all duration-300 ease-in-out font-medium">TRAVEL</span>
                         </span>
@@ -91,9 +93,9 @@ export default function Sidebar({ onNavigate, onLogout, isCollapsed = false, onT
 
             <nav className="flex-grow overflow-y-auto space-y-1 px-3 py-6">
                 {menuItems.map((item) => {
-                    const isActive = item.href === "/" 
-                        ? pathname === "/" 
-                        : (pathname === item.href || (pathname.startsWith(item.href + "/") && item.href !== "/dashboard"));
+                    const isActive = item.href === `/${locale}` 
+                        ? pathname === `/${locale}` 
+                        : (pathname === item.href || (pathname.startsWith(item.href + "/") && item.href !== `/${locale}/dashboard`));
                     const Icon = item.icon;
 
                     return (
@@ -117,11 +119,11 @@ export default function Sidebar({ onNavigate, onLogout, isCollapsed = false, onT
             <div className="border-t border-white/20 bg-white/10 p-4 mt-auto">
                 <button
                     onClick={onLogout}
-                    title={isCollapsed ? "Logout" : undefined}
-                    className={`flex w-full items-center ${isCollapsed ? "justify-center px-2" : "gap-3.5 px-4"} rounded-xl py-3 text-sm font-semibold text-slate-650 hover:bg-white/30 hover:text-slate-900 transition-colors duration-200`}
+                    title={isCollapsed ? t("logout") : undefined}
+                    className={`flex w-full items-center ${isCollapsed ? "justify-center px-2" : "gap-3.5 px-4"} rounded-xl py-3 text-sm font-semibold text-slate-655 hover:bg-white/30 hover:text-slate-900 transition-colors duration-200`}
                 >
                     <LogoutOutlined className="text-base flex-shrink-0" />
-                    {!isCollapsed && <span>Logout</span>}
+                    {!isCollapsed && <span>{t("logout")}</span>}
                 </button>
             </div>
         </aside>

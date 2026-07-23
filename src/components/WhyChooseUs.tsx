@@ -1,6 +1,7 @@
 "use client";
 
 import { useTravelRequest } from "@/context/TravelRequestContext";
+import { useTranslations } from "next-intl";
 
 const sellingPoints = [
   {
@@ -61,6 +62,18 @@ const sellingPoints = [
 
 export default function WhyChooseUs() {
   const { openFormModal } = useTravelRequest();
+  const t = useTranslations("WhyChooseUs");
+
+  const getPointKey = (index: number) => {
+    if (index === 0) return "experts";
+    if (index === 1) return "hotels";
+    if (index === 2) return "transport";
+    if (index === 3) return "itineraries";
+    if (index === 4) return "assistance";
+    if (index === 5) return "support";
+    return "";
+  };
+
   return (
     <section id="why-choose-us" className="py-24 bg-brand-light scroll-mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -68,13 +81,13 @@ export default function WhyChooseUs() {
           {/* Text Info (Left) */}
           <div className="lg:col-span-5 space-y-6 text-left animate-fade-in-up">
             <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">
-              Our Advantages
+              {t("tagline")}
             </span>
             <h2 className="text-3xl sm:text-5xl font-black text-brand-dark tracking-tight leading-tight">
-              Why Travelers Choose Horizon Travel
+              {t("title")}
             </h2>
             <p className="text-base text-brand-muted leading-relaxed">
-              Planning a trip to Sri Lanka shouldn&apos;t be stressful. We bridge the gap between dream itineraries and flawless execution, giving you complete freedom to enjoy your travels.
+              {t("description")}
             </p>
             <div className="pt-2">
               <button
@@ -82,7 +95,7 @@ export default function WhyChooseUs() {
                 onClick={() => openFormModal()}
                 className="inline-flex px-8 py-4 rounded-full text-sm font-bold text-white bg-brand-primary hover:bg-brand-primary/90 shadow-[0_8px_30px_rgb(255,139,80,0.3)] hover:shadow-[0_12px_36px_rgb(255,139,80,0.4)] hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out cursor-pointer"
               >
-                Plan Your Escapes
+                {t("cta")}
               </button>
             </div>
           </div>
@@ -90,21 +103,27 @@ export default function WhyChooseUs() {
           {/* Grid Cards (Right) */}
           <div className="lg:col-span-7">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {sellingPoints.map((point, index) => (
-                <div
-                  key={index}
-                  className="bg-white/80 backdrop-blur-lg p-8 rounded-3xl border border-white/60 shadow-lg space-y-4 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 ease-in-out text-left animate-fade-in-up"
-                  style={{ animationDelay: `${150 + index * 80}ms`, animationFillMode: "both" }}
-                >
-                  <div className="w-12 h-12 rounded-2xl bg-brand-primary/10 flex items-center justify-center transition-all duration-300 ease-in-out group-hover:scale-110">
-                    {point.icon}
+              {sellingPoints.map((point, index) => {
+                const pointKey = getPointKey(index);
+                const title = pointKey ? t(`points.${pointKey}.title`) : point.title;
+                const description = pointKey ? t(`points.${pointKey}.desc`) : point.description;
+
+                return (
+                  <div
+                    key={index}
+                    className="bg-white/80 backdrop-blur-lg p-8 rounded-3xl border border-white/60 shadow-lg space-y-4 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 ease-in-out text-left animate-fade-in-up"
+                    style={{ animationDelay: `${150 + index * 80}ms`, animationFillMode: "both" }}
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-brand-primary/10 flex items-center justify-center transition-all duration-300 ease-in-out group-hover:scale-110">
+                      {point.icon}
+                    </div>
+                    <h3 className="text-base font-bold text-brand-dark">{title}</h3>
+                    <p className="text-xs text-brand-muted leading-relaxed">
+                      {description}
+                    </p>
                   </div>
-                  <h3 className="text-base font-bold text-brand-dark">{point.title}</h3>
-                  <p className="text-xs text-brand-muted leading-relaxed">
-                    {point.description}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

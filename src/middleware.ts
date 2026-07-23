@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import createMiddleware from 'next-intl/middleware';
 import { resolveTenant, TenantNotFoundError, TenantSuspendedError } from "./lib/tenantResolver";
+
+const intlMiddleware = createMiddleware({
+  locales: ['en', 'fr', 'de', 'si'],
+  defaultLocale: 'en'
+});
 
 export async function middleware(request: NextRequest) {
   const url = request.nextUrl;
@@ -14,11 +20,39 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Handle API routes with tenant resolution only
+  if (url.pathname.startsWith("/api")) {
+    try {
+      const origin = url.origin;
+      const tenant = await resolveTenant({ hostname, origin });
+      const requestHeaders = new Headers(request.headers);
+      if (tenant.id) {
+        requestHeaders.set("x-tenant-id", tenant.id);
+      }
+      requestHeaders.set("x-tenant-slug", tenant.slug);
+      return NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      });
+    } catch (error) {
+      if (error instanceof TenantSuspendedError) {
+        return new NextResponse("Account Suspended", { status: 403 });
+      }
+      if (error instanceof TenantNotFoundError) {
+        return new NextResponse("Portal Not Found", { status: 404 });
+      }
+      return NextResponse.next();
+    }
+  }
+
+  // Run locale routing middleware for page requests
+  const response = intlMiddleware(request);
+
   try {
     const origin = url.origin;
     const tenant = await resolveTenant({ hostname, origin });
 
-    // If super admin portal, internally rewrite all page routes to /admin single-page component (excluding API endpoints)
     if (tenant.isAdmin) {
       if (!url.pathname.startsWith("/api")) {
         url.pathname = "/admin";
@@ -26,13 +60,19 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    // Attach tenant context to downstream headers
+    if (response) {
+      if (tenant.id) {
+        response.headers.set("x-tenant-id", tenant.id);
+      }
+      response.headers.set("x-tenant-slug", tenant.slug);
+      return response;
+    }
+
     const requestHeaders = new Headers(request.headers);
     if (tenant.id) {
       requestHeaders.set("x-tenant-id", tenant.id);
     }
     requestHeaders.set("x-tenant-slug", tenant.slug);
-
     return NextResponse.next({
       request: {
         headers: requestHeaders,
@@ -282,14 +322,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api/tenant/resolve (tenant resolution API)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - images/ (public images)
-     */
     "/((?!api/tenant/resolve|_next/static|_next/image|favicon.ico|images).*)",
   ],
 };

@@ -5,6 +5,8 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/context/ToastContext";
 import Link from "next/link";
+import { useLocale } from "next-intl";
+import { useCurrency } from "@/context/CurrencyContext";
 import { parseRequestPricing } from "@/lib/pricingParser";
 
 interface TravelRequestData {
@@ -18,8 +20,10 @@ interface TravelRequestData {
 }
 
 export default function MyRequestsPage() {
-  const { status: sessionStatus } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
+  const locale = useLocale();
+  const { formatPriceString } = useCurrency();
   const [requests, setRequests] = useState<TravelRequestData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -27,9 +31,9 @@ export default function MyRequestsPage() {
 
   useEffect(() => {
     if (sessionStatus === "unauthenticated") {
-      router.push("/login?callbackUrl=/my-requests");
+      router.push(`/${locale}/login?callbackUrl=/${locale}/my-requests`);
     }
-  }, [sessionStatus, router]);
+  }, [sessionStatus, router, locale]);
 
   useEffect(() => {
     if (sessionStatus === "authenticated") {
@@ -81,7 +85,7 @@ export default function MyRequestsPage() {
             <p className="text-sm text-slate-500 mt-1">Track the status of your customized Sri Lanka travel itineraries.</p>
           </div>
           <Link
-            href="/plan-trip"
+            href={`/${locale}/customize-tour`}
             className="inline-flex items-center justify-center px-6 py-3 bg-brand-primary text-white text-sm font-extrabold rounded-xl hover:bg-brand-primary/95 hover:shadow-lg hover:shadow-brand-primary/25 transition-all duration-200 self-start sm:self-auto"
           >
             Plan Another Trip
@@ -112,7 +116,7 @@ export default function MyRequestsPage() {
               </p>
             </div>
             <Link
-              href="/plan-trip"
+              href={`/${locale}/customize-tour`}
               className="inline-flex px-6 py-3 bg-brand-primary text-white text-sm font-bold rounded-xl hover:bg-brand-primary/95 transition-all"
             >
               Plan Your First Trip

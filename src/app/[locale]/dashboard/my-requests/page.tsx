@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import RequestCard, { type RequestCardData } from "@/components/dashboard/RequestCard";
 import LoadingSkeleton from "@/components/dashboard/LoadingSkeleton";
 import EmptyState from "@/components/dashboard/EmptyState";
+import { useTranslations } from "next-intl";
 
 export default function MyRequestsPage() {
     const [requests, setRequests] = useState<RequestCardData[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [cancellingId, setCancellingId] = useState<string | null>(null);
+    const t = useTranslations("Dashboard.MyRequests");
 
     const loadRequests = async () => {
         try {
@@ -45,21 +47,21 @@ export default function MyRequestsPage() {
     return (
         <div className="space-y-6">
             <div className="rounded-xl border border-brand-light/70 bg-brand-light p-6 shadow-[0_2px_8px_rgb(0,0,0,0.04)]">
-                <p className="text-xs font-medium uppercase tracking-wider text-brand-muted">Travel Requests</p>
-                <h2 className="mt-1 text-xl font-semibold text-brand-dark">My Travel Requests</h2>
+                <p className="text-xs font-medium uppercase tracking-wider text-brand-muted">{t("category")}</p>
+                <h2 className="mt-1 text-xl font-semibold text-brand-dark">{t("title")}</h2>
                 <p className="mt-1 text-sm text-brand-muted">
-                    Track your pending, approved, and cancelled journeys.
+                    {t("description")}
                 </p>
             </div>
 
             {loading ? (
                 <LoadingSkeleton />
             ) : error ? (
-                <EmptyState title="Unable to load requests" description={error} />
+                <EmptyState title={t("unableLoad")} description={error} />
             ) : requests.length === 0 ? (
                 <EmptyState
-                    title="No travel requests yet"
-                    description="Submit a request through the travel form to see it appear here."
+                    title={t("noRequestsYet")}
+                    description={t("submitRequestDesc")}
                 />
             ) : (
                 <div className="grid gap-4">

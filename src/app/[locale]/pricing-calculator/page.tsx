@@ -15,6 +15,8 @@ import {
   PricingInputs,
 } from "@/lib/pricingEngine";
 import { useToast } from "@/context/ToastContext";
+import { useCurrency } from "@/context/CurrencyContext";
+import { useLocale } from "next-intl";
 import {
   CheckOutlined,
   CalendarOutlined,
@@ -39,6 +41,8 @@ const AVAILABLE_DESTINATIONS = [
 export default function PricingCalculatorPage() {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
+  const locale = useLocale();
+  const { formatPrice, currency } = useCurrency();
   const { addToast } = useToast();
 
   // 1. Calculator State Inputs
@@ -542,35 +546,35 @@ export default function PricingCalculatorPage() {
               <div className="mt-6 border-t border-slate-100 pt-6 space-y-3.5 text-sm font-semibold">
                 <div className="flex justify-between items-center text-slate-500">
                   <span>Base Rate ($50/day/traveler)</span>
-                  <span className="text-slate-800 font-bold">${breakdown.baseCost.toLocaleString()}</span>
+                  <span className="text-slate-800 font-bold">{formatPrice(breakdown.baseCost)}</span>
                 </div>
                 <div className="flex justify-between items-center text-slate-500">
                   <span>Accommodation surcharge</span>
-                  <span className="text-slate-800 font-bold">${breakdown.accommodationCost.toLocaleString()}</span>
+                  <span className="text-slate-800 font-bold">{formatPrice(breakdown.accommodationCost)}</span>
                 </div>
                 <div className="flex justify-between items-center text-slate-500">
                   <span>Transportation costs</span>
-                  <span className="text-slate-800 font-bold">${breakdown.transportCost.toLocaleString()}</span>
+                  <span className="text-slate-800 font-bold">{formatPrice(breakdown.transportCost)}</span>
                 </div>
                 <div className="flex justify-between items-center text-slate-500">
                   <span>Destination ticket entry fees</span>
-                  <span className="text-slate-800 font-bold">${breakdown.destinationSurcharges.toLocaleString()}</span>
+                  <span className="text-slate-800 font-bold">{formatPrice(breakdown.destinationSurcharges)}</span>
                 </div>
                 {breakdown.activityCost > 0 && (
                   <div className="flex justify-between items-center text-slate-500">
                     <span>Selected add-on activities</span>
-                    <span className="text-slate-800 font-bold">${breakdown.activityCost.toLocaleString()}</span>
+                    <span className="text-slate-800 font-bold">{formatPrice(breakdown.activityCost)}</span>
                   </div>
                 )}
                 {breakdown.discount > 0 && (
                   <div className="flex justify-between items-center text-emerald-600">
                     <span>Group discount ({(breakdown.discountRate * 100).toFixed(0)}%)</span>
-                    <span className="font-bold">-${breakdown.discount.toLocaleString()}</span>
+                    <span className="font-bold">-{formatPrice(breakdown.discount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center text-slate-500">
                   <span>Local taxes & service charge (12%)</span>
-                  <span className="text-slate-800 font-bold">${breakdown.taxes.toLocaleString()}</span>
+                  <span className="text-slate-800 font-bold">{formatPrice(breakdown.taxes)}</span>
                 </div>
               </div>
 
@@ -578,8 +582,8 @@ export default function PricingCalculatorPage() {
               <div className="mt-6 border-t border-slate-100 pt-6 flex justify-between items-baseline">
                 <span className="text-base font-black text-slate-900">Total Price</span>
                 <div className="text-right">
-                  <span className="text-3xl font-black text-brand-secondary">${breakdown.totalPrice.toLocaleString()}</span>
-                  <span className="text-xs text-slate-400 font-bold uppercase ml-1">USD</span>
+                  <span className="text-3xl font-black text-brand-secondary">{formatPrice(breakdown.totalPrice)}</span>
+                  <span className="text-xs text-slate-400 font-bold uppercase ml-1.5">{currency}</span>
                 </div>
               </div>
 
