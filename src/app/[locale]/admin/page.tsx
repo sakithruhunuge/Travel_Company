@@ -315,7 +315,7 @@ export default function SuperAdminPage() {
             Active Operator: {session.user.name}
           </span>
           <button
-            onClick={() => signOut({ callbackUrl: `${window.location.origin}/` })}
+            onClick={() => signOut({ callbackUrl: `${window.location.origin}/login` })}
             className="px-4.5 py-1.5 bg-slate-800 hover:bg-red-900/40 text-xs font-bold rounded-full text-slate-300 hover:text-red-400 transition"
           >
             Logout

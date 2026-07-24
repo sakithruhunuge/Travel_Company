@@ -49,13 +49,21 @@ export async function middleware(request: NextRequest) {
   // Run locale routing middleware for page requests
   const response = intlMiddleware(request);
 
+  // If next-intl redirects (e.g. to add the locale prefix), return the redirect immediately
+  if (response && response.status >= 300 && response.status < 400) {
+    return response;
+  }
+
   try {
     const origin = url.origin;
     const tenant = await resolveTenant({ hostname, origin });
 
     if (tenant.isAdmin) {
       if (!url.pathname.startsWith("/api")) {
-        url.pathname = "/admin";
+        const segments = url.pathname.split("/");
+        const locales = ['en', 'fr', 'de', 'si'];
+        const locale = locales.includes(segments[1]) ? segments[1] : 'en';
+        url.pathname = `/${locale}/admin`;
         return NextResponse.rewrite(url);
       }
     }
