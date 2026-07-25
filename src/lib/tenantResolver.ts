@@ -128,7 +128,7 @@ export async function resolveTenant(options: {
       ? `slug=${encodeURIComponent(parsed.slug)}`
       : `customDomain=${encodeURIComponent(parsed.customDomain || "")}`;
 
-    const baseUrl = origin || "http://localhost:3000";
+    const baseUrl = process.env.TENANT_RESOLVER_ORIGIN || origin || "http://localhost:3000";
     const res = await fetch(`${baseUrl}/api/tenant/resolve?${queryParams}`);
 
     if (res.status === 404) {
