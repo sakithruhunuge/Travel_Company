@@ -89,11 +89,13 @@ def find_and_load_env():
                 k, v = k.strip(), v.strip()
                 if (v.startswith('"') and v.endswith('"')) or (v.startswith("'") and v.endswith("'")):
                     v = v[1:-1]
-                if k == "SCRAPER_DB_URI" or (k == "MONGODB_URI" and "MONGODB_URI" not in os.environ):
+                if k == "SCRAPER_DB_URI":
+                    os.environ["SCRAPER_DB_URI"] = v
                     os.environ["MONGODB_URI"] = v
 
 find_and_load_env()
-if "MONGODB_URI" not in os.environ:
+if "SCRAPER_DB_URI" not in os.environ or "37.60.226.84" in os.environ.get("SCRAPER_DB_URI", ""):
+    os.environ["SCRAPER_DB_URI"] = "mongodb://localhost:27017/srilanka_travel"
     os.environ["MONGODB_URI"] = "mongodb://localhost:27017/srilanka_travel"
 
 # --------------------------------------------------------------------------
