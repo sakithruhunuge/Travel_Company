@@ -21,19 +21,63 @@ export default function Packages() {
   const { openFormModal } = useTravelRequest();
   const { formatPriceString } = useCurrency();
   const t = useTranslations("Packages");
+
   const [packages, setPackages] = useState<TravelPackage[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchPackages = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Primary API endpoint: FastAPI Backend Gateway
+      const res = await fetch("http://localhost:8000/api/v1/packages");
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      const data = await res.json();
+      
+      const rawList = data.packages || data || [];
+      const normalized: TravelPackage[] = rawList.map((doc: any, idx: number) => ({
+        id: doc.package_id || doc._id || doc.id || `pkg_${idx}`,
+        name: doc.title || doc.name || "Curated Travel Package",
+        duration: doc.duration_days 
+          ? `${doc.duration_days} Days / ${doc.duration_days - 1} Nights`
+          : doc.duration || "4 Days / 3 Nights",
+        destinations: Array.isArray(doc.destinations) 
+          ? doc.destinations 
+          : [doc.destination || "Sri Lanka"],
+        includes: Array.isArray(doc.includes) && doc.includes.length > 0
+          ? doc.includes
+          : ["Luxury Accommodation", "Private Transport & Driver", "Breakfast & Dining", "Guided Sightseeing"],
+        image: doc.image_url || doc.image || "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=1200&q=80",
+        priceRange: doc.price_usd ? `$${doc.price_usd} USD` : doc.priceRange || "$450 USD",
+        rating: doc.rating ? String(doc.rating) : "4.9"
+      }));
+
+      setPackages(normalized);
+    } catch (err: any) {
+      console.warn("FastAPI backend fetch failed; trying fallback /api/packages endpoint...", err);
+      try {
+        // Fallback to local Next.js route
+        const fallbackRes = await fetch("/api/packages");
+        if (!fallbackRes.ok) throw new Error("Fallback fetch failed");
+        const fallbackData = await fallbackRes.json();
+        if (fallbackData.packages && fallbackData.packages.length > 0) {
+          setPackages(fallbackData.packages);
+        } else {
+          setError("Failed to load travel packages. Please check your connection and try again.");
+        }
+      } catch (fallbackErr) {
+        setError("Unable to connect to travel package server. Please refresh or try again later.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetch("/api/packages")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.packages) {
-          setPackages(data.packages);
-        }
-      })
-      .catch((err) => console.error("Failed to load packages:", err))
-      .finally(() => setIsLoading(false));
+    fetchPackages();
   }, []);
 
   return (
@@ -52,12 +96,38 @@ export default function Packages() {
           </p>
         </div>
 
-        {/* Loaders and Grid */}
+        {/* Loaders, Errors, and Package Grid */}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[1, 2, 3].map((n) => (
-              <div key={n} className="bg-slate-50 border border-slate-100 rounded-3xl h-96 animate-pulse" />
+              <div
+                key={n}
+                className="bg-slate-50 border border-slate-100 rounded-3xl h-[480px] p-6 flex flex-col justify-between animate-pulse"
+              >
+                <div className="bg-slate-200 h-52 rounded-2xl w-full mb-4" />
+                <div className="space-y-3">
+                  <div className="bg-slate-200 h-6 w-3/4 rounded-md" />
+                  <div className="bg-slate-200 h-4 w-1/2 rounded-md" />
+                  <div className="bg-slate-200 h-4 w-full rounded-md" />
+                </div>
+                <div className="bg-slate-200 h-12 rounded-full w-full mt-4" />
+              </div>
             ))}
+          </div>
+        ) : error ? (
+          <div className="max-w-lg mx-auto bg-amber-50 border border-amber-200 rounded-3xl p-8 text-center space-y-4">
+            <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">
+              ⚠️
+            </div>
+            <h3 className="text-lg font-bold text-amber-900">Service Temporarily Unavailable</h3>
+            <p className="text-sm text-amber-700">{error}</p>
+            <button
+              type="button"
+              onClick={fetchPackages}
+              className="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-full text-sm transition-all cursor-pointer shadow-md"
+            >
+              Try Again
+            </button>
           </div>
         ) : packages.length === 0 ? (
           <div className="text-center py-12">

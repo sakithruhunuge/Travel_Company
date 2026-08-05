@@ -12,6 +12,7 @@ import {
   PricingInputs,
 } from "@/lib/pricingEngine";
 import { useToast } from "@/context/ToastContext";
+import ItineraryDisplay from "@/components/ItineraryDisplay";
 import {
   CheckOutlined,
   CalendarOutlined,
@@ -74,7 +75,11 @@ const BASE_TOURS = [
   },
 ];
 
-export default function InteractiveTourCustomizer() {
+interface InteractiveTourCustomizerProps {
+  onSubmit?: (payload: any) => Promise<void>;
+}
+
+export default function InteractiveTourCustomizer({ onSubmit }: InteractiveTourCustomizerProps = {}) {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
   const locale = useLocale();
@@ -98,6 +103,9 @@ export default function InteractiveTourCustomizer() {
 
   const [preferredStartDate, setPreferredStartDate] = useState<string>("");
   const [specialRequests, setSpecialRequests] = useState<string>("");
+
+  const [generatedMarkdown, setGeneratedMarkdown] = useState<string | null>(null);
+  const [isGeneratingAI, setIsGeneratingAI] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitSuccess, setSubmitSuccess] = useState<boolean>(false);
   const [hoveredLocation, setHoveredLocation] = useState<MapLocation | null>(null);
@@ -179,6 +187,10 @@ export default function InteractiveTourCustomizer() {
 
       const container = document.getElementById("sri-lanka-map");
       if (!container) return;
+
+      if ((container as any)._leaflet_id) {
+        (container as any)._leaflet_id = null;
+      }
 
       const map = L.map("sri-lanka-map", {
         center: [7.8731, 80.7718],
@@ -333,6 +345,22 @@ export default function InteractiveTourCustomizer() {
       return;
     }
 
+    const payload = {
+      user_id: session?.user?.id || (session?.user?.email ? String(session.user.email) : "guest_user"),
+      package_id: selectedTour === "custom" ? null : selectedTour,
+      selected_place_ids: inputs.destinations || [],
+      prompt: specialRequests 
+        ? `${specialRequests} (Destinations: ${inputs.destinations.join(", ")})`
+        : `Customized Sri Lanka tour visiting ${inputs.destinations.join(", ")}`,
+      budget_tier: inputs.hotelClass === "luxury" ? "Luxury" : inputs.hotelClass === "budget" ? "Budget" : "Standard",
+      duration_days: inputs.duration || 5
+    };
+
+    if (onSubmit) {
+      await onSubmit(payload);
+      return;
+    }
+
     if (sessionStatus !== "authenticated") {
       try {
         sessionStorage.setItem(
@@ -424,6 +452,17 @@ export default function InteractiveTourCustomizer() {
   const selectedLocs = inputs.destinations
     .map((destId) => LOCATIONS.find((loc) => loc.id === destId))
     .filter((loc): loc is MapLocation => !!loc);
+
+  if (generatedMarkdown) {
+    return (
+      <div className="min-h-screen py-16 px-4">
+        <ItineraryDisplay
+          markdownContent={generatedMarkdown}
+          onReset={() => setGeneratedMarkdown(null)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-tr from-slate-50 via-sky-50/20 to-indigo-50/30 py-16 px-4 sm:px-6 lg:px-8">

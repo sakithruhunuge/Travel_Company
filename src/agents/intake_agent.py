@@ -98,68 +98,56 @@ OFF_TOPIC_PATTERNS = [
     r"sing\s+a\s+song",
     r"write\s+an?\s+essay",
     r"crypto\s+price",
-    r"stock\s+market"
-]
-
-# Common travel keywords to validate legitimate travel intent
-TRAVEL_KEYWORDS = [
-    "travel", "trip", "tour", "hotel", "resort", "beach", "temple", "visit", 
-    "stay", "vacation", "holiday", "itinerary", "flight", "place", "sightseeing",
-    "galle", "colombo", "bentota", "kandy", "dambulla", "ella", "sigiriya",
-    "mirissa", "trincomalee", "nuwara eliya", "jaffna", "yala", "budget",
-    "luxury", "standard", "pool", "view", "nature", "safari", "fort", "food"
+    r"sql\s+query"
 ]
 
 
 def is_security_threat_or_off_topic(text: str) -> bool:
     """
-    Evaluates input text for prompt injection attempts, system overrides, or off-topic requests.
+    Evaluates input text against security injection patterns and off-topic domain filters.
     """
     if not text or not isinstance(text, str):
         return False
-        
-    lower_text = text.lower()
 
-    # Check for prompt injection patterns
+    clean_text = text.strip()
+
     for pattern in PROMPT_INJECTION_PATTERNS:
-        if re.search(pattern, lower_text, re.I):
-            logger.warning(f"Security Shield Triggered: Prompt injection pattern detected ('{pattern}')")
+        if re.search(pattern, clean_text, re.I):
+            logger.warning(f"Security shield triggered! Prompt injection pattern matched: '{pattern}'")
             return True
 
-    # Check for off-topic non-travel requests
     for pattern in OFF_TOPIC_PATTERNS:
-        if re.search(pattern, lower_text, re.I):
-            logger.warning(f"Security Shield Triggered: Off-topic request detected ('{pattern}')")
-            return True
-
-    # If text is long and lacks any travel-related terms, evaluate as potential off-topic
-    words = lower_text.strip().split()
-    if len(words) >= 6:
-        has_travel_term = any(kw in lower_text for kw in TRAVEL_KEYWORDS)
-        has_destination = any(dest.lower() in lower_text for dest in KNOWN_DESTINATIONS)
-        if not has_travel_term and not has_destination:
-            logger.warning("Security Shield Triggered: Input lacks travel/geospatial domain context.")
+        if re.search(pattern, clean_text, re.I):
+            logger.warning(f"Off-topic shield triggered! Non-travel pattern matched: '{pattern}'")
             return True
 
     return False
 
 
-def extract_destination(text: str, fallback: Optional[str] = None) -> str:
+def extract_all_destinations(text: str, fallback: Optional[Union[str, List[str]]] = None) -> List[str]:
     """
-    Extracts target Sri Lankan destination city/region from input text or fallback payload.
+    Extracts ALL target Sri Lankan destination cities/regions mentioned in input text or fallback.
+    Supports multi-destination prompts (e.g. 'Galle and Kandy').
     """
-    if fallback and isinstance(fallback, str) and fallback.strip():
-        for dest in KNOWN_DESTINATIONS:
-            if dest.lower() == fallback.strip().lower():
-                return dest
-        return fallback.strip().title()
+    found: List[str] = []
+
+    if fallback:
+        if isinstance(fallback, list):
+            for item in fallback:
+                if str(item).strip() and str(item).strip().title() not in found:
+                    found.append(str(item).strip().title())
+        elif isinstance(fallback, str) and fallback.strip():
+            found.append(fallback.strip().title())
 
     if text and isinstance(text, str):
         for dest in KNOWN_DESTINATIONS:
             if re.search(r"\b" + re.escape(dest) + r"\b", text, re.I):
-                return dest
+                if dest not in found:
+                    found.append(dest)
 
-    return "Colombo"
+    if not found:
+        return ["Colombo"]
+    return found
 
 
 def extract_budget_tier(text: str, fallback: Optional[str] = None) -> str:
@@ -204,13 +192,7 @@ def parse_intake_submission(submission: Union[Dict[str, Any], str]) -> str:
     """
     Agent 1: Intake & Security Router.
     Parses user web submission or raw prompt, sanitizes input against security threats,
-    and returns a structured raw JSON string with required travel parameters.
-
-    Parameters:
-        submission (Dict or str): User web submission payload or prompt string.
-
-    Returns:
-        str: Raw JSON object or {"error": "Invalid travel request."}
+    and extracts all target travel parameters (supporting multi-destination prompts).
     """
     error_response = json.dumps({"error": "Invalid travel request."}, indent=2)
 
@@ -242,8 +224,9 @@ def parse_intake_submission(submission: Union[Dict[str, Any], str]) -> str:
     if is_security_threat_or_off_topic(combined_text):
         return error_response
 
-    # Rule 2: PARAMETER EXTRACTION
-    destination = extract_destination(combined_text, fallback=provided_dest)
+    # Rule 2: MULTI-DESTINATION PARAMETER EXTRACTION
+    dest_list = extract_all_destinations(combined_text, fallback=provided_dest)
+    destination = ", ".join(dest_list)
 
     if package_template and not isinstance(package_template, str):
         package_template = str(package_template)
@@ -255,10 +238,13 @@ def parse_intake_submission(submission: Union[Dict[str, Any], str]) -> str:
     else:
         selected_place_ids = [str(pid) for pid in selected_place_ids if pid]
 
+    for d in dest_list:
+        if d not in selected_place_ids:
+            selected_place_ids.append(d)
+
     budget_tier = extract_budget_tier(combined_text, fallback=provided_budget)
     duration_days = extract_duration_days(combined_text, fallback=provided_duration)
 
-    # Construct vibe_query: concatenate user prompt + preferred attributes
     attrs_str = ", ".join(preferred_attrs) if isinstance(preferred_attrs, list) and preferred_attrs else ""
     if user_prompt and attrs_str:
         vibe_query = f"{user_prompt}, {attrs_str}"
@@ -269,24 +255,16 @@ def parse_intake_submission(submission: Union[Dict[str, Any], str]) -> str:
     else:
         vibe_query = f"{destination} tour"
 
-    result_payload = {
+    structured_output = {
         "destination": destination,
-        "package_template": package_template,
-        "selected_place_ids": selected_place_ids,
+        "destinations_list": dest_list,
         "budget_tier": budget_tier,
         "duration_days": duration_days,
-        "vibe_query": vibe_query
+        "vibe_query": vibe_query,
+        "package_template": package_template,
+        "selected_place_ids": selected_place_ids,
+        "sanitized_prompt": user_prompt
     }
 
-    # Rule 3: OUTPUT ONLY RAW JSON
-    return json.dumps(result_payload, indent=2)
-
-
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(description="Test Agent 1: Intake & Security Router")
-    parser.add_argument("--prompt", type=str, default="I want a 4-day budget trip to Galle with quiet beach and seafood", help="User prompt")
-    args = parser.parse_args()
-
-    result = parse_intake_submission(args.prompt)
-    print(result)
+    logger.info(f"Agent 1 Intake successfully parsed parameters: destinations={dest_list}, budget='{budget_tier}', duration={duration_days}")
+    return json.dumps(structured_output, indent=2)
