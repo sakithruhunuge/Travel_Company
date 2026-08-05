@@ -218,9 +218,9 @@ export default function SuperAdminPage() {
     .sa-search{display:flex;align-items:center;gap:7px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:7px;padding:6px 12px;color:#94a3b8;font-size:12.5px;cursor:text;transition:border .15s}
     .sa-search:hover{border-color:#c7d0dc}
     .sa-kbd{font-size:10px;color:#c7d0dc;background:#f1f5f9;border-radius:4px;padding:1px 6px;margin-left:8px}
-    .sa-icon-btn{width:34px;height:34px;border-radius:7px;background:#f8fafc;border:1.5px solid #e2e8f0;display:flex;align-items:center;justify-content:center;color:#64748b;cursor:pointer;transition:all .15s;flex-shrink:0}
+    .sa-icon-btn{width:34px;height:34px;border-radius:7px;background:transparent;border:none;display:flex;align-items:center;justify-content:center;color:#64748b;cursor:pointer;transition:all .15s;flex-shrink:0}
     .sa-icon-btn:hover{background:#f1f5f9;border-color:#c7d0dc}
-    .sa-profile{display:flex;align-items:center;gap:9px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:9px;padding:5px 12px 5px 7px;cursor:pointer;transition:background .15s}
+    .sa-profile{display:flex;align-items:center;gap:9px;background:transparent;border:none;border-radius:9px;padding:5px 12px 5px 7px;cursor:pointer;transition:background .15s}
     .sa-profile:hover{background:#f1f5f9}
     .sa-profile-av{width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;flex-shrink:0}
     .sa-profile-name{font-size:12.5px;font-weight:700;color:#1e293b}
@@ -370,8 +370,11 @@ export default function SuperAdminPage() {
         <div className="sa-main">
           <header className="sa-topbar">
             <div className="sa-search" style={{ minWidth: '350px', justifyContent: 'space-between' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-              Search<span className="sa-kbd">⌘ + F</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                Search
+              </div>
+              <span className="sa-kbd">⌘ + F</span>
             </div>
             <div className="sa-topbar-right">
               <div className="sa-icon-btn">
@@ -588,7 +591,7 @@ export default function SuperAdminPage() {
                 const aMax = Math.max(...topAgencies.map(d => d.cust));
                 const lW = 340, lH = 155;
                 const rowH = lH / topAgencies.length;
-                const labelW = 110, numW = 44;
+                const labelW = 140, numW = 44;
                 const trackW = lW - labelW - numW;
 
                 return (
