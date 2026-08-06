@@ -177,6 +177,202 @@ def compute_cosine_similarity(query_embedding: np.ndarray, doc_embedding: Any) -
     return similarity
 
 
+DESTINATION_FALLBACK_POIS = {
+    "kandy": [
+        {
+            "id": "kandy-tooth-relic",
+            "source_id": "kandy-tooth-relic",
+            "name": "Temple of the Sacred Tooth Relic (Sri Dalada Maligawa)",
+            "city": "Kandy",
+            "address": "Royal Palace Complex, Kandy",
+            "rating": 4.9,
+            "review_count": 1420,
+            "popularity_index": 0.98,
+            "categories": ["Culture", "UNESCO Heritage", "Temple"],
+            "airport_distance_km": 105.0,
+            "airport_travel_time_min": 150.0,
+            "description": "Sri Lanka's most sacred Buddhist temple housing the sacred tooth relic of Lord Buddha.",
+            "images": ["/images/kandy.png"],
+            "ticket_price_usd": 15.0
+        },
+        {
+            "id": "kandy-peradeniya-gardens",
+            "source_id": "kandy-peradeniya-gardens",
+            "name": "Royal Botanical Gardens Peradeniya",
+            "city": "Kandy",
+            "address": "Peradeniya Road, Kandy",
+            "rating": 4.8,
+            "review_count": 980,
+            "popularity_index": 0.92,
+            "categories": ["Nature", "Gardens", "Park"],
+            "airport_distance_km": 100.0,
+            "airport_travel_time_min": 140.0,
+            "description": "Renowned botanical garden famous for its collection of orchids, giant bamboo, and palm avenues.",
+            "images": ["/images/kandy.png"],
+            "ticket_price_usd": 10.0
+        }
+    ],
+    "yala": [
+        {
+            "id": "yala-national-park-safari",
+            "source_id": "yala-national-park-safari",
+            "name": "Yala National Park Wildlife Safari",
+            "city": "Yala",
+            "address": "Yala Sanctuary, Tissamaharama",
+            "rating": 4.9,
+            "review_count": 2100,
+            "popularity_index": 0.99,
+            "categories": ["Wildlife", "Safari", "National Park"],
+            "airport_distance_km": 240.0,
+            "airport_travel_time_min": 240.0,
+            "description": "Famous wildlife park renowned for having one of the highest leopard densities in the world.",
+            "images": ["/images/yala.png"],
+            "ticket_price_usd": 35.0
+        },
+        {
+            "id": "yala-sithulpawwa-temple",
+            "source_id": "yala-sithulpawwa-temple",
+            "name": "Sithulpawwa Rock Temple",
+            "city": "Yala",
+            "address": "Yala National Park Complex",
+            "rating": 4.7,
+            "review_count": 450,
+            "popularity_index": 0.85,
+            "categories": ["History", "Rock Temple", "Culture"],
+            "airport_distance_km": 245.0,
+            "airport_travel_time_min": 250.0,
+            "description": "Ancient 2nd-century BC monastic complex built on massive rock formations deep within Yala.",
+            "images": ["/images/yala.png"],
+            "ticket_price_usd": 5.0
+        }
+    ],
+    "galle": [
+        {
+            "id": "galle-dutch-fort",
+            "source_id": "galle-dutch-fort",
+            "name": "Historic Galle Dutch Fort & Lighthouse",
+            "city": "Galle",
+            "address": "Church Street, Galle Fort",
+            "rating": 4.9,
+            "review_count": 3100,
+            "popularity_index": 0.98,
+            "categories": ["UNESCO Heritage", "History", "Fort"],
+            "airport_distance_km": 150.0,
+            "airport_travel_time_min": 130.0,
+            "description": "UNESCO World Heritage Site featuring 16th-century Portuguese and Dutch colonial ramparts.",
+            "images": ["/images/galle.png"],
+            "ticket_price_usd": 0.0
+        },
+        {
+            "id": "galle-unawatuna-beach",
+            "source_id": "galle-unawatuna-beach",
+            "name": "Unawatuna Beach & Jungle Beach",
+            "city": "Galle",
+            "address": "Unawatuna Bay, Galle",
+            "rating": 4.8,
+            "review_count": 1850,
+            "popularity_index": 0.94,
+            "categories": ["Beach", "Nature", "Water Sports"],
+            "airport_distance_km": 152.0,
+            "airport_travel_time_min": 135.0,
+            "description": "Picturesque golden horseshoe bay famous for calm turquoise waters, coral reefs, and beach cafes.",
+            "images": ["/images/galle.png"],
+            "ticket_price_usd": 0.0
+        }
+    ],
+    "sigiriya": [
+        {
+            "id": "sigiriya-rock-fortress",
+            "source_id": "sigiriya-rock-fortress",
+            "name": "Sigiriya Ancient Rock Fortress",
+            "city": "Sigiriya",
+            "address": "Sigiriya Road, Dambulla",
+            "rating": 5.0,
+            "review_count": 5200,
+            "popularity_index": 1.0,
+            "categories": ["UNESCO Heritage", "Archaeology", "History"],
+            "airport_distance_km": 145.0,
+            "airport_travel_time_min": 180.0,
+            "description": "World-famous 5th-century ancient citadel perched atop a 200-meter sheer granite peak.",
+            "images": ["/images/sigiriya.png"],
+            "ticket_price_usd": 30.0
+        }
+    ],
+    "dambulla": [
+        {
+            "id": "dambulla-cave-temple",
+            "source_id": "dambulla-cave-temple",
+            "name": "Dambulla Royal Cave Temple & Golden Temple",
+            "city": "Dambulla",
+            "address": "Kandy-Jaffna Highway, Dambulla",
+            "rating": 4.8,
+            "review_count": 2800,
+            "popularity_index": 0.96,
+            "categories": ["UNESCO Heritage", "Cave Temple", "Culture"],
+            "airport_distance_km": 130.0,
+            "airport_travel_time_min": 160.0,
+            "description": "Best-preserved cave temple complex in Sri Lanka featuring 153 Buddha statues and ancient murals.",
+            "images": ["/images/dambulla.png"],
+            "ticket_price_usd": 12.0
+        }
+    ],
+    "ella": [
+        {
+            "id": "ella-nine-arch-bridge",
+            "source_id": "ella-nine-arch-bridge",
+            "name": "Demodara Nine Arch Bridge",
+            "city": "Ella",
+            "address": "Gotuwala, Ella",
+            "rating": 4.9,
+            "review_count": 3400,
+            "popularity_index": 0.97,
+            "categories": ["Scenery", "Architecture", "Photography"],
+            "airport_distance_km": 200.0,
+            "airport_travel_time_min": 210.0,
+            "description": "Iconic colonial-era viaduct bridge surrounded by lush green tea hills and cloud forests.",
+            "images": ["/images/nine_arch.png"],
+            "ticket_price_usd": 0.0
+        }
+    ],
+    "nuwara eliya": [
+        {
+            "id": "nuwara-eliya-tea-factory",
+            "source_id": "nuwara-eliya-tea-factory",
+            "name": "Ceylon Tea Plantation & Pedro Tea Estate",
+            "city": "Nuwara Eliya",
+            "address": "Grand Hotel Road, Nuwara Eliya",
+            "rating": 4.8,
+            "review_count": 1600,
+            "popularity_index": 0.93,
+            "categories": ["Tea Estate", "Scenery", "Heritage"],
+            "airport_distance_km": 155.0,
+            "airport_travel_time_min": 190.0,
+            "description": "High-altitude tea plantation tour demonstrating the authentic process of crafting Ceylon Tea.",
+            "images": ["/images/tea.png"],
+            "ticket_price_usd": 5.0
+        }
+    ],
+    "bentota": [
+        {
+            "id": "bentota-beach-watersports",
+            "source_id": "bentota-beach-watersports",
+            "name": "Bentota River Safari & Golden Beach",
+            "city": "Bentota",
+            "address": "Bentota Coastal Strip, Bentota",
+            "rating": 4.8,
+            "review_count": 1400,
+            "popularity_index": 0.91,
+            "categories": ["Beach", "Water Sports", "River Safari"],
+            "airport_distance_km": 110.0,
+            "airport_travel_time_min": 90.0,
+            "description": "Prime coastal paradise for jet-skiing, boat safaris along the Madu Ganga mangrove lagoon, and relaxing.",
+            "images": ["/images/bentota.png"],
+            "ticket_price_usd": 15.0
+        }
+    ]
+}
+
+
 def search_travel_database(
     destination: str,
     budget_tier: Optional[str] = None,
@@ -263,15 +459,26 @@ def search_travel_database(
             name = doc.get("name") or ""
             
             # Note: Do NOT match on text_blob to avoid false positives (e.g. 'Distance to Colombo airport')
+            if destination.lower() != "colombo" and "colombo" in (name + " " + city).lower():
+                continue
+
             if (dest_pattern.search(city) or dest_pattern.search(address) or 
                 dest_pattern.search(district) or dest_pattern.search(province) or
                 dest_pattern.search(name)):
                 filtered_hotels.append(doc)
                 
-        # Fallback to all matching budget hotels if strict city match returns fewer than 3
-        if len(filtered_hotels) < 3 and all_hotels:
-            logger.info(f"Strict destination match returned {len(filtered_hotels)} hotels; falling back to broader candidate pool.")
-            filtered_hotels = all_hotels
+        if len(filtered_hotels) < 3:
+            logger.info(f"Strict destination match returned {len(filtered_hotels)} hotels; searching broader destination pool.")
+            broader_cursor = mongo.db["hotels"].find(base_filter)
+            existing_ids = {str(h.get("_id")) for h in filtered_hotels}
+            for doc in broader_cursor:
+                city = doc.get("city") or ""
+                address = doc.get("address") or ""
+                district = doc.get("district") or ""
+                name = doc.get("name") or ""
+                if str(doc.get("_id")) not in existing_ids:
+                    if (dest_pattern.search(city) or dest_pattern.search(address) or dest_pattern.search(district) or dest_pattern.search(name)):
+                        filtered_hotels.append(doc)
     else:
         filtered_hotels = all_hotels
 
@@ -347,9 +554,18 @@ def search_travel_database(
                 dest_pattern.search(name)):
                 filtered_pois.append(doc)
 
-        if len(filtered_pois) < 5 and all_pois:
-            logger.info(f"Strict destination match returned {len(filtered_pois)} POIs; falling back to broader candidate pool.")
-            filtered_pois = all_pois
+        # Supplement with curated destination landmarks if database POIs are fewer than 5
+        dest_key = destination.strip().lower() if destination else ""
+        city_fallbacks = []
+        for key, fb_items in DESTINATION_FALLBACK_POIS.items():
+            if key in dest_key or dest_key in key:
+                city_fallbacks.extend(fb_items)
+
+        if city_fallbacks:
+            existing_ids = {p.get("id") or str(p.get("_id")) for p in filtered_pois}
+            for fb_item in city_fallbacks:
+                if fb_item["id"] not in existing_ids:
+                    filtered_pois.append(fb_item)
     else:
         filtered_pois = all_pois
 

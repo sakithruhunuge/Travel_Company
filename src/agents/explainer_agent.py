@@ -173,6 +173,32 @@ def extract_suggested_places_by_destination(agent2_data: Dict[str, Any]) -> Dict
                         if not primary_image:
                             primary_image = clean_url
 
+            if not primary_image or "photos.app.goo.gl" in primary_image:
+                name_lower = p.get("name", "").lower()
+                dest_lower = dest.lower()
+                if "sigiriya" in name_lower or "sigiriya" in dest_lower:
+                    primary_image = "/images/sigiriya.png"
+                elif "yala" in name_lower or "yala" in dest_lower:
+                    primary_image = "/images/yala.png"
+                elif "kandy" in name_lower or "kandy" in dest_lower or "tooth" in name_lower or "malwathu" in name_lower:
+                    primary_image = "/images/kandy.png"
+                elif "galle" in name_lower or "galle" in dest_lower:
+                    primary_image = "/images/galle.png"
+                elif "dambulla" in name_lower or "dambulla" in dest_lower:
+                    primary_image = "/images/dambulla.png"
+                elif "ella" in name_lower or "ella" in dest_lower or "arch" in name_lower:
+                    primary_image = "/images/nine_arch.png"
+                elif "tea" in name_lower or "nuwara" in dest_lower or "eliya" in dest_lower:
+                    primary_image = "/images/tea.png"
+                elif "bentota" in name_lower or "bentota" in dest_lower:
+                    primary_image = "/images/bentota.png"
+                elif "mirissa" in name_lower or "mirissa" in dest_lower:
+                    primary_image = "/images/mirissa.png"
+                elif "colombo" in name_lower or "colombo" in dest_lower:
+                    primary_image = "/images/colombo.png"
+                else:
+                    primary_image = "/images/colombo.png"
+
             formatted_poi.append({
                 "id": str(p.get("id") or p.get("_id") or p.get("name")),
                 "name": p.get("name", "Cultural Landmark"),
