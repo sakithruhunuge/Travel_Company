@@ -1,8 +1,9 @@
 import os
 import sys
 import json
+import logging
 import importlib
-from typing import Union, Dict, Any, Optional
+from typing import Union, Dict, Any, List
 
 # --------------------------------------------------------------------------
 # 1. DYNAMIC SYS.PATH & VENV SITE-PACKAGES RESOLUTION
@@ -53,36 +54,27 @@ proj_root = os.path.dirname(os.path.dirname(curr_file_dir))
 if proj_root not in sys.path:
     sys.path.append(proj_root)
 
+# Import Search Tool
+try:
+    search_mod = importlib.import_module("src.tools.search_tool")
+    search_travel_database = search_mod.search_travel_database
+except Exception as e:
+    raise ImportError(f"Failed to import search_travel_database from src.tools.search_tool: {e}")
+
 # Resilient Logger Import
 try:
     logger_mod = importlib.import_module("src.utils.logger")
     logger = logger_mod.logger
 except Exception:
-    import logging
     logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
     logger = logging.getLogger("retrieval_agent")
-
-# Dynamic Search Tool Import
-try:
-    search_mod = importlib.import_module("src.tools.search_tool")
-    search_travel_database = search_mod.search_travel_database
-except Exception as e:
-    logger.error(f"Failed to import search_travel_database: {e}")
-    def search_travel_database(**kwargs):
-        return json.dumps({"error": "Search tool unavailable", "hotels": [], "poi": []})
 
 
 def execute_retrieval_agent(agent1_output: Union[Dict[str, Any], str]) -> str:
     """
-    Agent 2: Data Retrieval Searcher.
-    Receives structured intake payload from Agent 1, invokes search_travel_database over SCRAPER_DB,
-    applies intelligent budget-tier fallbacks if results are empty, and packages data for Agent 3.
-
-    Parameters:
-        agent1_output (Dict or str): Output from Agent 1 (JSON string or dictionary).
-
-    Returns:
-        str: Consolidated raw JSON string ready for Agent 3.
+    Agent 2: Multi-Destination Information Retrieval Searcher.
+    Loops through ordered destinations from Agent 1, querying Database 1 for each city independently
+    and applying budget-tier fallback logic per city.
     """
     logger.info("Executing Agent 2: Data Retrieval Searcher...")
 
@@ -105,85 +97,110 @@ def execute_retrieval_agent(agent1_output: Union[Dict[str, Any], str]) -> str:
         return json.dumps(params, indent=2)
 
     # 2. Extract Travel Parameters
-    destination = params.get("destination", "Colombo")
+    destinations = params.get("destinations")
+    if not destinations or not isinstance(destinations, list):
+        destinations = [params.get("destination", "Colombo")]
+
     budget_tier = params.get("budget_tier")
     vibe_query = params.get("vibe_query", "")
     selected_place_ids = params.get("selected_place_ids", [])
     duration_days = params.get("duration_days", 3)
     package_template = params.get("package_template")
 
-    logger.info(f"Agent 2 querying database: destination='{destination}', budget='{budget_tier}', vibe='{vibe_query}'")
+    logger.info(f"Agent 2 querying database for destinations: {destinations}, budget='{budget_tier}', vibe='{vibe_query}'")
 
-    # 3. Execute Initial Search
-    raw_search_json = search_travel_database(
-        destination=destination,
-        budget_tier=budget_tier,
-        vibe_query=vibe_query,
-        selected_place_ids=selected_place_ids,
-        limit=5
-    )
+    search_results_by_destination: Dict[str, Dict[str, List[Dict[str, Any]]]] = {}
+    all_hotels: List[Dict[str, Any]] = []
+    all_poi: List[Dict[str, Any]] = []
+    any_fallback_triggered = False
 
-    try:
-        search_data = json.loads(raw_search_json)
-    except Exception as parse_err:
-        logger.error(f"Error parsing search tool response: {parse_err}")
-        search_data = {"hotels": [], "poi": []}
-
-    hotels = search_data.get("hotels", [])
-    poi = search_data.get("poi", [])
-    fallback_triggered = False
-
-    # 4. Fallback Rule Execution: If no hotels or no POIs matched and budget_tier was specified, broaden search
-    if (len(hotels) == 0 or len(poi) == 0) and budget_tier is not None:
-        logger.info(f"Fallback Rule Triggered: Initial search yielded {len(hotels)} hotels and {len(poi)} POIs for budget '{budget_tier}'. Retrying with budget_tier=None...")
-        fallback_triggered = True
-        
-        fallback_search_json = search_travel_database(
-            destination=destination,
-            budget_tier=None,
+    # 3. Query Database Per Destination in Order
+    for dest in destinations:
+        raw_search_json = search_travel_database(
+            destination=dest,
+            budget_tier=budget_tier,
             vibe_query=vibe_query,
             selected_place_ids=selected_place_ids,
             limit=5
         )
-        try:
-            search_data = json.loads(fallback_search_json)
-        except Exception as fb_err:
-            logger.error(f"Error parsing fallback search response: {fb_err}")
 
-    # 5. Package Results for Agent 3
+        try:
+            city_search_data = json.loads(raw_search_json)
+        except Exception as parse_err:
+            logger.error(f"Error parsing search tool response for city '{dest}': {parse_err}")
+            city_search_data = {"hotels": [], "poi": []}
+
+        city_hotels = city_search_data.get("hotels", [])
+        city_poi = city_search_data.get("poi", [])
+
+        # Fallback Rule per City: If 0 hotels or 0 POIs returned for specified budget tier, broaden search
+        if (len(city_hotels) == 0 or len(city_poi) == 0) and budget_tier is not None:
+            logger.info(f"Fallback Rule Triggered for '{dest}': Yielded {len(city_hotels)} hotels, {len(city_poi)} POIs. Retrying with budget_tier=None...")
+            any_fallback_triggered = True
+
+            fallback_json = search_travel_database(
+                destination=dest,
+                budget_tier=None,
+                vibe_query=vibe_query,
+                selected_place_ids=selected_place_ids,
+                limit=5
+            )
+            try:
+                fb_data = json.loads(fallback_json)
+                city_hotels = fb_data.get("hotels", [])
+                city_poi = fb_data.get("poi", [])
+            except Exception as fb_err:
+                logger.error(f"Error parsing fallback search response for city '{dest}': {fb_err}")
+
+        search_results_by_destination[dest] = {
+            "hotels": city_hotels,
+            "poi": city_poi
+        }
+
+        # Merge for backward-compatible flat structure
+        for h in city_hotels:
+            if h not in all_hotels:
+                all_hotels.append(h)
+        for p in city_poi:
+            if p not in all_poi:
+                all_poi.append(p)
+
+    # 4. Package Results for Agent 3
     final_payload = {
+        "destinations": destinations,
         "intake_params": {
-            "destination": destination,
+            "destinations": destinations,
+            "destination": destinations[0],
             "budget_tier": budget_tier,
             "vibe_query": vibe_query,
             "selected_place_ids": selected_place_ids,
             "duration_days": duration_days,
             "package_template": package_template
         },
-        "search_results": search_data,
-        "fallback_triggered": fallback_triggered
+        "search_results_by_destination": search_results_by_destination,
+        "search_results": {
+            "hotels": all_hotels,
+            "poi": all_poi
+        },
+        "fallback_triggered": any_fallback_triggered
     }
 
-    logger.info(f"Agent 2 completed retrieval: {len(search_data.get('hotels', []))} hotels, {len(search_data.get('poi', []))} POIs. Fallback: {fallback_triggered}")
+    logger.info(f"Agent 2 completed retrieval across {len(destinations)} destinations: total {len(all_hotels)} hotels, {len(all_poi)} POIs. Fallback: {any_fallback_triggered}")
     return json.dumps(final_payload, indent=2, default=str)
 
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Test Agent 2: Data Retrieval Searcher")
-    parser.add_argument("--destination", type=str, default="Galle", help="Target city")
-    parser.add_argument("--budget", type=str, default="Standard", help="Budget tier")
-    parser.add_argument("--vibe", type=str, default="quiet beach fort seafood", help="Vibe query")
+    parser.add_argument("--prompt", type=str, default="first i want to go galle and enjoy beach. then i want to go kandy.", help="User prompt")
     args = parser.parse_args()
 
-    dummy_agent1_output = json.dumps({
-        "destination": args.destination,
-        "budget_tier": args.budget,
-        "vibe_query": args.vibe,
-        "selected_place_ids": [],
-        "duration_days": 4,
-        "package_template": None
+    agent1_out = json.dumps({
+        "destinations": ["Galle", "Kandy"],
+        "destination": "Galle",
+        "budget_tier": "Standard",
+        "duration_days": 5,
+        "vibe_query": args.prompt
     })
 
-    result = execute_retrieval_agent(dummy_agent1_output)
-    print(result)
+    print(execute_retrieval_agent(agent1_out))
