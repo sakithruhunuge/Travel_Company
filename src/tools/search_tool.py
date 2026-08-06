@@ -95,8 +95,9 @@ def find_and_load_env():
 
 find_and_load_env()
 if "SCRAPER_DB_URI" not in os.environ or "37.60.226.84" in os.environ.get("SCRAPER_DB_URI", ""):
-    os.environ["SCRAPER_DB_URI"] = "mongodb://localhost:27017/srilanka_travel"
-    os.environ["MONGODB_URI"] = "mongodb://localhost:27017/srilanka_travel"
+    db_uri = os.environ.get("MONGODB_URI") or "mongodb://localhost:27017/srilanka_travel"
+    os.environ["SCRAPER_DB_URI"] = db_uri
+    os.environ["MONGODB_URI"] = db_uri
 
 # --------------------------------------------------------------------------
 # 3. DYNAMIC RESILIENT MODULE IMPORTS (ELIMINATES LINTER SQUIGGLES)
@@ -119,11 +120,14 @@ except Exception:
         class MongoDBClient:
             def __init__(self):
                 uri = os.getenv("SCRAPER_DB_URI") or os.getenv("MONGODB_URI") or "mongodb://localhost:27017/srilanka_travel"
+                if os.path.exists("/.dockerenv"):
+                    uri = uri.replace("localhost", "mongodb").replace("127.0.0.1", "mongodb")
                 try:
                     self.client = MongoClient(uri, serverSelectionTimeoutMS=5000)
                     self.client.admin.command('ping')
                     self.db = self.client.get_database()
-                except Exception:
+                except Exception as conn_err:
+                    logger.error(f"MongoDBClient connection failed to URI: {uri}. Error: {conn_err}")
                     self.client = None
                     self.db = None
             def close(self):

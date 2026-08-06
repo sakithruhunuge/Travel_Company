@@ -119,6 +119,8 @@ app.add_middleware(
 # --------------------------------------------------------------------------
 def get_scraper_db():
     uri = os.getenv("SCRAPER_DB_URI") or os.getenv("MONGODB_URI") or "mongodb://localhost:27017/srilanka_travel"
+    if os.path.exists("/.dockerenv"):
+        uri = uri.replace("localhost", "mongodb").replace("127.0.0.1", "mongodb")
     try:
         client = MongoClient(uri, serverSelectionTimeoutMS=3000)
         return client.get_database()
@@ -128,6 +130,8 @@ def get_scraper_db():
 
 def get_travel_company_db():
     uri = os.getenv("TRAVEL_COMPANY_DB_URI") or os.getenv("MONGODB_URI") or "mongodb://localhost:27017/travel_platform"
+    if os.path.exists("/.dockerenv"):
+        uri = uri.replace("localhost", "mongodb").replace("127.0.0.1", "mongodb")
     try:
         client = MongoClient(uri, serverSelectionTimeoutMS=3000)
         return client.get_database()
