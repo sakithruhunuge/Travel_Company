@@ -188,8 +188,8 @@ export default function SuperAdminPage() {
     *{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',system-ui,sans-serif}
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: #f8fafc; }
-    ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; border: 1.5px solid #f8fafc; }
-    ::-webkit-scrollbar-thumb:hover { background: #6366f1; }
+    ::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 4px; border: 1.5px solid #f8fafc; }
+    ::-webkit-scrollbar-thumb:hover { background: #333333; }
     @keyframes spin{to{transform:rotate(360deg)}}
     @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
     .sa-wrap{display:flex;min-height:100vh;font-family:'Inter',system-ui,sans-serif;background:#f1f5f9}
@@ -212,7 +212,7 @@ export default function SuperAdminPage() {
     .sa-upgrade{width:100%;padding:8px;background:#fff;border:1.5px solid #e2e8f0;border-radius:7px;font-size:12px;font-weight:600;color:#64748b;cursor:pointer;transition:all .15s}
     .sa-upgrade:hover{border-color:#6366f1;color:#6366f1}
     .sa-main{margin-left:280px;flex:1;display:flex;flex-direction:column;min-height:100vh}
-    .sa-topbar{background:#fff;border-bottom:1px solid #e2e8f0;padding:0 26px;height:62px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:30;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+    .sa-topbar{background:#fff;border-bottom:1px solid #e2e8f0;padding:0 26px;height:62px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 1px 3px rgba(0,0,0,.04)}
     .sa-topbar-title{font-size:19px;font-weight:800;color:#0f172a}
     .sa-topbar-right{display:flex;align-items:center;gap:10px}
     .sa-search{display:flex;align-items:center;gap:7px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:7px;padding:6px 12px;color:#94a3b8;font-size:12.5px;cursor:text;transition:border .15s}
