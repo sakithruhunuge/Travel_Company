@@ -24,7 +24,7 @@ export default function StatsOverviewCard({ stats }: StatsOverviewCardProps) {
                         <FileTextOutlined className="text-xl" />
                     </div>
                     <div>
-                        <p className="text-xs font-bold uppercase tracking-wider text-brand-muted">{t("stats.total")}</p>
+                        <p className="text-[13px] font-bold uppercase tracking-wider text-brand-muted">{t("stats.total")}</p>
                         <h3 className="text-3xl font-black tabular-nums text-brand-dark mt-0.5">{stats.total}</h3>
                     </div>
                 </div>
@@ -35,10 +35,10 @@ export default function StatsOverviewCard({ stats }: StatsOverviewCardProps) {
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                         <div className="h-2.5 w-2.5 rounded-full bg-amber-550 flex-shrink-0" />
                         <div>
-                            <p className="text-xs font-bold text-brand-muted uppercase tracking-wider">{t("stats.pending")}</p>
+                            <p className="text-[13px] font-bold text-brand-muted uppercase tracking-wider">{t("stats.pending")}</p>
                             <div className="flex items-baseline gap-1.5 mt-0.5">
                                 <span className="text-xl font-bold text-slate-800 tabular-nums">{stats.pending}</span>
-                                <span className="text-[10px] text-brand-muted hidden sm:inline">{t("stats.awaitingReview")}</span>
+                                <span className="text-[12px] text-brand-muted hidden sm:inline">{t("stats.awaitingReview")}</span>
                             </div>
                         </div>
                     </div>
@@ -47,10 +47,10 @@ export default function StatsOverviewCard({ stats }: StatsOverviewCardProps) {
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3 border-l border-slate-200/80 pl-4 sm:pl-6">
                         <div className="h-2.5 w-2.5 rounded-full bg-emerald-550 flex-shrink-0" />
                         <div>
-                            <p className="text-xs font-bold text-brand-muted uppercase tracking-wider">{t("stats.approved")}</p>
+                            <p className="text-[13px] font-bold text-brand-muted uppercase tracking-wider">{t("stats.approved")}</p>
                             <div className="flex items-baseline gap-1.5 mt-0.5">
                                 <span className="text-xl font-bold text-slate-800 tabular-nums">{stats.approved}</span>
-                                <span className="text-[10px] text-brand-muted hidden sm:inline">{t("stats.confirmed")}</span>
+                                <span className="text-[12px] text-brand-muted hidden sm:inline">{t("stats.confirmed")}</span>
                             </div>
                         </div>
                     </div>
@@ -59,10 +59,10 @@ export default function StatsOverviewCard({ stats }: StatsOverviewCardProps) {
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3 border-l border-slate-200/80 pl-4 sm:pl-6">
                         <div className="h-2.5 w-2.5 rounded-full bg-rose-550 flex-shrink-0" />
                         <div>
-                            <p className="text-xs font-bold text-brand-muted uppercase tracking-wider">{t("stats.rejected")}</p>
+                            <p className="text-[13px] font-bold text-brand-muted uppercase tracking-wider">{t("stats.rejected")}</p>
                             <div className="flex items-baseline gap-1.5 mt-0.5">
                                 <span className="text-xl font-bold text-slate-800 tabular-nums">{stats.rejected}</span>
-                                <span className="text-[10px] text-brand-muted hidden sm:inline">{t("stats.needsAttention")}</span>
+                                <span className="text-[12px] text-brand-muted hidden sm:inline">{t("stats.needsAttention")}</span>
                             </div>
                         </div>
                     </div>

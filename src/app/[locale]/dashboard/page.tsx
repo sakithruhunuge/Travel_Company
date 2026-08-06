@@ -14,6 +14,7 @@ export default function DashboardHomePage() {
   const tenant = useTenant();
   const locale = useLocale();
   const t = useTranslations("Dashboard.Home");
+  const secondaryColor = (tenant as any)?.branding?.secondaryColor ?? "#FE2A2A";
 
   const [stats, setStats] = useState<{ total: number; pending: number; approved: number; rejected: number } | null>(null);
   const [recentRequests, setRecentRequests] = useState<any[]>([]);
@@ -108,12 +109,12 @@ export default function DashboardHomePage() {
             </div>
             <div className="rounded-2xl overflow-hidden shadow-xl border border-white/30 p-6 bg-slate-900 text-slate-100 flex flex-col justify-between h-44">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-cyan-400">Branding customization</p>
+                <p style={{ color: secondaryColor }} className="text-[10px] font-bold uppercase tracking-widest">Branding customization</p>
                 <p className="mt-2 text-sm font-semibold text-slate-350 leading-relaxed">
                   Make your booking portal uniquely yours. Customize layout colors, taglines, and upload your official logo.
                 </p>
               </div>
-              <Link href={`/${locale}/dashboard/branding`} className="text-xs font-black text-cyan-400 hover:text-cyan-300 self-start mt-2">
+              <Link href={`/${locale}/dashboard/branding`} style={{ color: secondaryColor }} className="text-xs font-black hover:opacity-80 self-start mt-2">
                 Configure Brand Options &rarr;
               </Link>
             </div>
@@ -205,29 +206,29 @@ export default function DashboardHomePage() {
 
           {/* Quick links settings card */}
           <div className="flex flex-col rounded-3xl bg-white/40 backdrop-blur-md p-6 sm:p-8 border border-slate-200 relative overflow-hidden">
-            <span className="inline-flex items-center rounded-full bg-white/60 px-3 py-1 text-xs font-semibold text-slate-650 border border-white/50 self-start">
+            <span className="inline-flex items-center rounded-full bg-white/60 px-3 py-1 text-[13px] font-semibold text-slate-650 border border-white/50 self-start">
               Actions
             </span>
-            <h3 className="mt-4 text-xl font-bold text-slate-900 tracking-tight">Quick Operations</h3>
-            <p className="mt-2 text-sm leading-relaxed text-slate-600 font-medium">
+            <h3 className="mt-4 text-[22px] font-bold text-slate-900 tracking-tight">Quick Operations</h3>
+            <p className="mt-2 text-[15px] leading-relaxed text-slate-600 font-medium">
               Administrative functions mapped directly for rapid portal management.
             </p>
             <div className="mt-6 flex-grow space-y-3 relative z-10">
               <Link
                 href={`/${locale}/dashboard/branding`}
-                className="flex items-center gap-3.5 rounded-xl bg-white/30 hover:bg-white/50 border border-white/20 p-4 text-xs font-bold text-slate-700 transition hover:translate-x-1"
+                className="flex items-center gap-3.5 rounded-xl bg-white/30 hover:bg-white/50 border border-white/20 p-4 text-[14px] font-bold text-slate-700 transition hover:translate-x-1"
               >
                 🎨 Change Theme Colors
               </Link>
               <Link
                 href={`/${locale}/dashboard/users`}
-                className="flex items-center gap-3.5 rounded-xl bg-white/30 hover:bg-white/50 border border-white/20 p-4 text-xs font-bold text-slate-700 transition hover:translate-x-1"
+                className="flex items-center gap-3.5 rounded-xl bg-white/30 hover:bg-white/50 border border-white/20 p-4 text-[14px] font-bold text-slate-700 transition hover:translate-x-1"
               >
                 👥 View Customer Registry
               </Link>
               <Link
                 href={`/${locale}/dashboard/analytics`}
-                className="flex items-center gap-3.5 rounded-xl bg-white/30 hover:bg-white/50 border border-white/20 p-4 text-xs font-bold text-slate-700 transition hover:translate-x-1"
+                className="flex items-center gap-3.5 rounded-xl bg-white/30 hover:bg-white/50 border border-white/20 p-4 text-[14px] font-bold text-slate-700 transition hover:translate-x-1"
               >
                 📊 Run Performance Report
               </Link>

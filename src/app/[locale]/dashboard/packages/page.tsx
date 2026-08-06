@@ -214,7 +214,7 @@ export default function TenantPackagesPage() {
 
               <div className="p-5 flex-grow flex flex-col justify-between">
                 <div>
-                  <h3 className="font-extrabold text-slate-800 text-base leading-snug group-hover:text-brand-secondary transition">
+                  <h3 className="font-extrabold text-slate-800 text-base leading-snug transition">
                     {pkg.name}
                   </h3>
                   <p className="text-xs font-semibold text-slate-500 mt-2">
