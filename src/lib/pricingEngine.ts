@@ -1,3 +1,8 @@
+export interface SelectedRealPrices {
+  hotelNightlyRateByDestination?: Record<string, number>;
+  poiCostsUsd?: number[];
+}
+
 export interface PricingInputs {
   duration: number;
   numberOfTravelers: number;
@@ -8,12 +13,16 @@ export interface PricingInputs {
   activities: string[];
   extraNights: number;
   addOns: string[];
+  baggageCount?: number;
+  pricingMode?: "per-day" | "per-trip";
+  selectedRealPrices?: SelectedRealPrices;
 }
 
 export interface PricingBreakdown {
   baseCost: number;
   accommodationCost: number;
   transportCost: number;
+  baggageSurcharge: number;
   destinationSurcharges: number;
   activityCost: number;
   addOnsCost: number;
@@ -22,6 +31,8 @@ export interface PricingBreakdown {
   discount: number;
   taxes: number;
   totalPrice: number;
+  hasRealHotelRates?: boolean;
+  hasRealPoiCosts?: boolean;
 }
 
 export const HOTEL_RATES = {
@@ -59,6 +70,10 @@ export const TRANSPORT_LABELS = {
   "charter-flight": "Helicopter / Charter Flight (+$500/traveler)",
 };
 
+export const BAGGAGE_RATE = 15; // $15 per extra bag beyond allowance
+export const BAGGAGE_FREE_ALLOWANCE_PER_TRAVELER = 1;
+export const BAGGAGE_LABEL = "Extra Baggage Handling (+$15/bag beyond 1 free bag per traveler)";
+
 export const DESTINATION_SURCHARGES: Record<string, number> = {
   Sigiriya: 80,
   Galle: 80,
@@ -70,6 +85,20 @@ export const DESTINATION_SURCHARGES: Record<string, number> = {
   Yala: 60,
   Dambulla: 60,
   Ella: 60,
+  Trincomalee: 70,
+  Jaffna: 85,
+  Anuradhapura: 60,
+  Polonnaruwa: 60,
+  "Arugam Bay": 75,
+  Negombo: 35,
+  Hikkaduwa: 40,
+  Tangalle: 50,
+  Udawalawe: 55,
+  Pasikuda: 65,
+  Wilpattu: 60,
+  Weligama: 45,
+  Unawatuna: 45,
+  Matara: 45,
 };
 
 export const SEASON_MULTIPLIERS = {
@@ -98,23 +127,20 @@ export const ACTIVITY_LABELS = {
   "cooking-class": "Traditional Sri Lankan Cooking Class (+$25/traveler)",
 };
 
-export const ADDONS_RATES = {
-  breakfast: 15, // $15 per night per traveler
-  dinner: 35, // $35 per night per traveler
-  "airport-transfer": 40, // $40 flat per traveler
-  guide: 25, // $25 per night per traveler
+export const ADDON_RATES: Record<string, number> = {
+  breakfast: 15,
+  dinner: 25,
+  "airport-transfer": 40,
+  guide: 30,
 };
 
-export const ADDONS_LABELS = {
-  breakfast: "Daily Breakfast (+$15/night per traveler)",
-  dinner: "Gourmet Dinner Buffets (+$35/night per traveler)",
-  "airport-transfer": "Private Airport Pickup & Dropoff (+$40 flat/traveler)",
-  guide: "Dedicated Tour Escort & Translator (+$25/night per traveler)",
+export const ADDON_LABELS = {
+  breakfast: "Daily Gourmet Breakfast (+$15/day per traveler)",
+  dinner: "Curated Dinner Experience (+$25/day per traveler)",
+  "airport-transfer": "VIP Airport Transfer (+$40 flat)",
+  guide: "Private Tour Guide (+$30/day)",
 };
 
-/**
- * Computes detailed pricing metrics based on travelers, destinations, hotel, transport, and season.
- */
 export function calculateTripPricing(inputs: PricingInputs): PricingBreakdown {
   const {
     duration,
@@ -126,80 +152,118 @@ export function calculateTripPricing(inputs: PricingInputs): PricingBreakdown {
     activities,
     extraNights,
     addOns,
+    baggageCount = 0,
+    pricingMode = "per-day",
+    selectedRealPrices,
   } = inputs;
 
-  const tCount = Math.max(1, numberOfTravelers);
-  const baseDays = Math.max(1, duration);
-  const extraN = Math.max(0, extraNights);
-  const totalNights = baseDays + extraN;
-  const mult = SEASON_MULTIPLIERS[season] || 1.0;
+  const totalNights = Math.max(1, duration + extraNights);
+  const seasonMultiplier = SEASON_MULTIPLIERS[season] || 1.0;
 
-  // 1. Base Cost: $50/day per traveler * baseDays * season multiplier
-  const baseCost = Math.round(50 * baseDays * tCount * mult);
+  // 1. Base Cost ($150 base per traveler)
+  const baseCost = Math.round(150 * numberOfTravelers * seasonMultiplier);
 
-  // 2. Accommodation Cost: fallback rate * totalNights * travelers * season multiplier
-  const hotelRate = HOTEL_RATES[hotelClass] || 0;
-  const accommodationCost = Math.round(hotelRate * totalNights * tCount * mult);
+  // 2. Accommodation Cost (Real Scraped Rate vs. Static Tier Estimate)
+  const realHotelMap = selectedRealPrices?.hotelNightlyRateByDestination || {};
+  const activeDests = destinations.length > 0 ? destinations : ["Colombo"];
+  
+  let accommodationCost = 0;
+  let hasRealHotelRates = false;
 
-  // 3. Transport Cost: flat daily * totalNights * mult OR flat per person * travelers * mult
-  const flatDaily = TRANSPORT_FLAT_DAILY[transportMode] || 0;
-  const flatPerPerson = TRANSPORT_PER_PERSON_FLAT[transportMode] || 0;
-  const transportCost = Math.round((flatDaily * totalNights + flatPerPerson * tCount) * mult);
+  const baseNightsPerCity = Math.floor(totalNights / activeDests.length);
+  const remNights = totalNights % activeDests.length;
 
-  // 4. Destination surcharges (flat per traveler, no season multiplier, $80 per destination)
-  let destSurchargeTotal = 0;
-  destinations.forEach((dest) => {
-    destSurchargeTotal += DESTINATION_SURCHARGES[dest] || 80; // default to 80 if not found
-  });
-  const destinationSurcharges = destSurchargeTotal * tCount;
-
-  // 5. Activity Cost (flat per traveler)
-  let actCostTotal = 0;
-  activities.forEach((act) => {
-    actCostTotal += ACTIVITY_RATES[act] || 0;
-  });
-  const activityCost = actCostTotal * tCount;
-
-  // 6. Add-ons Cost: meals (breakfast/dinner) are calculated per night per traveler
-  let addOnsTotal = 0;
-  addOns.forEach((addon) => {
-    if (addon === "breakfast") {
-      addOnsTotal += ADDONS_RATES.breakfast * totalNights * tCount;
-    } else if (addon === "dinner") {
-      addOnsTotal += ADDONS_RATES.dinner * totalNights * tCount;
-    } else if (addon === "airport-transfer") {
-      addOnsTotal += ADDONS_RATES["airport-transfer"] * tCount;
-    } else if (addon === "guide") {
-      addOnsTotal += ADDONS_RATES.guide * totalNights * tCount;
+  activeDests.forEach((dest, idx) => {
+    const cityNights = baseNightsPerCity + (idx < remNights ? 1 : 0);
+    const realRate = realHotelMap[dest];
+    
+    if (typeof realRate === "number" && realRate > 0) {
+      hasRealHotelRates = true;
+      accommodationCost += realRate * numberOfTravelers * cityNights * seasonMultiplier;
+    } else {
+      const fallbackRate = HOTEL_RATES[hotelClass] || HOTEL_RATES.standard;
+      accommodationCost += fallbackRate * numberOfTravelers * cityNights * seasonMultiplier;
     }
   });
-  const addOnsCost = addOnsTotal;
 
-  // 7. Subtotal
-  const subtotal = baseCost + accommodationCost + transportCost + destinationSurcharges + activityCost + addOnsCost;
+  accommodationCost = Math.round(accommodationCost);
 
-  // 8. Group Discounts (1 traveler: 0%, 2: 5%, 3-5: 10%, 6+: 15%)
+  // 3. Transport Cost
+  const dailyFlat = TRANSPORT_FLAT_DAILY[transportMode] || 0;
+  const perPersonFlat = TRANSPORT_PER_PERSON_FLAT[transportMode] || 0;
+
+  const transportCost = pricingMode === "per-trip"
+    ? Math.round(dailyFlat + perPersonFlat * numberOfTravelers)
+    : Math.round(dailyFlat * totalNights + perPersonFlat * numberOfTravelers);
+
+  // 4. Baggage Surcharge
+  const freeAllowance = numberOfTravelers * BAGGAGE_FREE_ALLOWANCE_PER_TRAVELER;
+  const extraBags = Math.max(0, baggageCount - freeAllowance);
+  const baggageSurcharge = extraBags * BAGGAGE_RATE;
+
+  // 5. Destination Surcharges (Per traveler)
+  let destinationSurcharges = 0;
+  destinations.forEach((dest) => {
+    const surcharge = DESTINATION_SURCHARGES[dest] || 40;
+    destinationSurcharges += surcharge * numberOfTravelers;
+  });
+  destinationSurcharges = Math.round(destinationSurcharges);
+
+  // 6. Activities & POI Ticket Costs
+  let activityCost = 0;
+  activities.forEach((act) => {
+    const rate = ACTIVITY_RATES[act] || 0;
+    activityCost += rate * numberOfTravelers;
+  });
+
+  let hasRealPoiCosts = false;
+  if (selectedRealPrices?.poiCostsUsd && selectedRealPrices.poiCostsUsd.length > 0) {
+    hasRealPoiCosts = true;
+    const realPoiTotal = selectedRealPrices.poiCostsUsd.reduce((sum, cost) => sum + cost, 0);
+    activityCost += realPoiTotal * numberOfTravelers;
+  }
+  activityCost = Math.round(activityCost);
+
+  // 7. Add-Ons Cost
+  let addOnsCost = 0;
+  addOns.forEach((addon) => {
+    if (addon === "breakfast" || addon === "dinner") {
+      const rate = ADDON_RATES[addon] || 0;
+      addOnsCost += rate * numberOfTravelers * totalNights;
+    } else if (addon === "guide") {
+      const rate = ADDON_RATES[addon] || 0;
+      addOnsCost += rate * totalNights;
+    } else if (addon === "airport-transfer") {
+      const rate = ADDON_RATES[addon] || 0;
+      addOnsCost += rate;
+    }
+  });
+  addOnsCost = Math.round(addOnsCost);
+
+  // 8. Subtotal
+  const subtotal = Math.round(
+    baseCost + accommodationCost + transportCost + baggageSurcharge + destinationSurcharges + activityCost + addOnsCost
+  );
+
+  // 9. Group Discount (10% off for 4+ travelers)
   let discountRate = 0;
-  if (tCount === 2) {
-    discountRate = 0.05;
-  } else if (tCount >= 3 && tCount <= 5) {
+  if (numberOfTravelers >= 4) {
     discountRate = 0.10;
-  } else if (tCount >= 6) {
-    discountRate = 0.15;
   }
   const discount = Math.round(subtotal * discountRate);
 
-  // 9. Taxes (12% local taxes and service charge on discounted price)
+  // 10. Taxes (12% on discounted subtotal)
   const taxableAmount = subtotal - discount;
   const taxes = Math.round(taxableAmount * 0.12);
 
-  // 10. Grand Total
-  const totalPrice = taxableAmount + taxes;
+  // 11. Grand Total Price
+  const totalPrice = Math.round(taxableAmount + taxes);
 
   return {
     baseCost,
     accommodationCost,
     transportCost,
+    baggageSurcharge,
     destinationSurcharges,
     activityCost,
     addOnsCost,
@@ -208,5 +272,7 @@ export function calculateTripPricing(inputs: PricingInputs): PricingBreakdown {
     discount,
     taxes,
     totalPrice,
+    hasRealHotelRates,
+    hasRealPoiCosts,
   };
 }
