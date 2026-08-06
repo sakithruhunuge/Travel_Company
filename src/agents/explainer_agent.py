@@ -64,14 +64,26 @@ except Exception:
     logger = logging.getLogger("explainer_agent")
 
 SYSTEM_PROMPT_AGENT_3 = """You are Agent 3: The Expert Sri Lanka Travel Guide and Explainable AI (XAI) Itinerary Designer.
-Your job is to read the structured retrieval JSON data provided by Agent 2 (which contains hotels and points of interest for Sri Lanka grouped by destination) and generate a compelling, beautiful, day-by-day Markdown travel itinerary.
+Your job is to read the structured retrieval JSON data provided by Agent 2 and generate a day-by-day Markdown travel itinerary.
 
 CRITICAL INSTRUCTIONS:
-1. When destinations has more than one entry, the itinerary MUST be sectioned by destination in the exact given order with explicit day ranges per city (e.g. ## 📍 Galle (Days 1–3), ## 📍 Kandy (Days 4–5)).
-2. Every hotel, resort, attraction, or landmark mentioned MUST include an explicit Explainable AI callout block in this EXACT format:
-   💡 Why This Was Chosen: [Clear explanation of why this place matches the traveler's budget, vibe, or location preference]
-3. Make the markdown format clean, well-formatted, with bold titles, emojis, and cost/rating highlights.
-4. Ensure tone is hospitable, enthusiastic, and authentic to Sri Lanka.
+1. Section by destination in the exact order with day ranges: e.g. ## 📍 Galle (Days 1–3), ## 📍 Kandy (Days 4–5).
+2. For each destination, include a section: ## 🏨 Featured Accommodation in [Destination].
+3. For each hotel, format it exactly as:
+   ### [Index]. [Hotel Name]
+   - **Rating:** ⭐ [Rating]/5.0
+   - **Estimated Rate:** $[Price]/night
+   - **Overview:** [Description]
+   - 💡 **Why This Was Chosen:** [Clear explainable AI reasoning about why this fits the user's budget and vibe]
+4. For daily sightseeing, format it exactly as:
+   #### Day [Day Number]: Highlights of [Destination]
+   - **Visit:** **[POIName]** ([Category])
+     - **Rating:** ⭐ [Rating]/5.0
+     - **Details:** [Description]
+     - 💡 **Why This Was Chosen:** [Clear explainable AI reason relating to user vibe/preferences]
+5. Summarize the user's vibe query naturally (do not parrot long queries verbatim).
+6. Correct any hotel/attraction description saying "in Colombo" to match its actual destination.
+7. Use ONLY the exact hotels and attractions provided in the JSON payload. Do not hallucinate other places.
 """
 
 
@@ -138,7 +150,8 @@ def extract_suggested_places_by_destination(agent2_data: Dict[str, Any]) -> Dict
             if isinstance(h_images, list) and len(h_images) > 0 and isinstance(h_images[0], str):
                 raw_url = h_images[0].strip()
                 if raw_url:
-                    primary_image = raw_url.split()[0]
+                    # Handle srcset like "url1 1x, url2 2x" by splitting on comma first
+                    primary_image = raw_url.split(",")[0].strip().split()[0]
 
             formatted_hotels.append({
                 "id": str(h.get("id") or h.get("_id") or h.get("name")),
@@ -148,7 +161,7 @@ def extract_suggested_places_by_destination(agent2_data: Dict[str, Any]) -> Dict
                 "rating": rating_val,
                 "price_tier": h.get("price_tier", budget),
                 "primary_image": primary_image,
-                "description": h.get("description", "Recommended accommodation in Sri Lanka.")
+                "description": h.get("description", f"Recommended accommodation in {dest}.").replace("in Colombo", f"in {dest}").replace("in colombo", f"in {dest}") if dest.lower() != "colombo" else h.get("description", "Recommended accommodation in Colombo.")
             })
 
         formatted_poi = []
@@ -165,7 +178,7 @@ def extract_suggested_places_by_destination(agent2_data: Dict[str, Any]) -> Dict
                 for img in p_images:
                     if not isinstance(img, str) or not img.strip():
                         continue
-                    clean_url = img.strip().split()[0]
+                    clean_url = img.split(",")[0].strip().split()[0]
                     if "mapillary.com" in clean_url:
                         if not street_view_url:
                             street_view_url = clean_url
@@ -230,6 +243,8 @@ def generate_deterministic_markdown_itinerary(agent2_data: Dict[str, Any]) -> st
     budget = intake.get("budget_tier", "Standard")
     duration = intake.get("duration_days", 3)
     vibe = intake.get("vibe_query", "Sri Lanka Tour")
+    
+    clean_vibe = vibe if len(vibe.split()) < 6 else "your specified preferences"
 
     effective_dests, day_ranges, is_trimmed = allocate_days_per_destination(duration, destinations)
     dest_str = " → ".join(effective_dests)
@@ -237,7 +252,7 @@ def generate_deterministic_markdown_itinerary(agent2_data: Dict[str, Any]) -> st
     lines = []
     lines.append(f"# 🌴 {duration}-Day Sri Lanka Travel Itinerary: {dest_str}")
     lines.append(f"**Target Route:** {dest_str} | **Budget Tier:** {budget} | **Duration:** {duration} Days")
-    lines.append(f"**Vibe & Intent:** *\"{vibe}\"*")
+    lines.append(f"**Vibe & Intent:** *\"{clean_vibe}\"*")
 
     if is_trimmed:
         lines.append(f"\n> 💡 **Note:** Trimmed to fit your {duration}-day duration — add more days to include everywhere you mentioned.")
@@ -263,18 +278,23 @@ def generate_deterministic_markdown_itinerary(agent2_data: Dict[str, Any]) -> st
                 h_rating = h.get("rating", 4.8)
                 h_price = h.get("avg_nightly_usd") or h.get("avg_nightly") or (120 if budget == "Luxury" else 35 if budget == "Budget" else 65)
                 h_desc = h.get("description", f"Comfortable accommodation located in {dest}.")
+                if dest.lower() != "colombo":
+                    h_desc = h_desc.replace("in Colombo", f"in {dest}").replace("in colombo", f"in {dest}")
+
                 sim = h.get("similarity_score")
                 sim_str = f" (Match Score: {int(sim*100)}%)" if sim else ""
 
                 lines.append(f"\n### {idx + 1}. {h_name}{sim_str}")
-                lines.append(f"- **Rating:** ⭐ {h_rating}/5.0 | **Estimated Rate:** ${h_price}/night")
+                lines.append(f"- **Rating:** ⭐ {h_rating}/5.0")
+                lines.append(f"- **Estimated Rate:** ${h_price}/night")
                 lines.append(f"- **Overview:** {h_desc}")
-                lines.append(f"💡 **Why This Was Chosen:** Selected for exceptional comfort in {dest}, matching your {budget} tier preference and proximity to key attractions.")
+                lines.append(f"- 💡 **Why This Was Chosen:** Selected for exceptional comfort in {dest}, matching your {budget} tier preference and proximity to key attractions.")
         else:
             lines.append(f"\n### 1. {dest} Grand Heritage Hotel")
-            lines.append(f"- **Rating:** ⭐ 4.8/5.0 | **Estimated Rate:** ${120 if budget=='Luxury' else 35 if budget=='Budget' else 65}/night")
+            lines.append(f"- **Rating:** ⭐ 4.8/5.0")
+            lines.append(f"- **Estimated Rate:** ${120 if budget=='Luxury' else 35 if budget=='Budget' else 65}/night")
             lines.append(f"- **Overview:** Prime accommodation featuring authentic Sri Lankan hospitality in {dest}.")
-            lines.append(f"💡 **Why This Was Chosen:** Top-ranked hospitality recommendation in {dest} tailored to your budget choice.")
+            lines.append(f"- 💡 **Why This Was Chosen:** Top-ranked hospitality recommendation in {dest} tailored to your budget choice.")
 
         # Day-by-day breakdown for this city
         lines.append(f"\n### 🗓️ Daily Sightseeing & Activities ({dest})")
@@ -295,7 +315,7 @@ def generate_deterministic_markdown_itinerary(agent2_data: Dict[str, Any]) -> st
                     lines.append(f"- **Visit:** **{p_name}** ({p_cat})")
                     lines.append(f"  - **Rating:** ⭐ {p_rating}/5.0")
                     lines.append(f"  - **Details:** {p_desc}")
-                    lines.append(f"  - 💡 **Why This Was Chosen:** Highlighted because it matches your interest in *{vibe}* and offers top visitor reviews in {dest}.")
+                    lines.append(f"  - 💡 **Why This Was Chosen:** Highlighted because it matches {clean_vibe} and offers top visitor reviews in {dest}.")
             else:
                 lines.append(f"- **Morning:** Explore historic landmarks, local markets, and cultural sites in {dest}.")
                 lines.append(f"  - 💡 **Why This Was Chosen:** Authentic local experience representing the cultural heritage of {dest}.")
@@ -336,6 +356,24 @@ def generate_explainable_itinerary(agent2_output: Union[Dict[str, Any], str]) ->
             "itinerary_markdown": f"### ⚠️ Invalid Request\n\n{err_msg}",
             "suggested_places_by_destination": {}
         }
+
+    # Correct descriptions in payload before passing to LLM or fallback to prevent "in Colombo" issues
+    by_dest = payload.get("search_results_by_destination", {})
+    if isinstance(by_dest, dict):
+        for dest, city_data in by_dest.items():
+            if isinstance(city_data, dict):
+                # Correct hotels description
+                for h in city_data.get("hotels", []):
+                    if isinstance(h, dict) and h.get("description"):
+                        desc = h["description"]
+                        if dest.lower() != "colombo":
+                            h["description"] = desc.replace("in Colombo", f"in {dest}").replace("in colombo", f"in {dest}")
+                # Correct POIs description
+                for p in city_data.get("poi", []):
+                    if isinstance(p, dict) and p.get("description"):
+                        desc = p["description"]
+                        if dest.lower() != "colombo":
+                            p["description"] = desc.replace("in Colombo", f"in {dest}").replace("in colombo", f"in {dest}")
 
     # Assemble structured suggested places payload for frontend
     suggested_places = extract_suggested_places_by_destination(payload)

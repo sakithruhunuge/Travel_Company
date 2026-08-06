@@ -108,6 +108,14 @@ export const BASE_TOURS = [
 
 const QUICK_CHIPS = ["beach", "ancient", "wildlife", "hill country", "quiet", "food"];
 
+const getPlainText = (node: any): string => {
+  if (!node) return "";
+  if (typeof node === "string") return node;
+  if (Array.isArray(node)) return node.map(getPlainText).join("");
+  if (node.props && node.props.children) return getPlainText(node.props.children);
+  return "";
+};
+
 export default function InteractiveTourCustomizer() {
   const t = useTranslations("CustomizeTour");
   const router = useRouter();
@@ -118,7 +126,7 @@ export default function InteractiveTourCustomizer() {
   const formatPrice = (val: number) => `$${val.toLocaleString()}`;
 
   // Selection states
-  const [selectedTour, setSelectedTour] = useState<string>("cultural");
+  const [selectedTour, setSelectedTour] = useState<string>("ai-suggested");
   const [inputs, setInputs] = useState<PricingInputs>({
     duration: 5,
     numberOfTravelers: 2,
@@ -615,20 +623,27 @@ export default function InteractiveTourCustomizer() {
     <div className="min-h-screen bg-slate-50/50 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-8">
 
-        {/* Header Title Banner */}
-        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-brand-primary rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
-          <div className="relative z-10 max-w-2xl space-y-3">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-bold text-sky-300 uppercase tracking-wide border border-white/10">
+        {/* Header Title Banner - Clean & Professional */}
+        <div className="relative overflow-hidden bg-white rounded-2xl border border-orange-100/50 shadow-sm p-6 sm:p-8">
+          {/* Base Clean Gradient: White left, subtle Orange right */}
+          <div className="absolute inset-0 bg-gradient-to-r from-white via-white to-orange-50" />
+          
+          {/* Extremely subtle, elegant orbs (No gray/dark shading) */}
+          <div className="absolute -right-20 -top-20 w-[25rem] h-[25rem] bg-brand-primary/10 rounded-full blur-[80px] pointer-events-none" />
+          <div className="absolute right-1/4 -bottom-20 w-[15rem] h-[15rem] bg-sky-300/15 rounded-full blur-[60px] pointer-events-none" />
+
+          {/* Content */}
+          <div className="relative z-10 max-w-3xl space-y-3">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-brand-primary/5 border border-brand-primary/20 rounded-full text-[11px] font-bold text-brand-primary uppercase tracking-widest">
               <CompassOutlined /> {t("tagline")}
-            </span>
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight leading-tight">
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-800 leading-snug">
               {t("title")}
             </h1>
-            <p className="text-slate-300 text-xs sm:text-sm font-medium leading-relaxed">
+            <p className="text-slate-500 text-sm font-medium leading-relaxed max-w-2xl">
               {t("subtitle")}
             </p>
           </div>
-          <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-[url('/images/sigiriya.png')] bg-cover bg-center opacity-15 mix-blend-overlay hidden md:block" />
         </div>
 
         {/* Main 2-Column Grid */}
@@ -678,14 +693,14 @@ export default function InteractiveTourCustomizer() {
                       type="button"
                       onClick={() => handleBaseTourChange(tour.id)}
                       className={`p-4 rounded-2xl border text-left hover:bg-slate-50/50 transition-all ${isSelected
-                          ? "border-brand-secondary bg-sky-50/35"
+                          ? "border-brand-primary bg-orange-50/40"
                           : "border-slate-200 bg-white"
                         }`}
                     >
                       <span className="block text-sm font-extrabold text-slate-900">{t(`baseTours.${tour.nameKey}` as any)}</span>
                       <span className="block text-[11px] text-slate-500 mt-1 font-medium leading-normal">{t(`baseTours.${tour.descKey}` as any)}</span>
                       {tour.id !== "custom" && (
-                        <span className="inline-block mt-3 text-[10px] font-black text-brand-secondary bg-sky-100/50 px-2 py-0.5 rounded-md uppercase">
+                        <span className="inline-block mt-3 text-[10px] font-black text-brand-primary bg-orange-100/70 px-2 py-0.5 rounded-md uppercase">
                           {t("baseDays", { duration: tour.duration })}
                         </span>
                       )}
@@ -694,45 +709,57 @@ export default function InteractiveTourCustomizer() {
                 })}
               </div>
 
-              {/* Inline AI Sub-form when AI Suggest is Selected */}
+              {/* Inline AI Sub-form when AI Suggest is Selected (Active by default) */}
               {selectedTour === "ai-suggested" && (
-                <div className="mt-4 p-5 bg-slate-50 rounded-2xl border border-brand-primary/20 space-y-4 animate-fade-in-up">
-                  <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-                    <ThunderboltOutlined className="text-brand-primary text-base" />
-                    <h4 className="font-black text-xs uppercase text-slate-900">
-                      Configure Your AI Trip Preferences
-                    </h4>
+                <div className="mt-4 p-6 bg-gradient-to-br from-white via-orange-50/30 to-amber-50/20 text-slate-900 rounded-3xl border border-brand-primary/30 shadow-md space-y-5 animate-fade-in-up">
+                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-orange-100 text-brand-primary flex items-center justify-center text-base font-bold border border-orange-200">
+                        <ThunderboltOutlined />
+                      </div>
+                      <div>
+                        <h4 className="font-black text-sm uppercase tracking-wide text-slate-900">
+                          Configure Your AI Trip Preferences
+                        </h4>
+                        <p className="text-[11px] text-slate-500 font-medium">
+                          Specify your travel dates and desired vibes to generate a tailored Sri Lanka itinerary
+                        </p>
+                      </div>
+                    </div>
+                    <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 bg-orange-100 text-brand-primary border border-orange-200 text-[10px] font-extrabold rounded-full uppercase tracking-wider">
+                      ● AI Assistant Active
+                    </span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase">{t("dateRangeStart")}</label>
+                      <label className="block text-[10px] font-extrabold text-slate-600 uppercase tracking-wider">{t("dateRangeStart")}</label>
                       <input
                         type="date"
                         value={aiStartDate}
                         onChange={(e) => setAiStartDate(e.target.value)}
-                        className="w-full mt-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800"
+                        className="w-full mt-1.5 px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition shadow-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase">{t("dateRangeEnd")}</label>
+                      <label className="block text-[10px] font-extrabold text-slate-600 uppercase tracking-wider">{t("dateRangeEnd")}</label>
                       <input
                         type="date"
                         value={aiEndDate}
                         onChange={(e) => setAiEndDate(e.target.value)}
-                        className="w-full mt-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800"
+                        className="w-full mt-1.5 px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition shadow-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase">Duration</label>
-                      <div className="mt-1 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-black text-emerald-700 text-center">
-                        {aiDuration} Days
+                      <label className="block text-[10px] font-extrabold text-slate-600 uppercase tracking-wider">Trip Duration</label>
+                      <div className="mt-1.5 px-3.5 py-2.5 bg-orange-100/70 border border-orange-200 rounded-xl text-xs font-black text-brand-primary text-center flex items-center justify-center gap-1.5 shadow-sm">
+                        <CalendarOutlined /> {aiDuration} Days ({aiDuration - 1} Nights)
                       </div>
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase">
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-extrabold text-slate-600 uppercase tracking-wider">
                       {t("keywordsLabel")}
                     </label>
                     <textarea
@@ -740,12 +767,12 @@ export default function InteractiveTourCustomizer() {
                       value={aiKeywords}
                       onChange={(e) => setAiKeywords(e.target.value)}
                       placeholder={t("keywordsPlaceholder")}
-                      className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-brand-primary resize-none"
+                      className="w-full px-4 py-3 bg-white border border-slate-300 rounded-2xl text-xs font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary resize-none transition shadow-sm"
                     />
 
                     {/* Quick Pick Chips */}
                     <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                      <span className="text-[10px] font-bold text-slate-400">Quick chips:</span>
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Quick vibes:</span>
                       {QUICK_CHIPS.map((chip) => (
                         <button
                           key={chip}
@@ -755,7 +782,7 @@ export default function InteractiveTourCustomizer() {
                               setAiKeywords((prev) => (prev ? `${prev}, ${chip}` : chip));
                             }
                           }}
-                          className="px-2.5 py-0.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-bold rounded-full transition"
+                          className="px-3 py-1 bg-white hover:bg-orange-50 border border-slate-200 hover:border-orange-300 text-slate-700 hover:text-brand-primary text-[10px] font-bold rounded-full transition cursor-pointer shadow-2xs"
                         >
                           + {chip}
                         </button>
@@ -768,15 +795,17 @@ export default function InteractiveTourCustomizer() {
                       type="button"
                       onClick={handleGenerateAIPackage}
                       disabled={isGeneratingAI}
-                      className="w-full py-3 bg-brand-primary hover:bg-brand-primary/95 text-white font-extrabold text-xs rounded-xl shadow-md transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="w-full py-3.5 bg-gradient-to-r from-brand-primary to-orange-500 hover:from-brand-primary/95 hover:to-orange-600 text-white font-extrabold text-xs rounded-xl shadow-md hover:shadow-lg transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 uppercase tracking-wide"
                     >
                       {isGeneratingAI ? (
                         <>
-                          <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                          <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
                           {t("generatingPackage")}
                         </>
                       ) : (
-                        t("generatePackage")
+                        <>
+                          <span>⚡</span> {t("generatePackage")}
+                        </>
                       )}
                     </button>
                   </div>
@@ -787,7 +816,7 @@ export default function InteractiveTourCustomizer() {
                       <button
                         type="button"
                         onClick={handleGenerateAIPackage}
-                        className="px-3 py-1 bg-rose-600 text-white font-bold rounded-lg text-[10px]"
+                        className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg text-[10px] transition cursor-pointer"
                       >
                         Retry
                       </button>
@@ -814,21 +843,227 @@ export default function InteractiveTourCustomizer() {
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{
+                      ul: ({ children }) => <ul className="pl-0 space-y-2.5 my-2.5">{children}</ul>,
+                      ol: ({ children }) => <ol className="pl-0 space-y-2.5 my-2.5">{children}</ol>,
                       p: ({ node, children, ...props }) => {
-                        const contentStr = String(children);
-                        if (contentStr.includes("💡 Why This Was Chosen:")) {
+                        const text = getPlainText(children);
+                        
+                        if (text.includes("Target Route:")) {
+                          const parts = text.split("|").map(p => p.trim());
+                          const route = parts.find(p => p.startsWith("Target Route:"))?.replace("Target Route:", "")?.trim();
+                          const budget = parts.find(p => p.startsWith("Budget Tier:"))?.replace("Budget Tier:", "")?.trim();
+                          const duration = parts.find(p => p.startsWith("Duration:"))?.replace("Duration:", "")?.trim();
+                          
                           return (
-                            <div className="my-3 p-4 bg-amber-50/90 border-l-4 border-amber-500 rounded-xl text-amber-950 font-semibold shadow-sm">
-                              {children}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-slate-50/60 border border-slate-200/50 rounded-xl mb-5 text-[11px] font-semibold text-slate-700 shadow-inner">
+                              {route && (
+                                <div className="flex items-center gap-2 bg-white p-2.5 rounded-lg border border-slate-100 shadow-xs">
+                                  <span className="text-teal-500 text-sm"><CompassOutlined /></span>
+                                  <div>
+                                    <span className="block text-[8px] font-black text-slate-400 uppercase tracking-wider">Route Sequence</span>
+                                    <span className="text-slate-805 font-bold">{route}</span>
+                                  </div>
+                                </div>
+                              )}
+                              {budget && (
+                                <div className="flex items-center gap-2 bg-white p-2.5 rounded-lg border border-slate-100 shadow-xs">
+                                  <span className="text-emerald-500 text-sm"><DollarOutlined /></span>
+                                  <div>
+                                    <span className="block text-[8px] font-black text-slate-400 uppercase tracking-wider">Budget Tier</span>
+                                    <span className="text-slate-805 font-bold">{budget}</span>
+                                  </div>
+                                </div>
+                              )}
+                              {duration && (
+                                <div className="flex items-center gap-2 bg-white p-2.5 rounded-lg border border-slate-100 shadow-xs">
+                                  <span className="text-blue-500 text-sm"><CalendarOutlined /></span>
+                                  <div>
+                                    <span className="block text-[8px] font-black text-slate-400 uppercase tracking-wider">Tour Duration</span>
+                                    <span className="text-slate-855 font-bold">{duration}</span>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           );
                         }
-                        return <p className="mb-2" {...props}>{children}</p>;
+
+                        if (text.includes("Vibe & Intent:")) {
+                          const vibe = text.replace("Vibe & Intent:", "").trim().replace(/^"(.*)"$/, '$1');
+                          return (
+                            <div className="p-3.5 bg-teal-50/20 border border-teal-100/50 rounded-xl mb-4 text-[11px]">
+                              <span className="block text-[8px] font-black text-teal-600 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                <ThunderboltOutlined className="text-teal-500" /> Express Vibe & Intent
+                              </span>
+                              <span className="italic text-teal-950 font-serif leading-relaxed">"{vibe}"</span>
+                            </div>
+                          );
+                        }
+
+                        if (text.includes("💡 Why This Was Chosen:") || text.includes("Why This Was Chosen:")) {
+                          const cleanText = text.replace(/^(💡\s*)?(Why This Was Chosen:\s*)?/i, "").trim();
+                          return (
+                            <div className="my-3 p-3.5 bg-gradient-to-r from-amber-50/60 to-amber-100/30 border-l-4 border-amber-500 rounded-r-xl text-amber-955 font-medium shadow-xs flex items-start gap-2.5 animate-pulse-subtle">
+                              <span className="text-sm mt-0.5 select-none">💡</span>
+                              <div>
+                                <span className="block text-[9px] font-black text-amber-800 uppercase tracking-wider mb-0.5">XAI Decision Rationale</span>
+                                <p className="text-[11px] text-amber-950 leading-relaxed font-semibold">{cleanText}</p>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        if (text.includes("Inter-city transfers across")) {
+                          return (
+                            <div className="p-4 bg-teal-50/10 border border-teal-100 rounded-2xl shadow-xs flex items-start gap-3 mt-5">
+                              <span className="text-lg">🚗</span>
+                              <div>
+                                <span className="block text-[8px] font-black text-teal-700 uppercase tracking-wider mb-0.5">Transportation & Logistics</span>
+                                <p className="text-xs text-teal-900 font-semibold leading-relaxed">{text}</p>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        return <p className="mb-2 text-slate-700 font-medium leading-relaxed" {...props}>{children}</p>;
                       },
-                      h1: ({ children }) => <h1 className="text-lg font-black text-slate-900 border-b pb-1 mt-4 mb-2">{children}</h1>,
-                      h2: ({ children }) => <h2 className="text-sm font-extrabold text-brand-primary mt-4 mb-2">{children}</h2>,
-                      h3: ({ children }) => <h3 className="text-xs font-bold text-slate-800 mt-3 mb-1">{children}</h3>,
-                      li: ({ children }) => <li className="ml-4 list-disc text-slate-600 my-0.5">{children}</li>,
+                      h1: ({ children }) => {
+                        const text = getPlainText(children);
+                        if (text.includes("🌴")) {
+                          return (
+                            <div className="relative overflow-hidden bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white p-6 rounded-2xl shadow-sm mb-6 border border-emerald-500/20">
+                              <div className="absolute right-0 bottom-0 translate-x-4 translate-y-4 opacity-10 text-9xl font-black select-none pointer-events-none">🌴</div>
+                              <h2 className="text-lg md:text-xl font-black tracking-tight flex items-center gap-2 mb-1.5 text-white">
+                                {children}
+                              </h2>
+                              <p className="text-[11px] font-medium m-0 flex items-center gap-1.5">
+                                <RobotOutlined className="text-emerald-300" />
+                                <span>Tailored using Explainable AI (XAI) for Sri Lankan Eco-tourism</span>
+                              </p>
+                            </div>
+                          );
+                        }
+                        if (text.includes("📍")) {
+                          const cleanText = text.replace(/^(📍\s*)?(Destination:\s*)?/i, "").trim();
+                          return (
+                            <div className="flex items-center gap-3 border-b border-slate-100 pb-3.5 mt-8 mb-4">
+                              <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-teal-50 text-teal-600 text-base shadow-sm border border-teal-100">
+                                📍
+                              </span>
+                              <div>
+                                <h3 className="text-sm font-black text-slate-800 leading-tight m-0">
+                                  {cleanText}
+                                </h3>
+                                <span className="text-[9px] font-black text-teal-600 bg-teal-50/50 px-2 py-0.5 rounded tracking-wider uppercase">
+                                  Route Destination
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        }
+                        return <h1 className="text-base font-black text-slate-900 border-b border-slate-100 pb-1.5 mt-5 mb-3">{children}</h1>;
+                      },
+                      h2: ({ children }) => {
+                        const text = getPlainText(children);
+                        let icon = <CompassOutlined className="text-brand-primary" />;
+                        if (text.includes("🏨")) icon = <span>🏨</span>;
+                        else if (text.includes("🗓️")) icon = <span>🗓️</span>;
+                        else if (text.includes("🚗")) icon = <span>🚗</span>;
+
+                        const cleanText = text.replace(/^(🏨|🗓️|🚗)\s*/, "").trim();
+
+                        return (
+                          <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 mt-6 mb-3 border-b border-slate-100/80 pb-2">
+                            {icon}
+                            <span>{cleanText}</span>
+                          </h3>
+                        );
+                      },
+                      h3: ({ children }) => {
+                        const text = getPlainText(children);
+                        return (
+                          <h4 className="text-xs font-black text-slate-900 mt-5 mb-2 bg-gradient-to-r from-slate-100/60 to-transparent px-3 py-1.5 rounded-lg border-l-4 border-slate-800">
+                            {text}
+                          </h4>
+                        );
+                      },
+                      h4: ({ children }) => {
+                        const text = getPlainText(children);
+                        return (
+                          <div className="text-xs font-black text-slate-800 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200/50 inline-flex items-center gap-1.5 mt-5 mb-2 shadow-xs">
+                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            {text}
+                          </div>
+                        );
+                      },
+                      li: ({ children, ...props }) => {
+                        const text = getPlainText(children);
+
+                        if (text.includes("Why This Was Chosen:")) {
+                          const cleanText = text.replace(/^(💡\s*)?(Why This Was Chosen:\s*)?/i, "").trim();
+                          return (
+                            <li className="list-none ml-0 my-2.5">
+                              <div className="p-3 bg-amber-50 border-l-4 border-amber-500 rounded-r-xl text-amber-950 font-medium shadow-xs flex items-start gap-2.5">
+                                <span className="text-sm mt-0.5 select-none">💡</span>
+                                <div>
+                                  <span className="block text-[9px] font-black text-amber-800 uppercase tracking-wider mb-0.5">XAI Decision Rationale</span>
+                                  <p className="text-[11px] text-amber-955 font-semibold leading-relaxed m-0">{cleanText}</p>
+                                </div>
+                              </div>
+                            </li>
+                          );
+                        }
+
+                        if (text.startsWith("Rating:")) {
+                          const ratingStr = text.replace("Rating:", "").trim();
+                          return (
+                            <li className="list-none ml-0 my-1 flex items-center gap-1.5 text-xs text-slate-605 font-semibold">
+                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Rating</span>
+                              <span className="flex items-center gap-1 bg-amber-50/50 px-2 py-0.5 rounded text-amber-700 border border-amber-100">
+                                <StarFilled className="text-amber-500 text-[10px]" />
+                                {ratingStr}
+                              </span>
+                            </li>
+                          );
+                        }
+
+                        if (text.startsWith("Estimated Rate:")) {
+                          const priceStr = text.replace("Estimated Rate:", "").trim();
+                          return (
+                            <li className="list-none ml-0 my-1 flex items-center gap-1.5 text-xs text-slate-605 font-semibold">
+                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Est. Cost</span>
+                              <span className="flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
+                                {priceStr}
+                              </span>
+                            </li>
+                          );
+                        }
+
+                        if (text.startsWith("Overview:") || text.startsWith("Details:")) {
+                          const cleanText = text.replace(/^(Overview:|Details:)/, "").trim();
+                          return (
+                            <li className="list-none ml-0 my-1.5 text-xs text-slate-600 font-medium leading-relaxed">
+                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
+                                {text.startsWith("Overview:") ? "Overview & Features" : "Description"}
+                              </span>
+                              <p className="bg-slate-50/30 p-2.5 rounded-lg border border-slate-200/50 text-slate-700 font-medium m-0">{cleanText}</p>
+                            </li>
+                          );
+                        }
+
+                        if (text.startsWith("Visit:")) {
+                          const cleanText = text.replace("Visit:", "").trim();
+                          return (
+                            <li className="list-none ml-0 mt-4 mb-2 text-sm font-black text-slate-900 flex items-center gap-2">
+                              <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-teal-50 text-teal-600 text-xs shadow-sm border border-teal-100 select-none">
+                                🌴
+                              </span>
+                              <span>{cleanText}</span>
+                            </li>
+                          );
+                        }
+
+                        return <li className="ml-4 list-disc text-slate-600 my-0.5" {...props}>{children}</li>;
+                      }
                     }}
                   >
                     {aiItinerary}
@@ -1180,7 +1415,7 @@ export default function InteractiveTourCustomizer() {
                       type="button"
                       onClick={() => setInputs((prev) => ({ ...prev, transportMode: mode }))}
                       className={`p-4 rounded-2xl border text-left hover:bg-slate-50/50 transition ${isSelected
-                          ? "border-brand-secondary bg-sky-50/40"
+                          ? "border-brand-primary bg-orange-50/40"
                           : "border-slate-200 bg-white"
                         }`}
                     >
@@ -1250,7 +1485,7 @@ export default function InteractiveTourCustomizer() {
             {/* Step 6: Inclusions & Meal Add-ons Checklist */}
             <section className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-                <CoffeeOutlined className="text-brand-secondary" />
+                <CoffeeOutlined className="text-brand-primary" />
                 <span>{t("step6")}</span>
               </h3>
 
@@ -1263,7 +1498,7 @@ export default function InteractiveTourCustomizer() {
                       type="button"
                       onClick={() => handleToggleAddOn(addon)}
                       className={`p-4 rounded-2xl border text-left hover:bg-slate-50/50 relative flex items-center justify-between transition ${isSelected
-                          ? "border-brand-secondary bg-sky-50/30"
+                          ? "border-brand-primary bg-orange-50/30"
                           : "border-slate-200 bg-white"
                         }`}
                     >
@@ -1273,7 +1508,7 @@ export default function InteractiveTourCustomizer() {
                       </div>
                       <div
                         className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold border transition ${isSelected
-                            ? "bg-brand-secondary text-white border-brand-secondary"
+                            ? "bg-brand-primary text-white border-brand-primary"
                             : "bg-white text-transparent border-slate-300"
                           }`}
                       >
@@ -1293,7 +1528,7 @@ export default function InteractiveTourCustomizer() {
             <section className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xl relative overflow-hidden">
               <div className="flex justify-between items-center border-b border-slate-100 pb-4">
                 <div>
-                  <span className="text-[10px] font-black text-brand-secondary uppercase tracking-widest block">
+                  <span className="text-[10px] font-black text-brand-primary uppercase tracking-widest block">
                     {t("liveEstimate")}
                   </span>
                   <h3 className="text-lg font-black text-slate-900">{t("tripSummary")}</h3>
@@ -1391,7 +1626,7 @@ export default function InteractiveTourCustomizer() {
               <div className="mt-6 border-t border-slate-100 pt-6 flex justify-between items-baseline">
                 <span className="text-sm font-black text-slate-900">{t("totalQuote")}</span>
                 <div className="text-right">
-                  <span className="text-2xl font-black text-brand-secondary">{formatPrice(pricing.totalPrice)}</span>
+                  <span className="text-2xl font-black text-brand-primary">{formatPrice(pricing.totalPrice)}</span>
                   <span className="text-xs text-slate-400 font-bold uppercase ml-1.5">{currency}</span>
                 </div>
               </div>
@@ -1409,7 +1644,7 @@ export default function InteractiveTourCustomizer() {
                     min={new Date().toISOString().split("T")[0]}
                     value={preferredStartDate}
                     onChange={(e) => setPreferredStartDate(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-secondary text-xs font-semibold cursor-pointer"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-primary text-xs font-semibold cursor-pointer"
                   />
                   {errors.preferredStartDate && (
                     <span className="text-red-500 text-xs font-black">{errors.preferredStartDate}</span>
@@ -1426,7 +1661,7 @@ export default function InteractiveTourCustomizer() {
                     placeholder={t("placeholderPreferences")}
                     value={specialRequests}
                     onChange={(e) => setSpecialRequests(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-secondary text-xs font-semibold resize-none"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-primary text-xs font-semibold resize-none"
                   />
                 </div>
 
