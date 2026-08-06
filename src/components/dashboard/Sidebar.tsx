@@ -68,7 +68,7 @@ export default function Sidebar({ onNavigate, onLogout, isCollapsed = false, onT
 
     return (
         <aside className="flex h-full w-full flex-col bg-white/35 backdrop-blur-lg text-slate-700 border-r border-white/20 shadow-xl overflow-hidden">
-            <div className={`px-4 py-6 border-b border-white/20 bg-white/10 flex ${isCollapsed ? "flex-col items-center gap-4" : "items-center justify-between"}`}>
+            <div className={`px-4 py-5 border-b border-white/20 bg-white/10 relative flex items-center justify-center ${isCollapsed ? "flex-col gap-4" : ""}`}>
                 {isCollapsed ? (
                     <Link href={`/${locale}`} className="text-xl font-black tracking-wider text-brand-primary">
                         {initial}
@@ -83,7 +83,7 @@ export default function Sidebar({ onNavigate, onLogout, isCollapsed = false, onT
                 {onToggleCollapse && (
                     <button
                         onClick={onToggleCollapse}
-                        className="text-slate-500 hover:text-slate-900 transition-colors p-1 rounded-md hover:bg-white/40 flex items-center justify-center"
+                        className="absolute right-3 text-slate-500 hover:text-slate-900 transition-colors p-1 rounded-md hover:bg-white/40 flex items-center justify-center"
                         aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                     >
                         {isCollapsed ? <MenuUnfoldOutlined className="text-lg" /> : <MenuFoldOutlined className="text-lg" />}
@@ -104,7 +104,7 @@ export default function Sidebar({ onNavigate, onLogout, isCollapsed = false, onT
                             href={item.href}
                             onClick={onNavigate}
                             title={isCollapsed ? item.label : undefined}
-                            className={`flex items-center ${isCollapsed ? "justify-center px-2" : "gap-3.5 px-4"} rounded-xl py-3 text-sm font-semibold transition-all ${isActive
+                            className={`flex items-center ${isCollapsed ? "justify-center px-2" : "gap-3.5 px-4"} rounded-xl py-3 text-[16px] font-semibold transition-all ${isActive
                                     ? "bg-white/60 text-slate-900 border border-white/40 shadow-sm"
                                     : "text-slate-600 hover:bg-white/30 hover:text-slate-900"
                                 }`}
@@ -117,14 +117,56 @@ export default function Sidebar({ onNavigate, onLogout, isCollapsed = false, onT
             </nav>
 
             <div className="border-t border-white/20 bg-white/10 p-4 mt-auto">
-                <button
-                    onClick={onLogout}
-                    title={isCollapsed ? t("logout") : undefined}
-                    className={`flex w-full items-center ${isCollapsed ? "justify-center px-2" : "gap-3.5 px-4"} rounded-xl py-3 text-sm font-semibold text-slate-655 hover:bg-white/30 hover:text-slate-900 transition-colors duration-200`}
-                >
-                    <LogoutOutlined className="text-base flex-shrink-0" />
-                    {!isCollapsed && <span>{t("logout")}</span>}
-                </button>
+                {isCollapsed ? (
+                    /* Collapsed: icon-only round button */
+                    <button
+                        onClick={onLogout}
+                        title={t("logout")}
+                        className="flex w-full items-center justify-center rounded-xl py-3 text-slate-500 hover:bg-white/30 hover:text-slate-900 transition-colors duration-200"
+                    >
+                        <LogoutOutlined className="text-base" />
+                    </button>
+                ) : (
+                    /* Expanded: full-width outline button + copyright */
+                    <>
+                        <button
+                            onClick={onLogout}
+                            style={{
+                                width: "100%",
+                                padding: "10px",
+                                background: "transparent",
+                                border: "1.5px solid #e2e8f0",
+                                borderRadius: "8px",
+                                color: "#64748b",
+                                fontWeight: 600,
+                                fontSize: "14px",
+                                cursor: "pointer",
+                                transition: "border-color .15s, color .15s, background .15s",
+                                textAlign: "center",
+                            }}
+                            onMouseEnter={(e) => {
+                                (e.currentTarget as HTMLButtonElement).style.borderColor = "#cbd5e1";
+                                (e.currentTarget as HTMLButtonElement).style.color = "#1e293b";
+                                (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.25)";
+                            }}
+                            onMouseLeave={(e) => {
+                                (e.currentTarget as HTMLButtonElement).style.borderColor = "#e2e8f0";
+                                (e.currentTarget as HTMLButtonElement).style.color = "#64748b";
+                                (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+                            }}
+                        >
+                            {t("logout")}
+                        </button>
+                        <p style={{
+                            marginTop: "12px",
+                            fontSize: "10.5px",
+                            textAlign: "center",
+                            color: "#94a3b8",
+                        }}>
+                            © 2026 {(tenant as any)?.name ?? `${tenantSlug} Travel`}
+                        </p>
+                    </>
+                )}
             </div>
         </aside>
     );
