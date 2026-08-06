@@ -133,6 +133,13 @@ def extract_suggested_places_by_destination(agent2_data: Dict[str, Any]) -> Dict
             raw_rating = h.get("rating")
             rating_val = float(raw_rating) if raw_rating is not None else 4.5
 
+            h_images = h.get("images") or []
+            primary_image = None
+            if isinstance(h_images, list) and len(h_images) > 0 and isinstance(h_images[0], str):
+                raw_url = h_images[0].strip()
+                if raw_url:
+                    primary_image = raw_url.split()[0]
+
             formatted_hotels.append({
                 "id": str(h.get("id") or h.get("_id") or h.get("name")),
                 "name": h.get("name", "Boutique Hotel"),
@@ -140,6 +147,7 @@ def extract_suggested_places_by_destination(agent2_data: Dict[str, Any]) -> Dict
                 "avg_nightly_usd": float(rate),
                 "rating": rating_val,
                 "price_tier": h.get("price_tier", budget),
+                "primary_image": primary_image,
                 "description": h.get("description", "Recommended accommodation in Sri Lanka.")
             })
 
@@ -149,6 +157,22 @@ def extract_suggested_places_by_destination(agent2_data: Dict[str, Any]) -> Dict
             raw_p_rating = p.get("rating")
             p_rating_val = float(raw_p_rating) if raw_p_rating is not None else 4.7
 
+            p_images = p.get("images") or []
+            primary_image = None
+            street_view_url = None
+
+            if isinstance(p_images, list):
+                for img in p_images:
+                    if not isinstance(img, str) or not img.strip():
+                        continue
+                    clean_url = img.strip().split()[0]
+                    if "mapillary.com" in clean_url:
+                        if not street_view_url:
+                            street_view_url = clean_url
+                    else:
+                        if not primary_image:
+                            primary_image = clean_url
+
             formatted_poi.append({
                 "id": str(p.get("id") or p.get("_id") or p.get("name")),
                 "name": p.get("name", "Cultural Landmark"),
@@ -156,6 +180,8 @@ def extract_suggested_places_by_destination(agent2_data: Dict[str, Any]) -> Dict
                 "ticket_price_usd": float(ticket),
                 "rating": p_rating_val,
                 "categories": p.get("categories", []),
+                "primary_image": primary_image,
+                "street_view_url": street_view_url,
                 "description": p.get("description", "Attraction landmark in Sri Lanka.")
             })
 

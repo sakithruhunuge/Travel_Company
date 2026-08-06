@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import Image from "next/image";
 import {
   CompassOutlined,
   DollarOutlined,
@@ -21,6 +22,7 @@ import {
   RobotOutlined,
   ThunderboltOutlined,
   SafetyCertificateOutlined,
+  PictureOutlined,
 } from "@ant-design/icons";
 
 import { useToast } from "@/context/ToastContext";
@@ -153,6 +155,7 @@ export default function InteractiveTourCustomizer() {
   // Selectable AI Suggested Places state
   const [suggestedPlacesByDestination, setSuggestedPlacesByDestination] = useState<Record<string, { hotels: any[]; poi: any[] }>>({});
   const [selectedPlaceIds, setSelectedPlaceIds] = useState<string[]>([]);
+  const [failedPoiImages, setFailedPoiImages] = useState<Record<string, boolean>>({});
 
   // Re-derive AI duration on date change
   useEffect(() => {
@@ -611,7 +614,7 @@ export default function InteractiveTourCustomizer() {
   return (
     <div className="min-h-screen bg-slate-50/50 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-8">
-        
+
         {/* Header Title Banner */}
         <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-brand-primary rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
           <div className="relative z-10 max-w-2xl space-y-3">
@@ -630,10 +633,10 @@ export default function InteractiveTourCustomizer() {
 
         {/* Main 2-Column Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
+
           {/* Left Column: Customizer Controls (7 cols) */}
           <div className="lg:col-span-7 space-y-8">
-            
+
             {/* Step 1: Base Package vs AI Suggest Card Choice */}
             <section className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
@@ -642,16 +645,15 @@ export default function InteractiveTourCustomizer() {
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                
+
                 {/* AI Suggest My Trip Option Card */}
                 <button
                   type="button"
                   onClick={() => setSelectedTour("ai-suggested")}
-                  className={`p-4 rounded-2xl border text-left hover:bg-slate-50/50 transition-all col-span-1 sm:col-span-2 ${
-                    selectedTour === "ai-suggested"
+                  className={`p-4 rounded-2xl border text-left hover:bg-slate-50/50 transition-all col-span-1 sm:col-span-2 ${selectedTour === "ai-suggested"
                       ? "border-brand-primary bg-brand-primary/5 shadow-md"
                       : "border-brand-primary/40 bg-white"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="block text-sm font-extrabold text-brand-primary flex items-center gap-2">
@@ -675,11 +677,10 @@ export default function InteractiveTourCustomizer() {
                       key={tour.id}
                       type="button"
                       onClick={() => handleBaseTourChange(tour.id)}
-                      className={`p-4 rounded-2xl border text-left hover:bg-slate-50/50 transition-all ${
-                        isSelected
+                      className={`p-4 rounded-2xl border text-left hover:bg-slate-50/50 transition-all ${isSelected
                           ? "border-brand-secondary bg-sky-50/35"
                           : "border-slate-200 bg-white"
-                      }`}
+                        }`}
                     >
                       <span className="block text-sm font-extrabold text-slate-900">{t(`baseTours.${tour.nameKey}` as any)}</span>
                       <span className="block text-[11px] text-slate-500 mt-1 font-medium leading-normal">{t(`baseTours.${tour.descKey}` as any)}</span>
@@ -875,17 +876,31 @@ export default function InteractiveTourCustomizer() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {cityHotels.map((hotel) => {
                               const isSelected = selectedPlaceIds.includes(String(hotel.id));
+                              const defaultCityImg = LOCATIONS.find((l) => l.id === city)?.img || "/images/colombo.png";
+                              const displayImg = (hotel.primary_image && !hotel.primary_image.includes("photos.app.goo.gl"))
+                                ? hotel.primary_image
+                                : defaultCityImg;
                               return (
                                 <div
                                   key={hotel.id}
                                   onClick={() => handleToggleSuggestedPlace(hotel, city, true)}
-                                  className={`p-3.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
-                                    isSelected
+                                  className={`p-3.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${isSelected
                                       ? "border-brand-primary bg-sky-50/70 shadow-sm"
                                       : "border-slate-200 bg-white hover:border-slate-300"
-                                  }`}
+                                    }`}
                                 >
                                   <div>
+                                    <div className="w-full h-28 relative rounded-lg overflow-hidden mb-2.5 bg-slate-100 border border-slate-200/50">
+                                      <img
+                                        src={displayImg}
+                                        alt={hotel.name}
+                                        loading="lazy"
+                                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                                        onError={(e) => {
+                                          (e.target as HTMLImageElement).src = defaultCityImg;
+                                        }}
+                                      />
+                                    </div>
                                     <div className="flex items-start justify-between gap-2">
                                       <h5 className="text-xs font-extrabold text-slate-900 leading-tight">
                                         {hotel.name}
@@ -908,11 +923,10 @@ export default function InteractiveTourCustomizer() {
                                   <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2">
                                     <span className="text-[10px] font-bold text-slate-400">Real Scraped Rate</span>
                                     <span
-                                      className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition ${
-                                        isSelected
+                                      className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition ${isSelected
                                           ? "bg-brand-primary text-white"
                                           : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                                      }`}
+                                        }`}
                                     >
                                       {isSelected ? t("selectedPlace") : t("selectPlace")}
                                     </span>
@@ -933,17 +947,33 @@ export default function InteractiveTourCustomizer() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {cityPois.map((poi) => {
                               const isSelected = selectedPlaceIds.includes(String(poi.id));
+                              const defaultCityImg = LOCATIONS.find((l) => l.id === city)?.img || "/images/colombo.png";
+                              const isPoiImgFailed = failedPoiImages[String(poi.id)];
+                              const displayImg = (poi.primary_image && !poi.primary_image.includes("photos.app.goo.gl") && !isPoiImgFailed)
+                                ? poi.primary_image
+                                : defaultCityImg;
                               return (
                                 <div
                                   key={poi.id}
                                   onClick={() => handleToggleSuggestedPlace(poi, city, false)}
-                                  className={`p-3.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
-                                    isSelected
+                                  className={`p-3.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${isSelected
                                       ? "border-emerald-600 bg-emerald-50/40 shadow-sm"
                                       : "border-slate-200 bg-white hover:border-slate-300"
-                                  }`}
+                                    }`}
                                 >
                                   <div>
+                                    <div className="w-full h-28 relative rounded-lg overflow-hidden mb-2.5 bg-slate-100 border border-slate-200/50">
+                                      <img
+                                        src={displayImg}
+                                        alt={poi.name}
+                                        loading="lazy"
+                                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                                        onError={(e) => {
+                                          (e.target as HTMLImageElement).src = defaultCityImg;
+                                          setFailedPoiImages((prev) => ({ ...prev, [String(poi.id)]: true }));
+                                        }}
+                                      />
+                                    </div>
                                     <div className="flex items-start justify-between gap-2">
                                       <h5 className="text-xs font-extrabold text-slate-900 leading-tight">
                                         {poi.name}
@@ -961,16 +991,28 @@ export default function InteractiveTourCustomizer() {
                                         {poi.description}
                                       </p>
                                     )}
+                                    {poi.street_view_url && (
+                                      <div className="mt-1">
+                                        <a
+                                          href={poi.street_view_url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="inline-flex items-center gap-1 text-[10px] font-bold text-sky-600 hover:text-sky-800 hover:underline"
+                                        >
+                                          <span>View street view on Mapillary</span> ↗
+                                        </a>
+                                      </div>
+                                    )}
                                   </div>
 
                                   <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2">
                                     <span className="text-[10px] font-bold text-slate-400">Entry Ticket</span>
                                     <span
-                                      className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition ${
-                                        isSelected
+                                      className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition ${isSelected
                                           ? "bg-emerald-600 text-white"
                                           : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                                      }`}
+                                        }`}
                                     >
                                       {isSelected ? t("selectedPlace") : t("selectPlace")}
                                     </span>
@@ -1077,11 +1119,10 @@ export default function InteractiveTourCustomizer() {
                       onClick={() => handleToggleLocation(loc.id)}
                       onMouseEnter={() => setHoveredLocation(loc)}
                       onMouseLeave={() => setHoveredLocation(null)}
-                      className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 ${
-                        isSelected
+                      className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 ${isSelected
                           ? "bg-brand-primary text-white border-brand-primary shadow-sm"
                           : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
-                      }`}
+                        }`}
                     >
                       <span>{loc.name}</span>
                       {isSelected && <CheckOutlined className="text-[10px]" />}
@@ -1106,11 +1147,10 @@ export default function InteractiveTourCustomizer() {
                       key={tier}
                       type="button"
                       onClick={() => setInputs((prev) => ({ ...prev, hotelClass: tier }))}
-                      className={`p-4 rounded-2xl border text-left hover:bg-slate-50/50 transition ${
-                        isSelected
+                      className={`p-4 rounded-2xl border text-left hover:bg-slate-50/50 transition ${isSelected
                           ? "border-brand-primary bg-brand-primary/5"
                           : "border-slate-200 bg-white"
-                      }`}
+                        }`}
                     >
                       <span className="block text-xs font-black text-slate-900 uppercase">
                         {t(`hotelTiers.${tier === "premium-boutique" ? "premiumBoutique" : tier}` as any)}
@@ -1139,11 +1179,10 @@ export default function InteractiveTourCustomizer() {
                       key={mode}
                       type="button"
                       onClick={() => setInputs((prev) => ({ ...prev, transportMode: mode }))}
-                      className={`p-4 rounded-2xl border text-left hover:bg-slate-50/50 transition ${
-                        isSelected
+                      className={`p-4 rounded-2xl border text-left hover:bg-slate-50/50 transition ${isSelected
                           ? "border-brand-secondary bg-sky-50/40"
                           : "border-slate-200 bg-white"
-                      }`}
+                        }`}
                     >
                       <span className="block text-xs font-black text-slate-900 uppercase">
                         {t(`transportModes.${mode === "self-drive" ? "selfDrive" : mode === "private-driver" ? "privateDriver" : mode === "first-class-train" ? "firstClassTrain" : "charterFlight"}` as any)}
@@ -1186,22 +1225,20 @@ export default function InteractiveTourCustomizer() {
                     <button
                       type="button"
                       onClick={() => setInputs((prev) => ({ ...prev, pricingMode: "per-day" }))}
-                      className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold text-center transition ${
-                        inputs.pricingMode === "per-day"
+                      className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold text-center transition ${inputs.pricingMode === "per-day"
                           ? "bg-brand-primary text-white border-brand-primary"
                           : "bg-white text-slate-700 border-slate-200"
-                      }`}
+                        }`}
                     >
                       {t("perDay")}
                     </button>
                     <button
                       type="button"
                       onClick={() => setInputs((prev) => ({ ...prev, pricingMode: "per-trip" }))}
-                      className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold text-center transition ${
-                        inputs.pricingMode === "per-trip"
+                      className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold text-center transition ${inputs.pricingMode === "per-trip"
                           ? "bg-brand-primary text-white border-brand-primary"
                           : "bg-white text-slate-700 border-slate-200"
-                      }`}
+                        }`}
                     >
                       {t("perTrip")}
                     </button>
@@ -1225,22 +1262,20 @@ export default function InteractiveTourCustomizer() {
                       key={addon}
                       type="button"
                       onClick={() => handleToggleAddOn(addon)}
-                      className={`p-4 rounded-2xl border text-left hover:bg-slate-50/50 relative flex items-center justify-between transition ${
-                        isSelected
+                      className={`p-4 rounded-2xl border text-left hover:bg-slate-50/50 relative flex items-center justify-between transition ${isSelected
                           ? "border-brand-secondary bg-sky-50/30"
                           : "border-slate-200 bg-white"
-                      }`}
+                        }`}
                     >
                       <div>
                         <span className="block text-xs font-black text-slate-800 uppercase capitalize">{addon}</span>
                         <span className="block text-[10px] text-slate-400 font-bold mt-0.5">{t(`addOnLabels.${addon}` as any)}</span>
                       </div>
                       <div
-                        className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold border transition ${
-                          isSelected
+                        className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold border transition ${isSelected
                             ? "bg-brand-secondary text-white border-brand-secondary"
                             : "bg-white text-transparent border-slate-300"
-                        }`}
+                          }`}
                       >
                         <CheckOutlined />
                       </div>
@@ -1254,7 +1289,7 @@ export default function InteractiveTourCustomizer() {
 
           {/* Right Column: Sticky Real-time Pricing Summary (5 cols) */}
           <div className="lg:col-span-5 lg:sticky lg:top-24 space-y-6">
-            
+
             <section className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xl relative overflow-hidden">
               <div className="flex justify-between items-center border-b border-slate-100 pb-4">
                 <div>
@@ -1363,7 +1398,7 @@ export default function InteractiveTourCustomizer() {
 
               {/* Checkout Form */}
               <div className="mt-8 border-t border-slate-100 pt-6 space-y-4">
-                
+
                 {/* Preferred Date */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-700 uppercase flex items-center gap-1.5">
@@ -1406,17 +1441,16 @@ export default function InteractiveTourCustomizer() {
                   type="button"
                   onClick={handleSubmitBooking}
                   disabled={isSubmitting}
-                  className={`w-full py-3.5 rounded-xl text-white font-black text-xs transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer ${
-                    sessionStatus !== "authenticated"
+                  className={`w-full py-3.5 rounded-xl text-white font-black text-xs transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer ${sessionStatus !== "authenticated"
                       ? "bg-amber-600 hover:bg-amber-500"
                       : "bg-slate-900 hover:bg-slate-800"
-                  }`}
+                    }`}
                 >
                   {isSubmitting
                     ? t("savingQuote")
                     : sessionStatus !== "authenticated"
-                    ? t("signInSubmit")
-                    : t("submitCustom")}
+                      ? t("signInSubmit")
+                      : t("submitCustom")}
                 </button>
               </div>
 

@@ -146,16 +146,20 @@ _MODEL_CACHE: Optional[Any] = None
 
 def get_model() -> Any:
     """
-    Returns the cached SentenceTransformer model instance.
+    Returns the cached SentenceTransformer model instance if available.
     """
     global _MODEL_CACHE
     if _MODEL_CACHE is None:
-        logger.info("Loading SentenceTransformer model 'all-MiniLM-L6-v2' into memory cache...")
-        st_mod = importlib.import_module("sentence_transformers")
-        SentenceTransformer = st_mod.SentenceTransformer
-        _MODEL_CACHE = SentenceTransformer("all-MiniLM-L6-v2")
-        logger.info("SentenceTransformer model loaded successfully.")
-    return _MODEL_CACHE
+        try:
+            logger.info("Loading SentenceTransformer model 'all-MiniLM-L6-v2' into memory cache...")
+            st_mod = importlib.import_module("sentence_transformers")
+            SentenceTransformer = st_mod.SentenceTransformer
+            _MODEL_CACHE = SentenceTransformer("all-MiniLM-L6-v2")
+            logger.info("SentenceTransformer model loaded successfully.")
+        except Exception as e:
+            logger.warning(f"Could not load SentenceTransformer model ({e}). Falling back to zero-vector similarity.")
+            _MODEL_CACHE = False
+    return _MODEL_CACHE if _MODEL_CACHE is not False else None
 
 
 def compute_cosine_similarity(query_embedding: np.ndarray, doc_embedding: Any) -> float:
@@ -176,17 +180,17 @@ def compute_cosine_similarity(query_embedding: np.ndarray, doc_embedding: Any) -
 def search_travel_database(
     destination: str,
     budget_tier: Optional[str] = None,
-    vibe_query: str = "",
+    vibe_query: Optional[str] = None,
     selected_place_ids: Optional[List[str]] = None,
     limit: int = 5
 ) -> str:
     """
-    Hybrid Vector, Geospatial Location, and Budget-Tier Search Function over SCRAPER_DB ('srilanka_travel').
+    Queries MongoDB for hotels and POIs matching the destination, budget tier, and vibe embedding similarity.
 
-    Parameters:
-        destination (str): Target destination city, district, or region in Sri Lanka (e.g. 'Galle', 'Colombo', 'Bentota').
-        budget_tier (str, optional): Target price tier ('Budget', 'Standard', 'Luxury').
-        vibe_query (str): Natural language summary describing the desired vibe, preferences, or activities.
+    Args:
+        destination (str): Primary target destination (e.g., 'Colombo', 'Kandy', 'Galle', 'Yala').
+        budget_tier (str, optional): 'Budget', 'Standard', or 'Luxury'. Filters hotel price tiers and rates.
+        vibe_query (str, optional): Natural language travel preferences vector encoded for semantic matching.
         selected_place_ids (list, optional): List of specific source_ids or document _ids to prioritize at top of results.
         limit (int): Maximum number of records to return (defaults to 5).
 
@@ -204,8 +208,14 @@ def search_travel_database(
     
     # Compose search string and generate query vector embedding
     search_prompt = f"{destination} {vibe_query}".strip() if vibe_query else destination
-    query_vec = model.encode(search_prompt, show_progress_bar=False)
-    query_vec = np.array(query_vec, dtype=np.float32)
+    if model is not None:
+        try:
+            query_vec = model.encode(search_prompt, show_progress_bar=False)
+            query_vec = np.array(query_vec, dtype=np.float32)
+        except Exception:
+            query_vec = np.zeros(384, dtype=np.float32)
+    else:
+        query_vec = np.zeros(384, dtype=np.float32)
 
     selected_ids_set = set(selected_place_ids) if selected_place_ids else set()
 
@@ -306,6 +316,7 @@ def search_travel_database(
                 "has_pool": doc.get("has_pool", False),
                 "has_breakfast": doc.get("has_breakfast", False),
                 "description": doc.get("description"),
+                "images": doc.get("images", []),
                 "similarity_score": round(sim, 4)
             }
         ))
@@ -369,6 +380,7 @@ def search_travel_database(
                 "airport_distance_km": doc.get("airport_distance_km"),
                 "airport_travel_time_min": doc.get("airport_travel_time_min"),
                 "description": doc.get("description"),
+                "images": doc.get("images", []),
                 "similarity_score": round(sim, 4)
             }
         ))
