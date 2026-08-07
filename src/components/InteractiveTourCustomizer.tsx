@@ -682,6 +682,7 @@ export default function InteractiveTourCustomizer() {
   if (submitSuccess) {
     return (
       <div className="itc-root min-h-screen bg-[#FDFBF7] px-4 py-16">
+        {/* SSR Hydration Safe Inline Styles */}
         <style dangerouslySetInnerHTML={{ __html: ITC_CSS }} />
         <motion.div
           initial={{ opacity: 0, y: 30, scale: 0.97 }}
