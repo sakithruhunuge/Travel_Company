@@ -648,6 +648,7 @@ export default function InteractiveTourCustomizer() {
     }
     setIsSubmitting(true);
     try {
+      // Verified API Schema alignment: numberOfTravelers and preferredStartDate
       const payload = {
         packageId: selectedTour === "ai-suggested" ? "custom" : selectedTour,
         packageName: selectedTour === "ai-suggested" ? "AI-Suggested Ceylon Experience" : `Custom Tour - ${inputs.destinations.join(", ")}`,
