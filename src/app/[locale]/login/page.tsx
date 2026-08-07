@@ -14,6 +14,7 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const restoreForm = searchParams.get("restoreForm") === "true";
   const triggerGoogle = searchParams.get("triggerGoogle") === "true";
+  const authError = searchParams.get("error");
 
   let callbackUrl = searchParams.get("callbackUrl") || (restoreForm ? "/plan-trip" : "/dashboard");
   if (restoreForm && (callbackUrl === "/dashboard" || callbackUrl === "/login" || callbackUrl === "/signup")) {
@@ -118,6 +119,14 @@ function LoginContent() {
                   <h1 className="text-3xl font-bold text-slate-900">Welcome Back</h1>
                   <p className="text-slate-500">Sign in to continue your journey</p>
                 </div>
+
+                {authError && (
+                  <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-600 text-xs font-semibold leading-relaxed">
+                    {authError === "OAuthCallbackError" || authError === "Configuration"
+                      ? "Google Sign-In failed: Please verify that your GOOGLE_CLIENT_SECRET in .env is configured and valid."
+                      : `Authentication error: ${authError}`}
+                  </div>
+                )}
 
                 <LoginForm />
 

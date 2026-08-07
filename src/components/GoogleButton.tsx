@@ -27,7 +27,7 @@ export default function GoogleButton() {
       const port = window.location.port ? `:${window.location.port}` : "";
       const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || "travelcompany.com";
       
-      const isLocalhostSubdomain = hostname.endsWith(".localhost");
+      const isLocalhostSubdomain = hostname !== "localhost" && hostname.endsWith(".localhost");
       const isProdSubdomain = hostname !== mainDomain && hostname.endsWith("." + mainDomain);
       const isSubdomain = isLocalhostSubdomain || isProdSubdomain;
 
