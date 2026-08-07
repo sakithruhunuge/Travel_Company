@@ -1,12 +1,22 @@
+// ============================================================================
+//  src/components/InteractiveTourCustomizer.tsx  —  PREMIUM LIGHT REVAMP v2
+//  feature/agent_frontend · Travel_Company
+//  Palette: Primary #FF8B50 · Secondary #25A5FE · warm whites + glass.
+//  No black surfaces. Same exports / APIs / pricing engine / i18n keys.
+//  New: immersive Ceylon hero, island icons showcase (add-to-route postcards),
+//  glass live-estimate rail, coral/sky micro-interactions.
+// ============================================================================
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { useTranslations } from "next-intl";
+/* eslint-disable @next/next/no-img-element */
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
+import type LType from "leaflet";
 import {
   CompassOutlined,
   DollarOutlined,
@@ -22,7 +32,10 @@ import {
   RobotOutlined,
   ThunderboltOutlined,
   SafetyCertificateOutlined,
-  PictureOutlined,
+  CrownOutlined,
+  FireOutlined,
+  CameraOutlined,
+  SendOutlined,
 } from "@ant-design/icons";
 
 import { useToast } from "@/context/ToastContext";
@@ -30,15 +43,16 @@ import {
   calculateTripPricing,
   PricingInputs,
   HOTEL_LABELS,
+  HOTEL_RATES,
   TRANSPORT_LABELS,
-  SEASON_LABELS,
+  SEASON_MULTIPLIERS,
   ACTIVITY_RATES,
   ACTIVITY_LABELS,
-  ADDON_LABELS,
+  ADDON_RATES,
   DESTINATION_SURCHARGES,
 } from "@/lib/pricingEngine";
 
-// Extended 24 Sri Lanka Locations Dataset with Real Coordinates
+/* ---------------- 24 Sri Lanka Locations (real coordinates) ---------------- */
 export interface MapLocation {
   id: string;
   name: string;
@@ -46,6 +60,31 @@ export interface MapLocation {
   lng: number;
   img: string;
   description: string;
+}
+
+export interface MapPlaceHotel {
+  id: string | number;
+  name: string;
+  avg_nightly_usd: number;
+  rating?: number;
+  price_tier?: string;
+  description?: string;
+  primary_image?: string;
+}
+
+export interface MapPlacePoi {
+  id: string | number;
+  name: string;
+  ticket_price_usd: number;
+  rating?: number;
+  description?: string;
+  primary_image?: string;
+  street_view_url?: string;
+}
+
+export interface DestinationPlaces {
+  hotels?: MapPlaceHotel[];
+  poi?: MapPlacePoi[];
 }
 
 export const LOCATIONS: MapLocation[] = [
@@ -76,56 +115,161 @@ export const LOCATIONS: MapLocation[] = [
 ];
 
 export const BASE_TOURS = [
-  {
-    id: "cultural",
-    nameKey: "cultural",
-    descKey: "culturalDesc",
-    destinations: ["Colombo", "Dambulla", "Sigiriya", "Kandy"],
-    duration: 5,
-  },
-  {
-    id: "southern",
-    nameKey: "southern",
-    descKey: "southernDesc",
-    destinations: ["Bentota", "Galle", "Mirissa", "Yala"],
-    duration: 6,
-  },
-  {
-    id: "hill",
-    nameKey: "hill",
-    descKey: "hillDesc",
-    destinations: ["Kandy", "Nuwara Eliya", "Ella"],
-    duration: 6,
-  },
-  {
-    id: "custom",
-    nameKey: "custom",
-    descKey: "customDesc",
-    destinations: ["Colombo", "Kandy"],
-    duration: 4,
-  },
+  { id: "cultural", nameKey: "cultural", descKey: "culturalDesc", destinations: ["Colombo", "Dambulla", "Sigiriya", "Kandy"], duration: 5 },
+  { id: "southern", nameKey: "southern", descKey: "southernDesc", destinations: ["Bentota", "Galle", "Mirissa", "Yala"], duration: 6 },
+  { id: "hill", nameKey: "hill", descKey: "hillDesc", destinations: ["Kandy", "Nuwara Eliya", "Ella"], duration: 6 },
+  { id: "custom", nameKey: "custom", descKey: "customDesc", destinations: ["Colombo", "Kandy"], duration: 4 },
+];
+
+/* Iconic experiences showcase — real project imagery, tap to add to route */
+const SPOTLIGHTS = [
+  { id: "Sigiriya", img: "/images/sigiriya.png", tag: "UNESCO Heritage", title: "Sigiriya Lion Rock", blurb: "A 5th-century sky palace rising 200 metres above the misty jungle plain." },
+  { id: "Ella", img: "/images/nine_arch.png", tag: "Scenic Rail", title: "Nine Arch Bridge", blurb: "Ride the world's most photographed train through emerald tea country." },
+  { id: "Nuwara Eliya", img: "/images/tea.png", tag: "Hill Country", title: "Ceylon Tea Trails", blurb: "Cool-climate plantations, waterfall valleys and colonial bungalow stays." },
+  { id: "Yala", img: "/images/yala.png", tag: "Wild Safari", title: "Yala Leopard Kingdom", blurb: "The highest density of wild leopards on Earth, at golden-hour jeep range." },
+  { id: "Galle", img: "/images/galle.png", tag: "Colonial Charm", title: "Galle Dutch Fort", blurb: "Cobblestone ramparts, sunset walks and boutique café culture since 1663." },
+  { id: "Mirissa", img: "/images/mirissa.png", tag: "Ocean Wonder", title: "Mirissa Blue Waters", blurb: "Sail at dawn for blue whales, then dine barefoot on the golden sand." },
 ];
 
 const QUICK_CHIPS = ["beach", "ancient", "wildlife", "hill country", "quiet", "food"];
 
-const getPlainText = (node: any): string => {
+const SEASONS = [
+  { id: "off-peak", name: "Off-Peak", window: "May – Jun · Oct – Nov", mult: SEASON_MULTIPLIERS["off-peak"] },
+  { id: "shoulder", name: "Shoulder", window: "Jul – Sep", mult: SEASON_MULTIPLIERS["shoulder"] },
+  { id: "peak", name: "Peak", window: "Dec – Apr", mult: SEASON_MULTIPLIERS["peak"] },
+] as const;
+
+const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
+  "yala-safari": <CameraOutlined />,
+  "surf-lessons": <SendOutlined />,
+  "sigiriya-hike": <ThunderboltOutlined />,
+  "cooking-class": <FireOutlined />,
+};
+
+const ADDONS = [
+  { id: "breakfast", icon: <CoffeeOutlined />, price: ADDON_RATES.breakfast, per: "day · traveler" },
+  { id: "dinner", icon: <FireOutlined />, price: ADDON_RATES.dinner, per: "day · traveler" },
+  { id: "airport-transfer", icon: <CarOutlined />, price: ADDON_RATES["airport-transfer"], per: "flat" },
+  { id: "guide", icon: <UsergroupAddOutlined />, price: ADDON_RATES.guide, per: "day" },
+];
+
+const cleanLabel = (label: string) => label.replace(/\s*\(\+\$.*\)$/, "").trim();
+
+const getPlainText = (node: React.ReactNode): string => {
   if (!node) return "";
-  if (typeof node === "string") return node;
+  if (typeof node === "string" || typeof node === "number") return String(node);
   if (Array.isArray(node)) return node.map(getPlainText).join("");
-  if (node.props && node.props.children) return getPlainText(node.props.children);
+  if (React.isValidElement<{ children?: React.ReactNode }>(node) && node.props && node.props.children) {
+    return getPlainText(node.props.children);
+  }
   return "";
 };
 
+/* ---------------- animated count-up ---------------- */
+function useAnimatedNumber(target: number) {
+  const [val, setVal] = useState(target);
+  const valRef = useRef(target);
+  useEffect(() => {
+    const from = valRef.current;
+    const to = target;
+    if (Math.abs(to - from) < 1) {
+      valRef.current = to;
+      setVal(to);
+      return;
+    }
+    let raf = 0;
+    const t0 = performance.now();
+    const dur = 650;
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - t0) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      const v = from + (to - from) * eased;
+      valRef.current = v;
+      setVal(v);
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target]);
+  return val;
+}
+
+const fadeUp = {
+  initial: { opacity: 0, y: 26 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-60px" },
+  transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] as const },
+};
+
+function Stepper({
+  value,
+  onDec,
+  onInc,
+  decDisabled,
+  incDisabled,
+  suffix,
+}: {
+  value: number;
+  onDec: () => void;
+  onInc: () => void;
+  decDisabled?: boolean;
+  incDisabled?: boolean;
+  suffix?: string;
+}) {
+  return (
+    <div className="flex items-center gap-4">
+      <motion.button
+        whileTap={{ scale: 0.9 }}
+        type="button"
+        onClick={onDec}
+        disabled={decDisabled}
+        className="w-11 h-11 rounded-2xl bg-white border border-[#F0E7D8] text-[#7A7263] text-lg font-black flex items-center justify-center hover:border-[#FF8B50] hover:text-[#FF8B50] hover:shadow-md hover:shadow-[#FF8B50]/15 transition disabled:opacity-35 disabled:pointer-events-none"
+        aria-label="decrease"
+      >
+        −
+      </motion.button>
+      <div className="min-w-[92px] text-center overflow-hidden">
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.span
+            key={value}
+            initial={{ y: 16, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -16, opacity: 0 }}
+            transition={{ duration: 0.22 }}
+            className="inline-block text-2xl font-semibold text-[#44403C] itc-serif"
+          >
+            {value}
+            {suffix && <span className="ml-1.5 text-xs font-sans font-bold text-[#B5AC9A] uppercase tracking-wider">{suffix}</span>}
+          </motion.span>
+        </AnimatePresence>
+      </div>
+      <motion.button
+        whileTap={{ scale: 0.9 }}
+        type="button"
+        onClick={onInc}
+        disabled={incDisabled}
+        className="w-11 h-11 rounded-2xl bg-white border border-[#F0E7D8] text-[#7A7263] text-lg font-black flex items-center justify-center hover:border-[#FF8B50] hover:text-[#FF8B50] hover:shadow-md hover:shadow-[#FF8B50]/15 transition disabled:opacity-35 disabled:pointer-events-none"
+        aria-label="increase"
+      >
+        +
+      </motion.button>
+    </div>
+  );
+}
+
+/* ============================================================================ */
 export default function InteractiveTourCustomizer() {
   const t = useTranslations("CustomizeTour");
+  const locale = useLocale();
+  const translateKey = (key: string) => t(key as Parameters<typeof t>[0]);
+
   const router = useRouter();
-  const { data: session, status: sessionStatus } = useSession();
+  const { status: sessionStatus } = useSession();
   const { addToast } = useToast();
 
   const currency = "USD";
-  const formatPrice = (val: number) => `$${val.toLocaleString()}`;
+  const formatPrice = (v: number) => `$${Math.round(v).toLocaleString()}`;
 
-  // Selection states
   const [selectedTour, setSelectedTour] = useState<string>("ai-suggested");
   const [inputs, setInputs] = useState<PricingInputs>({
     duration: 5,
@@ -149,39 +293,42 @@ export default function InteractiveTourCustomizer() {
   const [hoveredLocation, setHoveredLocation] = useState<MapLocation | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // AI Suggest Sub-form state
-  const todayStr = new Date().toISOString().split("T")[0];
-  const nextWeekStr = new Date(Date.now() + 5 * 86400000).toISOString().split("T")[0];
-  const [aiStartDate, setAiStartDate] = useState<string>(todayStr);
-  const [aiEndDate, setAiEndDate] = useState<string>(nextWeekStr);
+  const [todayStr, setTodayStr] = useState<string>("");
+  const [aiStartDate, setAiStartDate] = useState<string>("");
+  const [aiEndDate, setAiEndDate] = useState<string>("");
+
+  useEffect(() => {
+    const today = new Date().toISOString().split("T")[0];
+    const nextWeek = new Date(Date.now() + 5 * 86400000).toISOString().split("T")[0];
+    setTodayStr(today);
+    setAiStartDate(today);
+    setAiEndDate(nextWeek);
+  }, []);
   const [aiDuration, setAiDuration] = useState<number>(5);
   const [aiKeywords, setAiKeywords] = useState<string>("ancient rock fort, quiet beaches, wildlife safari");
   const [isGeneratingAI, setIsGeneratingAI] = useState<boolean>(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiItinerary, setAiItinerary] = useState<string | null>(null);
 
-  // Selectable AI Suggested Places state
-  const [suggestedPlacesByDestination, setSuggestedPlacesByDestination] = useState<Record<string, { hotels: any[]; poi: any[] }>>({});
+  const [suggestedPlacesByDestination, setSuggestedPlacesByDestination] = useState<Record<string, DestinationPlaces>>({});
   const [selectedPlaceIds, setSelectedPlaceIds] = useState<string[]>([]);
   const [failedPoiImages, setFailedPoiImages] = useState<Record<string, boolean>>({});
 
-  // Re-derive AI duration on date change
   useEffect(() => {
     if (aiStartDate && aiEndDate) {
       const start = new Date(aiStartDate).getTime();
       const end = new Date(aiEndDate).getTime();
-      const diff = Math.max(1, Math.round((end - start) / (1000 * 3600 * 24)));
-      setAiDuration(diff);
+      setAiDuration(Math.max(1, Math.round((end - start) / (1000 * 3600 * 24))));
     }
   }, [aiStartDate, aiEndDate]);
 
-  // Leaflet references
-  const mapRef = useRef<any>(null);
-  const markersRef = useRef<Record<string, any>>({});
-  const polylineRef = useRef<any>(null);
+  const leafletLibRef = useRef<typeof LType | null>(null);
+  const mapRef = useRef<LType.Map | null>(null);
+  const markersRef = useRef<Record<string, LType.Marker>>({});
+  const polylineRef = useRef<LType.Polyline | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
 
-  // Load draft from sessionStorage on mount
+  /* restore draft */
   useEffect(() => {
     try {
       const saved = sessionStorage.getItem("tour_customizer_draft");
@@ -202,110 +349,88 @@ export default function InteractiveTourCustomizer() {
     }
   }, [addToast, t]);
 
-  // Toggle location selection
-  const handleToggleLocation = (locId: string) => {
-    setInputs((prev) => {
-      const isSelected = prev.destinations.includes(locId);
-      let nextDests = [];
-      if (isSelected) {
-        if (prev.destinations.length > 1) {
-          nextDests = prev.destinations.filter((d) => d !== locId);
+  const handleToggleLocation = useCallback(
+    (locId: string) => {
+      setInputs((prev) => {
+        const isSelected = prev.destinations.includes(locId);
+        let nextDests: string[] = [];
+        if (isSelected) {
+          if (prev.destinations.length > 1) {
+            nextDests = prev.destinations.filter((d) => d !== locId);
+          } else {
+            nextDests = [...prev.destinations];
+            addToast("info", "Please keep at least one destination selected.");
+          }
         } else {
-          nextDests = [...prev.destinations];
-          addToast("info", "Please keep at least one destination selected.");
+          nextDests = [...prev.destinations, locId];
         }
-      } else {
-        nextDests = [...prev.destinations, locId];
-      }
-      return { ...prev, destinations: nextDests };
-    });
-  };
+        return { ...prev, destinations: nextDests };
+      });
+    },
+    [addToast]
+  );
 
-  // Toggle suggested place card & dynamically update real prices & route map
-  const handleToggleSuggestedPlace = (item: any, city: string, isHotel: boolean) => {
+  const handleToggleSuggestedPlace = (item: MapPlaceHotel | MapPlacePoi, city: string, isHotel: boolean) => {
     const itemId = String(item.id);
     const isSelected = selectedPlaceIds.includes(itemId);
-
-    let nextSelectedIds: string[] = [];
-    if (isSelected) {
-      nextSelectedIds = selectedPlaceIds.filter((id) => id !== itemId);
-    } else {
-      nextSelectedIds = [...selectedPlaceIds, itemId];
-    }
+    const nextSelectedIds = isSelected ? selectedPlaceIds.filter((id) => id !== itemId) : [...selectedPlaceIds, itemId];
     setSelectedPlaceIds(nextSelectedIds);
 
     setInputs((prev) => {
-      // Auto-add destination to route map if not already present
-      let nextDests = [...prev.destinations];
-      if (!isSelected && !nextDests.includes(city)) {
-        nextDests.push(city);
-      }
+      const nextDests = [...prev.destinations];
+      if (!isSelected && !nextDests.includes(city)) nextDests.push(city);
 
-      // Re-build selectedRealPrices map
       const hotelNightlyRateByDestination: Record<string, number> = { ...(prev.selectedRealPrices?.hotelNightlyRateByDestination || {}) };
       const poiCostsUsd: number[] = [];
 
       Object.entries(suggestedPlacesByDestination).forEach(([destName, data]) => {
         (data.hotels || []).forEach((h) => {
-          if (nextSelectedIds.includes(String(h.id))) {
-            hotelNightlyRateByDestination[destName] = h.avg_nightly_usd;
-          }
+          if (nextSelectedIds.includes(String(h.id))) hotelNightlyRateByDestination[destName] = h.avg_nightly_usd;
         });
         (data.poi || []).forEach((p) => {
-          if (nextSelectedIds.includes(String(p.id))) {
-            if (p.ticket_price_usd > 0) poiCostsUsd.push(p.ticket_price_usd);
-          }
+          if (nextSelectedIds.includes(String(p.id)) && p.ticket_price_usd > 0) poiCostsUsd.push(p.ticket_price_usd);
         });
       });
 
-      // Clear hotel rate if deselecting
       if (isSelected && isHotel) {
-        const remainingCityHotels = (suggestedPlacesByDestination[city]?.hotels || []).filter((h) =>
-          nextSelectedIds.includes(String(h.id))
-        );
-        if (remainingCityHotels.length === 0) {
-          delete hotelNightlyRateByDestination[city];
-        }
+        const remainingCityHotels = (suggestedPlacesByDestination[city]?.hotels || []).filter((h) => nextSelectedIds.includes(String(h.id)));
+        if (remainingCityHotels.length === 0) delete hotelNightlyRateByDestination[city];
       }
 
-      return {
-        ...prev,
-        destinations: nextDests,
-        selectedRealPrices: {
-          hotelNightlyRateByDestination,
-          poiCostsUsd,
-        },
-      };
+      return { ...prev, destinations: nextDests, selectedRealPrices: { hotelNightlyRateByDestination, poiCostsUsd } };
     });
 
-    if (!isSelected) {
-      addToast("success", `Added ${item.name} (${city}) to your itinerary!`);
-    }
+    if (!isSelected) addToast("success", `Added ${item.name} (${city}) to your itinerary!`);
   };
 
-  // Toggle meal add-ons & extras
-  const handleToggleAddOn = (addonId: string) => {
-    setInputs((prev) => {
-      const exists = prev.addOns.includes(addonId);
-      const nextAddons = exists
-        ? prev.addOns.filter((a) => a !== addonId)
-        : [...prev.addOns, addonId];
-      return { ...prev, addOns: nextAddons };
-    });
+  const handleToggleAddOn = (addonId: string) =>
+    setInputs((prev) => ({ ...prev, addOns: prev.addOns.includes(addonId) ? prev.addOns.filter((a) => a !== addonId) : [...prev.addOns, addonId] }));
+
+  const handleToggleActivity = (actId: string) =>
+    setInputs((prev) => ({ ...prev, activities: prev.activities.includes(actId) ? prev.activities.filter((a) => a !== actId) : [...prev.activities, actId] }));
+
+  const handleBaseTourChange = (tourId: string) => {
+    setSelectedTour(tourId);
+    const tour = BASE_TOURS.find((bt) => bt.id === tourId);
+    if (tour) setInputs((prev) => ({ ...prev, duration: tour.duration, destinations: [...tour.destinations] }));
   };
 
-  // Calculate dynamic costs
   const pricing = calculateTripPricing(inputs);
+  const animatedTotal = useAnimatedNumber(pricing.totalPrice);
+  const totalNights = inputs.duration + inputs.extraNights;
+  const perTraveler = Math.round(pricing.totalPrice / Math.max(1, inputs.numberOfTravelers));
 
-  // SSR-Safe Client-side Leaflet Initialization
+  /* leaflet init */
   useEffect(() => {
-    let L: any;
+    let cancelled = false;
     const initMap = async () => {
-      L = await import("leaflet");
-      // @ts-ignore
+      const L = await import("leaflet");
+      // @ts-expect-error leaflet css import
       await import("leaflet/dist/leaflet.css");
+      if (cancelled) return;
+      leafletLibRef.current = L;
 
-      delete (L.Icon.Default.prototype as any)._getIconUrl;
+      delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
         iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
@@ -313,15 +438,10 @@ export default function InteractiveTourCustomizer() {
       });
 
       if (mapRef.current) return;
-
       const container = document.getElementById("sri-lanka-map");
       if (!container) return;
 
-      const map = L.map("sri-lanka-map", {
-        center: [7.8731, 80.7718],
-        zoom: 7.5,
-        zoomControl: true,
-      });
+      const map = L.map("sri-lanka-map", { center: [7.8731, 80.7718], zoom: 7.5, zoomControl: true });
       mapRef.current = map;
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -329,15 +449,17 @@ export default function InteractiveTourCustomizer() {
         attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(map);
 
-      const markers: Record<string, any> = {};
+      const markers: Record<string, LType.Marker> = {};
       LOCATIONS.forEach((loc) => {
         const popupContent = document.createElement("div");
-        popupContent.style.width = "180px";
-        popupContent.className = "flex flex-col gap-2 p-1 text-slate-800 text-left font-sans";
+        popupContent.style.width = "190px";
+        popupContent.className = "flex flex-col gap-2 p-1 text-left";
+        popupContent.style.fontFamily = "'Inter', sans-serif";
+        popupContent.style.color = "#44403C";
 
         const imgContainer = document.createElement("div");
-        imgContainer.className = "relative w-full h-[90px] rounded-lg overflow-hidden border border-slate-200";
-
+        imgContainer.className = "relative w-full rounded-xl overflow-hidden border border-orange-100";
+        imgContainer.style.height = "92px";
         const img = document.createElement("img");
         img.src = loc.img;
         img.alt = loc.name;
@@ -347,11 +469,18 @@ export default function InteractiveTourCustomizer() {
         imgContainer.appendChild(img);
 
         const title = document.createElement("h4");
-        title.className = "font-black text-sm text-slate-900";
+        title.style.fontWeight = "800";
+        title.style.fontSize = "14px";
+        title.style.color = "#44403C";
+        title.style.margin = "0";
         title.innerText = loc.name;
 
         const desc = document.createElement("p");
-        desc.className = "text-[11px] text-slate-500 font-medium leading-tight";
+        desc.style.fontSize = "11px";
+        desc.style.color = "#8A8577";
+        desc.style.fontWeight = "500";
+        desc.style.lineHeight = "1.35";
+        desc.style.margin = "0";
         desc.innerText = loc.description;
 
         const btn = document.createElement("button");
@@ -363,25 +492,17 @@ export default function InteractiveTourCustomizer() {
         popupContent.appendChild(desc);
         popupContent.appendChild(btn);
 
-        const marker = L.marker([loc.lat, loc.lng]).addTo(map).bindPopup(popupContent);
-        markers[loc.id] = marker;
+        markers[loc.id] = L.marker([loc.lat, loc.lng]).addTo(map).bindPopup(popupContent);
       });
 
       markersRef.current = markers;
-
-      const polyline = L.polyline([], {
-        color: "#0284c7",
-        weight: 3,
-        dashArray: "6, 8",
-      }).addTo(map);
-      polylineRef.current = polyline;
-
+      polylineRef.current = L.polyline([], { color: "#FF8B50", weight: 3, dashArray: "6, 10", opacity: 0.9 }).addTo(map);
       setMapLoaded(true);
     };
 
     initMap();
-
     return () => {
+      cancelled = true;
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -389,15 +510,29 @@ export default function InteractiveTourCustomizer() {
     };
   }, []);
 
-  // Update map polyline & popup button states when selected destinations change
+  /* sync markers / polyline / popups */
   useEffect(() => {
     if (!mapLoaded) return;
+    const L = leafletLibRef.current;
+    if (!L) return;
 
     LOCATIONS.forEach((loc) => {
       const marker = markersRef.current[loc.id];
       if (!marker) return;
+      const orderIdx = inputs.destinations.indexOf(loc.id);
+      const isSelected = orderIdx !== -1;
 
-      const isSelected = inputs.destinations.includes(loc.id);
+      marker.setIcon(
+        L.divIcon({
+          className: "itc-pin-wrap",
+          html: isSelected
+            ? `<div class="itc-pin sel"><span>${orderIdx + 1}</span><i class="itc-pin-pulse"></i></div>`
+            : `<div class="itc-pin"></div>`,
+          iconSize: [30, 30],
+          iconAnchor: [15, 15],
+          popupAnchor: [0, -14],
+        })
+      );
 
       const popup = marker.getPopup();
       if (popup) {
@@ -406,46 +541,42 @@ export default function InteractiveTourCustomizer() {
           const btn = content.querySelector("button");
           if (btn) {
             btn.innerText = isSelected ? t("removeFromRoute") : t("addToRoute");
-            btn.className = isSelected
-              ? "mt-2 py-1.5 w-full bg-rose-600 text-white rounded-lg font-bold text-[10px] uppercase text-center hover:bg-rose-500 transition select-none cursor-pointer"
-              : "mt-2 py-1.5 w-full bg-slate-900 text-white rounded-lg font-bold text-[10px] uppercase text-center hover:bg-slate-800 transition select-none cursor-pointer";
-
-            btn.onclick = () => {
-              handleToggleLocation(loc.id);
-            };
+            btn.style.cssText =
+              "margin-top:10px;padding:8px 0;width:100%;border:none;border-radius:12px;font-weight:800;font-size:10px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;";
+            if (isSelected) {
+              btn.style.background = "#FFF1E9";
+              btn.style.color = "#E05A1A";
+              btn.style.border = "1px solid #FFD9C4";
+            } else {
+              btn.style.background = "linear-gradient(100deg,#FF8B50,#FF6B2C)";
+              btn.style.color = "#fff";
+              btn.style.boxShadow = "0 8px 20px -8px rgba(255,139,80,.7)";
+            }
+            btn.onclick = () => handleToggleLocation(loc.id);
           }
         }
       }
     });
 
-    if (polylineRef.current && mapRef.current) {
-      const selectedCoords = inputs.destinations
-        .map((id) => LOCATIONS.find((loc) => loc.id === id))
-        .filter((loc): loc is MapLocation => !!loc)
-        .map((loc) => [loc.lat, loc.lng] as [number, number]);
+    const selectedLocs = inputs.destinations
+      .map((id) => LOCATIONS.find((loc) => loc.id === id))
+      .filter((loc): loc is MapLocation => !!loc);
+    const selectedCoords = selectedLocs.map((loc) => [loc.lat, loc.lng] as [number, number]);
 
-      polylineRef.current.setLatLngs(selectedCoords);
+    if (polylineRef.current) polylineRef.current.setLatLngs(selectedCoords);
+    if (mapRef.current && selectedCoords.length > 0) {
+      try {
+        mapRef.current.flyToBounds(L.latLngBounds(selectedCoords).pad(0.28), { duration: 0.9, maxZoom: 9 });
+      } catch {
+        /* noop */
+      }
     }
-  }, [inputs.destinations, mapLoaded, t]);
+  }, [inputs.destinations, mapLoaded, t, handleToggleLocation]);
 
-  // Handle base tour template click
-  const handleBaseTourChange = (tourId: string) => {
-    setSelectedTour(tourId);
-    const tour = BASE_TOURS.find((t) => t.id === tourId);
-    if (tour) {
-      setInputs((prev) => ({
-        ...prev,
-        duration: tour.duration,
-        destinations: [...tour.destinations],
-      }));
-    }
-  };
-
-  // AI Package Generation Handler
+  /* AI generation */
   const handleGenerateAIPackage = async () => {
     setIsGeneratingAI(true);
     setAiError(null);
-
     const payload = {
       prompt: aiKeywords,
       duration_days: aiDuration,
@@ -453,68 +584,43 @@ export default function InteractiveTourCustomizer() {
       selected_place_ids: selectedPlaceIds,
       date_range: { start: aiStartDate, end: aiEndDate },
     };
-
     try {
-      const res = await fetch("/api/generate-itinerary", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
+      const res = await fetch("/api/generate-itinerary", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || "AI suggestions are temporarily unavailable.");
       }
-
       const data = await res.json();
       if (data.status === "success" && data.itinerary_markdown) {
         setAiItinerary(data.itinerary_markdown);
         setSelectedTour("ai-suggested");
+        if (data.suggested_places_by_destination) setSuggestedPlacesByDestination(data.suggested_places_by_destination);
 
-        if (data.suggested_places_by_destination) {
-          setSuggestedPlacesByDestination(data.suggested_places_by_destination);
-        }
-
-        // Parse returned ordered destinations & match against LOCATIONS
         const returnedCities: string[] = data.destinations || [];
         if (returnedCities.length === 0 && data.search_results_by_destination) {
           Object.keys(data.search_results_by_destination).forEach((c) => {
             if (!returnedCities.includes(c)) returnedCities.push(c);
           });
         }
-
-        // Intersect with known LOCATIONS
-        const validMappedDests = returnedCities.filter((c) =>
-          LOCATIONS.some((loc) => loc.id === c)
-        );
-
+        const validMappedDests = returnedCities.filter((c) => LOCATIONS.some((loc) => loc.id === c));
         if (returnedCities.length > validMappedDests.length) {
           addToast("info", "Some AI picks aren't on the interactive map yet, but are included in your itinerary text.");
         }
-
         const finalDests = validMappedDests.length > 0 ? validMappedDests : ["Colombo", "Kandy"];
-
-        // Map budget tier to hotelClass
         const budgetTier = data.intake_params?.budget_tier || "Standard";
-        const mappedHotelClass =
-          budgetTier === "Luxury" ? "luxury" : budgetTier === "Budget" ? "budget" : "standard";
+        const mappedHotelClass = budgetTier === "Luxury" ? "luxury" : budgetTier === "Budget" ? "budget" : "standard";
 
-        setInputs((prev) => ({
-          ...prev,
-          duration: data.intake_params?.duration_days || aiDuration,
-          destinations: finalDests,
-          hotelClass: mappedHotelClass,
-        }));
-
+        setInputs((prev) => ({ ...prev, duration: data.intake_params?.duration_days || aiDuration, destinations: finalDests, hotelClass: mappedHotelClass }));
         if (aiStartDate) setPreferredStartDate(aiStartDate);
         addToast("success", "AI Package generated! Review your itinerary and suggested places below.");
       } else {
         throw new Error(data.error || "Failed to generate AI package.");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "AI suggestions are temporarily unavailable.";
       console.error(err);
-      setAiError(err.message || "AI suggestions are temporarily unavailable.");
-      addToast("error", err.message || "AI suggestions are temporarily unavailable.");
+      setAiError(errorMessage);
+      addToast("error", errorMessage);
     } finally {
       setIsGeneratingAI(false);
     }
@@ -522,14 +628,8 @@ export default function InteractiveTourCustomizer() {
 
   const validateForm = () => {
     const tempErrors: Record<string, string> = {};
-    if (!preferredStartDate) {
-      tempErrors.preferredStartDate = t("selectStartDate");
-    } else {
-      const today = new Date().toISOString().split("T")[0];
-      if (preferredStartDate < today) {
-        tempErrors.preferredStartDate = t("futureDate");
-      }
-    }
+    if (!preferredStartDate) tempErrors.preferredStartDate = t("selectStartDate");
+    else if (preferredStartDate < new Date().toISOString().split("T")[0]) tempErrors.preferredStartDate = t("futureDate");
     setErrors(tempErrors);
     return Object.keys(tempErrors).length === 0;
   };
@@ -539,405 +639,488 @@ export default function InteractiveTourCustomizer() {
       addToast("error", t("correctErrors"));
       return;
     }
-
     if (sessionStatus !== "authenticated") {
-      const draft = {
-        inputs,
-        preferredStartDate,
-        specialRequests,
-        selectedTour,
-        aiItinerary,
-        suggestedPlacesByDestination,
-        selectedPlaceIds,
-      };
+      const draft = { inputs, preferredStartDate, specialRequests, selectedTour, aiItinerary, suggestedPlacesByDestination, selectedPlaceIds };
       sessionStorage.setItem("tour_customizer_draft", JSON.stringify(draft));
       addToast("info", t("redirectLogin"));
       signIn(undefined, { callbackUrl: window.location.href });
       return;
     }
-
     setIsSubmitting(true);
     try {
       const payload = {
         packageId: selectedTour === "ai-suggested" ? "custom" : selectedTour,
         packageName: selectedTour === "ai-suggested" ? "AI-Suggested Ceylon Experience" : `Custom Tour - ${inputs.destinations.join(", ")}`,
+        numberOfTravelers: inputs.numberOfTravelers,
+        preferredStartDate,
         pricingInputs: inputs,
         submittedTotal: pricing.totalPrice,
         aiItineraryMarkdown: aiItinerary,
         aiVibeQuery: aiKeywords,
         source: selectedTour === "ai-suggested" ? "ai-suggested" : "manual",
-        startDate: preferredStartDate,
         specialRequests,
-        travelers: inputs.numberOfTravelers,
       };
-
-      const res = await fetch("/api/travel-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
+      const res = await fetch("/api/travel-request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!res.ok) {
-        throw new Error("Failed to submit custom travel request");
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || errData.message || "Failed to submit custom travel request");
       }
-
       setSubmitSuccess(true);
       addToast("success", "Custom travel request submitted successfully!");
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to submit request";
       console.error(err);
-      addToast("error", err.message || "Failed to submit request");
+      addToast("error", errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const stripStepNumber = (label: string) => label.replace(/^\d+\.\s*/, "");
+
+  /* ================= SUCCESS ================= */
   if (submitSuccess) {
     return (
-      <div className="max-w-4xl mx-auto my-12 p-8 bg-white border border-slate-200 rounded-3xl shadow-lg text-center space-y-6 animate-fade-in-up">
-        <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-2xl font-black">
-          <CheckOutlined />
-        </div>
-        <h2 className="text-2xl font-black text-slate-900">{t("requestSubmittedTitle")}</h2>
-        <p className="text-slate-600 text-sm max-w-md mx-auto">
-          {t("requestSubmittedDesc")}
-        </p>
-        <div className="pt-4 flex justify-center gap-4">
-          <button
-            onClick={() => router.push("/dashboard/my-requests")}
-            className="px-6 py-3 bg-brand-primary text-white font-bold rounded-xl shadow-md hover:bg-brand-primary/90 transition"
+      <div className="itc-root min-h-screen bg-[#FDFBF7] px-4 py-16">
+        <style dangerouslySetInnerHTML={{ __html: ITC_CSS }} />
+        <motion.div
+          initial={{ opacity: 0, y: 30, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="max-w-2xl mx-auto bg-white/80 backdrop-blur-xl rounded-[32px] border border-[#F3EBDE] shadow-[0_30px_80px_-30px_rgba(255,139,80,0.35)] p-10 sm:p-14 text-center relative overflow-hidden"
+        >
+          <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-[#FF8B50]/15 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-[#25A5FE]/10 blur-3xl pointer-events-none" />
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 260, damping: 18, delay: 0.15 }}
+            className="w-20 h-20 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-500 flex items-center justify-center mx-auto text-3xl"
           >
-            {t("viewRequestsBtn")}
-          </button>
-          <button
-            onClick={() => setSubmitSuccess(false)}
-            className="px-6 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition"
-          >
-            {t("customizeAnotherBtn")}
-          </button>
-        </div>
+            <CheckOutlined />
+          </motion.div>
+          <h2 className="itc-serif text-3xl font-semibold text-[#44403C] mt-7">{t("itinerarySaved")}</h2>
+          <p className="text-[#8A8577] text-sm leading-relaxed max-w-md mx-auto mt-3">{t("savedDesc")}</p>
+          <div className="pt-8 flex flex-col sm:flex-row justify-center gap-3">
+            <motion.button whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }} onClick={() => router.push(`/${locale}/dashboard/my-requests`)} className="itc-btn-primary !w-auto px-8">
+              {t("viewDashboardRequests")}
+            </motion.button>
+            <motion.button whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }} onClick={() => setSubmitSuccess(false)} className="px-7 py-3.5 bg-[#FFF6EF] border border-[#FFD9C4] text-[#E05A1A] text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-[#FFEDDF] transition">
+              {t("configureAnother")}
+            </motion.button>
+          </div>
+        </motion.div>
       </div>
     );
   }
 
+  /* ================= MAIN ================= */
   return (
-    <div className="min-h-screen bg-slate-50/50 py-10 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="itc-root min-h-screen bg-[#FDFBF7] pb-24">
+      <style dangerouslySetInnerHTML={{ __html: ITC_CSS }} />
 
-        {/* Header Title Banner - Clean & Professional */}
-        <div className="relative overflow-hidden bg-white rounded-2xl border border-orange-100/50 shadow-sm p-6 sm:p-8">
-          {/* Base Clean Gradient: White left, subtle Orange right */}
-          <div className="absolute inset-0 bg-gradient-to-r from-white via-white to-orange-50" />
-          
-          {/* Extremely subtle, elegant orbs (No gray/dark shading) */}
-          <div className="absolute -right-20 -top-20 w-[25rem] h-[25rem] bg-brand-primary/10 rounded-full blur-[80px] pointer-events-none" />
-          <div className="absolute right-1/4 -bottom-20 w-[15rem] h-[15rem] bg-sky-300/15 rounded-full blur-[60px] pointer-events-none" />
+      {/* ================= IMMERSIVE HERO ================= */}
+      <section className="relative overflow-hidden">
+        <img src="/images/hero_bg.png" alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#FDFBF7] via-[#FDFBF7]/85 to-[#FDFBF7]/25" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#FDFBF7] via-transparent to-[#FDFBF7]/60" />
+        <div className="absolute -left-20 top-1/3 w-96 h-96 rounded-full bg-[#FF8B50]/20 blur-[100px] pointer-events-none" />
+        <div className="absolute right-10 -top-16 w-80 h-80 rounded-full bg-[#25A5FE]/15 blur-[90px] pointer-events-none" />
 
-          {/* Content */}
-          <div className="relative z-10 max-w-3xl space-y-3">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-brand-primary/5 border border-brand-primary/20 rounded-full text-[11px] font-bold text-brand-primary uppercase tracking-widest">
-              <CompassOutlined /> {t("tagline")}
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-800 leading-snug">
-              {t("title")}
-            </h1>
-            <p className="text-slate-500 text-sm font-medium leading-relaxed max-w-2xl">
-              {t("subtitle")}
-            </p>
+        <div className="relative max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 pt-14 lg:pt-20 pb-28 grid lg:grid-cols-[1.15fr_0.85fr] gap-10 items-center">
+          <div>
+            <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="itc-glass inline-flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.24em] text-[#E05A1A]">
+              <CompassOutlined className="text-[#FF8B50]" /> {t("tagline")}
+            </motion.div>
+
+            <motion.h1
+              initial={{ opacity: 0, y: 26 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+              className="itc-serif text-4xl sm:text-5xl lg:text-[3.7rem] leading-[1.06] font-semibold mt-6 tracking-tight text-[#3E3A33]"
+            >
+              {t("title").split(" ").slice(0, -1).join(" ")}{" "}
+              <span className="itc-serif italic text-[#FF8B50]">{t("title").split(" ").slice(-1)}</span>
+            </motion.h1>
+
+            <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.16 }} className="mt-5 max-w-xl text-[#6E6759] text-sm sm:text-[15px] leading-relaxed font-medium">
+              {t("description")}
+            </motion.p>
+
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7, delay: 0.28 }} className="mt-7 flex flex-wrap items-center gap-2.5">
+              {[
+                { icon: <EnvironmentOutlined />, label: "24 curated destinations" },
+                { icon: <RobotOutlined />, label: t("subtitle") },
+                { icon: <SafetyCertificateOutlined />, label: "Live verified pricing" },
+              ].map((chip) => (
+                <span key={chip.label} className="itc-glass inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[10px] font-black uppercase tracking-wider text-[#5C5648]">
+                  <span className="text-[#25A5FE]">{chip.icon}</span> {chip.label}
+                </span>
+              ))}
+            </motion.div>
           </div>
+
+          {/* glass live ticker */}
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.7, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="itc-glass rounded-[28px] p-7 shadow-[0_30px_70px_-25px_rgba(120,90,50,0.35)]"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[#E05A1A]">{t("liveEstimate")}</span>
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#25A5FE] opacity-60" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#25A5FE]" />
+              </span>
+            </div>
+            <div className="mt-5 space-y-3.5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-2.5 text-[#5C5648] font-semibold"><EnvironmentOutlined className="text-[#FF8B50]" /> {t("citiesSelected", { count: inputs.destinations.length })}</span>
+                <span className="text-[#B5AC9A] text-xs font-bold max-w-[150px] truncate hidden sm:block">{inputs.destinations.join(" → ")}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-2.5 text-[#5C5648] font-semibold"><CalendarOutlined className="text-[#FF8B50]" /> {t("totalNights")}</span>
+                <span className="font-black text-[#44403C]">{totalNights}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-2.5 text-[#5C5648] font-semibold"><UsergroupAddOutlined className="text-[#FF8B50]" /> {inputs.numberOfTravelers === 1 ? t("guest") : t("guests", { count: inputs.numberOfTravelers })}</span>
+                {inputs.numberOfTravelers >= 4 && <span className="text-[9px] font-black bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded-full uppercase tracking-wider">−10% group</span>}
+              </div>
+            </div>
+            <div className="mt-6 pt-5 border-t border-white/70">
+              <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[#B5AC9A]">{t("totalQuote")}</div>
+              <div className="flex items-end gap-2 mt-1.5">
+                <span className="itc-serif text-4xl font-semibold text-[#E05A1A] tabular-nums">{formatPrice(animatedTotal)}</span>
+                <span className="text-[11px] font-black text-[#B5AC9A] uppercase mb-1.5">{currency}</span>
+              </div>
+              <div className="text-[11px] text-[#8A8577] font-semibold mt-1">≈ {formatPrice(perTraveler)} / traveler</div>
+            </div>
+          </motion.div>
         </div>
 
-        {/* Main 2-Column Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <svg className="absolute bottom-0 left-0 w-full h-8 text-[#FDFBF7]" viewBox="0 0 1440 32" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0 32h1440v-8c-130-8-250-14-370-11s-240 12-360 12-240-14-360-14S120 15 0 22v10z" fill="currentColor" />
+        </svg>
+      </section>
 
-          {/* Left Column: Customizer Controls (7 cols) */}
-          <div className="lg:col-span-7 space-y-8">
-
-            {/* Step 1: Base Package vs AI Suggest Card Choice */}
-            <section className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <h3 className="text-base font-black text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-                <AppstoreAddOutlined className="text-brand-primary" />
-                <span>{t("step1")}</span>
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-
-                {/* AI Suggest My Trip Option Card */}
-                <button
-                  type="button"
-                  onClick={() => setSelectedTour("ai-suggested")}
-                  className={`p-4 rounded-2xl border text-left hover:bg-slate-50/50 transition-all col-span-1 sm:col-span-2 ${selectedTour === "ai-suggested"
-                      ? "border-brand-primary bg-brand-primary/5 shadow-md"
-                      : "border-brand-primary/40 bg-white"
-                    }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="block text-sm font-extrabold text-brand-primary flex items-center gap-2">
-                      <RobotOutlined className="text-lg" />
-                      <span>{t("aiSuggestTitle")}</span>
-                    </span>
-                    <span className="px-2.5 py-0.5 bg-brand-primary text-white text-[10px] font-black rounded-full uppercase">
-                      ⚡ 3-Agent AI Engine
-                    </span>
-                  </div>
-                  <span className="block text-[11px] text-slate-600 mt-1 font-medium leading-normal">
-                    {t("aiSuggestDesc")}
-                  </span>
-                </button>
-
-                {/* Pre-built Base Tours */}
-                {BASE_TOURS.map((tour) => {
-                  const isSelected = selectedTour === tour.id;
-                  return (
-                    <button
-                      key={tour.id}
-                      type="button"
-                      onClick={() => handleBaseTourChange(tour.id)}
-                      className={`p-4 rounded-2xl border text-left hover:bg-slate-50/50 transition-all ${isSelected
-                          ? "border-brand-primary bg-orange-50/40"
-                          : "border-slate-200 bg-white"
-                        }`}
-                    >
-                      <span className="block text-sm font-extrabold text-slate-900">{t(`baseTours.${tour.nameKey}` as any)}</span>
-                      <span className="block text-[11px] text-slate-500 mt-1 font-medium leading-normal">{t(`baseTours.${tour.descKey}` as any)}</span>
-                      {tour.id !== "custom" && (
-                        <span className="inline-block mt-3 text-[10px] font-black text-brand-primary bg-orange-100/70 px-2 py-0.5 rounded-md uppercase">
-                          {t("baseDays", { duration: tour.duration })}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+      {/* ================= STATS RIBBON ================= */}
+      <section className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 -mt-14 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.3 }}
+          className="itc-glass rounded-[26px] shadow-[0_24px_60px_-24px_rgba(120,90,50,0.3)] grid grid-cols-2 lg:grid-cols-4 gap-y-6 py-6 px-4"
+        >
+          {[
+            { icon: <SafetyCertificateOutlined />, n: "8", label: "UNESCO World Heritage Sites", c: "#FF8B50" },
+            { icon: <EnvironmentOutlined />, n: "1,340 km", label: "Golden coastline & hidden bays", c: "#25A5FE" },
+            { icon: <CameraOutlined />, n: "25+", label: "National parks & sanctuaries", c: "#FF8B50" },
+            { icon: <CompassOutlined />, n: "2,500 yrs", label: "Of living cultural heritage", c: "#25A5FE" },
+          ].map((s, i) => (
+            <div key={s.label} className={`flex items-center gap-3.5 px-4 ${i > 0 ? "lg:border-l lg:border-white/70" : ""}`}>
+              <span className="w-11 h-11 rounded-2xl flex items-center justify-center text-lg shrink-0" style={{ background: `${s.c}1A`, color: s.c }}>
+                {s.icon}
+              </span>
+              <div>
+                <span className="itc-serif block text-xl font-semibold text-[#44403C] leading-none">{s.n}</span>
+                <span className="block text-[10px] font-bold text-[#8A8577] mt-1 leading-tight">{s.label}</span>
               </div>
+            </div>
+          ))}
+        </motion.div>
+      </section>
 
-              {/* Inline AI Sub-form when AI Suggest is Selected (Active by default) */}
-              {selectedTour === "ai-suggested" && (
-                <div className="mt-4 p-6 bg-gradient-to-br from-white via-orange-50/30 to-amber-50/20 text-slate-900 rounded-3xl border border-brand-primary/30 shadow-md space-y-5 animate-fade-in-up">
-                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-orange-100 text-brand-primary flex items-center justify-center text-base font-bold border border-orange-200">
-                        <ThunderboltOutlined />
-                      </div>
-                      <div>
-                        <h4 className="font-black text-sm uppercase tracking-wide text-slate-900">
-                          Configure Your AI Trip Preferences
-                        </h4>
-                        <p className="text-[11px] text-slate-500 font-medium">
-                          Specify your travel dates and desired vibes to generate a tailored Sri Lanka itinerary
-                        </p>
-                      </div>
-                    </div>
-                    <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 bg-orange-100 text-brand-primary border border-orange-200 text-[10px] font-extrabold rounded-full uppercase tracking-wider">
-                      ● AI Assistant Active
-                    </span>
+      {/* ================= ISLAND ICONS SHOWCASE ================= */}
+      <section className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 mt-16">
+        <motion.div {...fadeUp} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+          <div>
+            <span className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.26em] text-[#25A5FE]">
+              <span className="w-6 h-[2px] bg-[#25A5FE] rounded" /> The Island&apos;s Icons
+            </span>
+            <h2 className="itc-serif text-3xl sm:text-4xl font-semibold text-[#3E3A33] mt-2 tracking-tight">
+              Places that make travelers <span className="italic text-[#FF8B50]">fall in love</span> with Ceylon
+            </h2>
+          </div>
+          <p className="text-xs text-[#8A8577] font-semibold max-w-[240px] sm:text-right leading-relaxed">Tap any wonder to weave it straight into your route below.</p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {SPOTLIGHTS.map((spot, i) => {
+            const onRoute = inputs.destinations.includes(spot.id);
+            return (
+              <motion.article
+                key={spot.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{ duration: 0.55, delay: (i % 3) * 0.09, ease: [0.16, 1, 0.3, 1] }}
+                whileHover={{ y: -7 }}
+                className={`group relative rounded-[26px] overflow-hidden border border-white/70 bg-white shadow-[0_18px_50px_-20px_rgba(120,90,50,0.35)] ${i % 3 === 1 ? "lg:translate-y-6" : ""}`}
+              >
+                <div className="relative h-56 overflow-hidden">
+                  <img src={spot.img} alt={spot.title} loading="lazy" className="w-full h-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.08]" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#3E2A1A]/55 via-transparent to-transparent opacity-80" />
+                  <span className="itc-glass absolute top-3.5 left-3.5 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.18em] text-[#44403C]">
+                    {spot.tag}
+                  </span>
+                  {onRoute && (
+                    <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute top-3.5 right-3.5 w-7 h-7 rounded-full bg-[#FF8B50] text-white flex items-center justify-center text-[11px] shadow-lg shadow-[#FF8B50]/40">
+                      <CheckOutlined />
+                    </motion.span>
+                  )}
+                  <div className="absolute bottom-3.5 left-4 right-4">
+                    <h3 className="itc-serif text-xl font-semibold text-white drop-shadow-md leading-tight">{spot.title}</h3>
                   </div>
+                </div>
+                <div className="p-5">
+                  <p className="text-xs text-[#6E6759] font-medium leading-relaxed">{spot.blurb}</p>
+                  <motion.button
+                    whileTap={{ scale: 0.96 }}
+                    type="button"
+                    onClick={() => handleToggleLocation(spot.id)}
+                    className={`mt-4 w-full py-3 rounded-2xl text-[10.5px] font-black uppercase tracking-[0.16em] transition ${onRoute
+                        ? "bg-[#FFF1E9] text-[#E05A1A] border border-[#FFD9C4] hover:bg-[#FFEDDF]"
+                        : "bg-gradient-to-r from-[#FF8B50] to-[#FF6B2C] text-white shadow-lg shadow-[#FF8B50]/30 hover:shadow-xl hover:shadow-[#FF8B50]/40"
+                      }`}
+                  >
+                    {onRoute ? "✓ On your route — tap to remove" : "+ Add to my route"}
+                  </motion.button>
+                </div>
+              </motion.article>
+            );
+          })}
+        </div>
+      </section>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-[10px] font-extrabold text-slate-600 uppercase tracking-wider">{t("dateRangeStart")}</label>
-                      <input
-                        type="date"
-                        value={aiStartDate}
-                        onChange={(e) => setAiStartDate(e.target.value)}
-                        className="w-full mt-1.5 px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition shadow-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-extrabold text-slate-600 uppercase tracking-wider">{t("dateRangeEnd")}</label>
-                      <input
-                        type="date"
-                        value={aiEndDate}
-                        onChange={(e) => setAiEndDate(e.target.value)}
-                        className="w-full mt-1.5 px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition shadow-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-extrabold text-slate-600 uppercase tracking-wider">Trip Duration</label>
-                      <div className="mt-1.5 px-3.5 py-2.5 bg-orange-100/70 border border-orange-200 rounded-xl text-xs font-black text-brand-primary text-center flex items-center justify-center gap-1.5 shadow-sm">
-                        <CalendarOutlined /> {aiDuration} Days ({aiDuration - 1} Nights)
-                      </div>
-                    </div>
+      {/* ================= MAIN GRID ================= */}
+      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 mt-16 relative z-10 grid lg:grid-cols-[minmax(0,1fr)_408px] gap-8 items-start">
+        {/* ---------------- LEFT ---------------- */}
+        <div className="space-y-8 min-w-0">
+          {/* STEP 1 */}
+          <motion.section {...fadeUp} className="itc-card">
+            <header className="itc-sec-head">
+              <span className="itc-step-no">01</span>
+              <div>
+                <h3 className="itc-sec-title">{stripStepNumber(t("step1"))}</h3>
+                <p className="itc-sec-hint">
+                  {t("baseSelected")}: <b className="text-[#E05A1A]">{selectedTour === "ai-suggested" ? t("baseTours.aiSuggested") : translateKey(`baseTours.${BASE_TOURS.find((b) => b.id === selectedTour)?.nameKey || "custom"}`)}</b>
+                </p>
+              </div>
+              <AppstoreAddOutlined className="itc-sec-icon" />
+            </header>
+
+            {/* AI featured card */}
+            <motion.button
+              type="button"
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.99 }}
+              onClick={() => setSelectedTour("ai-suggested")}
+              className={`relative w-full text-left rounded-[24px] p-5 sm:p-6 mb-4 overflow-hidden transition-all duration-300 border ${selectedTour === "ai-suggested"
+                  ? "border-[#FF8B50] bg-gradient-to-br from-[#FFF6EF] via-white to-[#F0F8FF] shadow-[0_22px_50px_-20px_rgba(255,139,80,0.55)]"
+                  : "border-[#F0E7D8] bg-white hover:border-[#FFD9C4]"
+                }`}
+            >
+              {selectedTour === "ai-suggested" && <motion.div layoutId="aiGlow" className="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-[#FF8B50]/20 blur-3xl pointer-events-none" />}
+              <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3.5">
+                  <span className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl bg-gradient-to-br from-[#FF8B50] to-[#FF6B2C] text-white shadow-lg shadow-[#FF8B50]/35">
+                    <RobotOutlined />
+                  </span>
+                  <div>
+                    <span className="block text-[15px] font-black text-[#44403C]">{t("aiSuggestTitle")}</span>
+                    <span className="block text-[11.5px] text-[#8A8577] font-medium mt-0.5 leading-snug">{t("aiSuggestDesc")}</span>
                   </div>
+                </div>
+                <span className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#25A5FE] text-white text-[9px] font-black rounded-full uppercase tracking-[0.16em] self-start sm:self-center shadow-md shadow-[#25A5FE]/30">
+                  <ThunderboltOutlined /> 3-Agent AI Engine
+                </span>
+              </div>
+            </motion.button>
 
-                  <div className="space-y-2">
-                    <label className="block text-[10px] font-extrabold text-slate-600 uppercase tracking-wider">
-                      {t("keywordsLabel")}
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={aiKeywords}
-                      onChange={(e) => setAiKeywords(e.target.value)}
-                      placeholder={t("keywordsPlaceholder")}
-                      className="w-full px-4 py-3 bg-white border border-slate-300 rounded-2xl text-xs font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary resize-none transition shadow-sm"
-                    />
-
-                    {/* Quick Pick Chips */}
-                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Quick vibes:</span>
-                      {QUICK_CHIPS.map((chip) => (
-                        <button
-                          key={chip}
-                          type="button"
-                          onClick={() => {
-                            if (!aiKeywords.toLowerCase().includes(chip)) {
-                              setAiKeywords((prev) => (prev ? `${prev}, ${chip}` : chip));
-                            }
-                          }}
-                          className="px-3 py-1 bg-white hover:bg-orange-50 border border-slate-200 hover:border-orange-300 text-slate-700 hover:text-brand-primary text-[10px] font-bold rounded-full transition cursor-pointer shadow-2xs"
-                        >
-                          + {chip}
-                        </button>
+            {/* base tours */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {BASE_TOURS.map((tour, i) => {
+                const isSelected = selectedTour === tour.id;
+                return (
+                  <motion.button
+                    key={tour.id}
+                    type="button"
+                    initial={{ opacity: 0, y: 14 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.4, delay: i * 0.05 }}
+                    whileHover={{ y: -3 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleBaseTourChange(tour.id)}
+                    className={`relative text-left rounded-[22px] border p-5 transition-all duration-300 ${isSelected ? "border-[#FF8B50] bg-[#FFF9F4] shadow-[0_16px_40px_-16px_rgba(255,139,80,0.5)]" : "border-[#F0E7D8] bg-white hover:border-[#FFD9C4] hover:shadow-md"
+                      }`}
+                  >
+                    <div className="flex items-center gap-1 mb-3 h-3">
+                      {tour.destinations.map((d, j) => (
+                        <React.Fragment key={d}>
+                          <span className={`w-2.5 h-2.5 rounded-full border-2 transition ${isSelected ? "bg-[#FF8B50] border-[#FF8B50]" : "bg-white border-[#E4DCCB]"}`} />
+                          {j < tour.destinations.length - 1 && <span className={`flex-1 h-[2px] rounded transition ${isSelected ? "bg-[#FF8B50]/40" : "bg-[#EFE9DB]"}`} />}
+                        </React.Fragment>
                       ))}
                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 pt-2">
-                    <button
-                      type="button"
-                      onClick={handleGenerateAIPackage}
-                      disabled={isGeneratingAI}
-                      className="w-full py-3.5 bg-gradient-to-r from-brand-primary to-orange-500 hover:from-brand-primary/95 hover:to-orange-600 text-white font-extrabold text-xs rounded-xl shadow-md hover:shadow-lg transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 uppercase tracking-wide"
-                    >
-                      {isGeneratingAI ? (
-                        <>
-                          <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                          {t("generatingPackage")}
-                        </>
+                    <span className="block text-sm font-black text-[#44403C] leading-snug">{translateKey(`baseTours.${tour.nameKey}`)}</span>
+                    <span className="block text-[11px] text-[#8A8577] font-medium mt-1 leading-normal">{translateKey(`baseTours.${tour.descKey}`)}</span>
+                    <div className="mt-3 flex items-center justify-between">
+                      {tour.id !== "custom" ? (
+                        <span className="text-[9px] font-black uppercase tracking-widest text-[#E05A1A] bg-[#FF8B50]/10 px-2.5 py-1 rounded-lg">{t("baseDays", { duration: tour.duration })}</span>
                       ) : (
-                        <>
-                          <span>⚡</span> {t("generatePackage")}
-                        </>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-[#25A5FE] bg-[#25A5FE]/10 px-2.5 py-1 rounded-lg">{tour.destinations.length} stops</span>
                       )}
-                    </button>
-                  </div>
-
-                  {aiError && (
-                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs font-semibold text-rose-800 flex justify-between items-center">
-                      <span>⚠️ {aiError}</span>
-                      <button
-                        type="button"
-                        onClick={handleGenerateAIPackage}
-                        className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg text-[10px] transition cursor-pointer"
-                      >
-                        Retry
-                      </button>
+                      <AnimatePresence>
+                        {isSelected && (
+                          <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} transition={{ type: "spring", stiffness: 400, damping: 22 }} className="w-6 h-6 rounded-full bg-gradient-to-br from-[#FF8B50] to-[#FF6B2C] text-white flex items-center justify-center text-[10px] shadow-md shadow-[#FF8B50]/40">
+                            <CheckOutlined />
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
                     </div>
-                  )}
-                </div>
+                  </motion.button>
+                );
+              })}
+            </div>
+
+            {/* AI configure panel */}
+            <AnimatePresence>
+              {selectedTour === "ai-suggested" && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                  animate={{ opacity: 1, height: "auto", marginTop: 20 }}
+                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                  transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                  className="overflow-hidden"
+                >
+                  <div className="relative rounded-[26px] border border-[#FFD9C4]/70 bg-gradient-to-br from-[#FFF9F4] via-white to-[#F2F9FF] p-6 sm:p-7 shadow-[0_18px_44px_-22px_rgba(255,139,80,0.4)]">
+                    <div className="absolute -right-14 -bottom-14 w-48 h-48 rounded-full bg-[#25A5FE]/10 blur-3xl pointer-events-none" />
+                    <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#FF8B50]/15 pb-4">
+                      <div className="flex items-center gap-3">
+                        <span className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#FF8B50] to-[#FF6B2C] text-white flex items-center justify-center text-base shadow-lg shadow-[#FF8B50]/30"><ThunderboltOutlined /></span>
+                        <div>
+                          <h4 className="text-sm font-black text-[#44403C] uppercase tracking-wide">Configure Your AI Trip Preferences</h4>
+                          <p className="text-[11px] text-[#8A8577] font-medium mt-0.5">Specify dates and vibes — three agents design the route.</p>
+                        </div>
+                      </div>
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-600 text-[9px] font-black rounded-full uppercase tracking-[0.16em] self-start">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> AI Assistant Active
+                      </span>
+                    </div>
+
+                    <div className="relative grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5">
+                      <div>
+                        <label className="itc-label">{t("dateRangeStart")}</label>
+                        <input type="date" value={aiStartDate} onChange={(e) => setAiStartDate(e.target.value)} className="itc-input mt-1.5" />
+                      </div>
+                      <div>
+                        <label className="itc-label">{t("dateRangeEnd")}</label>
+                        <input type="date" value={aiEndDate} onChange={(e) => setAiEndDate(e.target.value)} className="itc-input mt-1.5" />
+                      </div>
+                      <div>
+                        <label className="itc-label">Trip Duration</label>
+                        <div className="mt-1.5 h-[42px] rounded-xl bg-gradient-to-r from-[#FF8B50]/12 to-[#25A5FE]/12 border border-[#FF8B50]/25 flex items-center justify-center gap-2 text-xs font-black text-[#E05A1A]">
+                          <CalendarOutlined /> {aiDuration} Days ({aiDuration - 1} Nights)
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="relative mt-4">
+                      <label className="itc-label">{t("keywordsLabel")}</label>
+                      <textarea rows={2} value={aiKeywords} onChange={(e) => setAiKeywords(e.target.value)} placeholder={t("keywordsPlaceholder")} className="itc-input mt-1.5 resize-none !rounded-2xl !py-3" />
+                      <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+                        <span className="text-[9px] font-black text-[#B5AC9A] uppercase tracking-[0.18em]">Quick vibes:</span>
+                        {QUICK_CHIPS.map((chip) => (
+                          <motion.button
+                            key={chip}
+                            whileHover={{ y: -1 }}
+                            whileTap={{ scale: 0.95 }}
+                            type="button"
+                            onClick={() => {
+                              if (!aiKeywords.toLowerCase().includes(chip)) setAiKeywords((prev) => (prev ? `${prev}, ${chip}` : chip));
+                            }}
+                            className="px-3 py-1 bg-white hover:bg-[#FFF1E9] border border-[#F0E7D8] hover:border-[#FFD9C4] text-[#6E6759] hover:text-[#E05A1A] text-[10px] font-bold rounded-full transition"
+                          >
+                            + {chip}
+                          </motion.button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="relative mt-5">
+                      <motion.button whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} type="button" onClick={handleGenerateAIPackage} disabled={isGeneratingAI} className="itc-gen-btn">
+                        {isGeneratingAI ? (
+                          <span className="flex items-center gap-2.5">
+                            <span className="flex gap-1">
+                              {[0, 1, 2].map((d) => (
+                                <motion.span key={d} className="w-1.5 h-1.5 rounded-full bg-white inline-block" animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 0.9, delay: d * 0.18 }} />
+                              ))}
+                            </span>
+                            {t("generatingPackage")}
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-2"><ThunderboltOutlined /> {t("generatePackage")}</span>
+                        )}
+                      </motion.button>
+
+                      <AnimatePresence>
+                        {isGeneratingAI && (
+                          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="grid grid-cols-3 gap-2 mt-4">
+                            {["Intake Agent", "Retrieval Agent", "Explainer Agent"].map((agent, i) => (
+                              <motion.div key={agent} animate={{ opacity: [0.45, 1, 0.45] }} transition={{ repeat: Infinity, duration: 1.8, delay: i * 0.4 }} className="itc-glass rounded-xl px-3 py-2.5 text-center">
+                                <RobotOutlined style={{ color: i === 1 ? "#25A5FE" : "#FF8B50" }} />
+                                <span className="block text-[9px] font-black text-[#5C5648] uppercase tracking-wider mt-1">{agent}</span>
+                              </motion.div>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      <AnimatePresence>
+                        {aiError && (
+                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                            <div className="mt-4 flex items-start gap-2 p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-rose-500 text-xs font-semibold">
+                              <InfoCircleOutlined className="mt-0.5" /> {aiError}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                </motion.div>
               )}
-            </section>
+            </AnimatePresence>
+          </motion.section>
 
-            {/* AI-Suggested Itinerary & Explainable AI Callout Blocks */}
+          {/* AI itinerary */}
+          <AnimatePresence>
             {aiItinerary && (
-              <section className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4 animate-fade-in-up">
-                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                  <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                    <RobotOutlined className="text-brand-primary" />
-                    <span>{t("aiItineraryReview")}</span>
-                  </h3>
-                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
-                    Explainable AI (XAI)
-                  </span>
-                </div>
+              <motion.section initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }} className="itc-card">
+                <header className="itc-sec-head">
+                  <span className="itc-step-no">✦</span>
+                  <div>
+                    <h3 className="itc-sec-title">{t("aiItineraryReview")}</h3>
+                    <p className="itc-sec-hint">Tailored using Explainable AI (XAI) for Sri Lankan Eco-tourism</p>
+                  </div>
+                  <RobotOutlined className="itc-sec-icon sky" />
+                </header>
 
-                <div className="prose prose-slate max-w-none text-xs font-medium text-slate-700 leading-relaxed space-y-3">
+                <div className="itc-md text-[13px] text-[#6E6759] leading-relaxed">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{
-                      ul: ({ children }) => <ul className="pl-0 space-y-2.5 my-2.5">{children}</ul>,
-                      ol: ({ children }) => <ol className="pl-0 space-y-2.5 my-2.5">{children}</ol>,
-                      p: ({ node, children, ...props }) => {
+                      h1: ({ children }: { children?: React.ReactNode }) => {
                         const text = getPlainText(children);
-                        
-                        if (text.includes("Target Route:")) {
-                          const parts = text.split("|").map(p => p.trim());
-                          const route = parts.find(p => p.startsWith("Target Route:"))?.replace("Target Route:", "")?.trim();
-                          const budget = parts.find(p => p.startsWith("Budget Tier:"))?.replace("Budget Tier:", "")?.trim();
-                          const duration = parts.find(p => p.startsWith("Duration:"))?.replace("Duration:", "")?.trim();
-                          
+                        if (text.includes("🏝️") || text.includes("Ceylon") || text.includes("Sri Lanka")) {
                           return (
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-slate-50/60 border border-slate-200/50 rounded-xl mb-5 text-[11px] font-semibold text-slate-700 shadow-inner">
-                              {route && (
-                                <div className="flex items-center gap-2 bg-white p-2.5 rounded-lg border border-slate-100 shadow-xs">
-                                  <span className="text-teal-500 text-sm"><CompassOutlined /></span>
-                                  <div>
-                                    <span className="block text-[8px] font-black text-slate-400 uppercase tracking-wider">Route Sequence</span>
-                                    <span className="text-slate-805 font-bold">{route}</span>
-                                  </div>
-                                </div>
-                              )}
-                              {budget && (
-                                <div className="flex items-center gap-2 bg-white p-2.5 rounded-lg border border-slate-100 shadow-xs">
-                                  <span className="text-emerald-500 text-sm"><DollarOutlined /></span>
-                                  <div>
-                                    <span className="block text-[8px] font-black text-slate-400 uppercase tracking-wider">Budget Tier</span>
-                                    <span className="text-slate-805 font-bold">{budget}</span>
-                                  </div>
-                                </div>
-                              )}
-                              {duration && (
-                                <div className="flex items-center gap-2 bg-white p-2.5 rounded-lg border border-slate-100 shadow-xs">
-                                  <span className="text-blue-500 text-sm"><CalendarOutlined /></span>
-                                  <div>
-                                    <span className="block text-[8px] font-black text-slate-400 uppercase tracking-wider">Tour Duration</span>
-                                    <span className="text-slate-855 font-bold">{duration}</span>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        }
-
-                        if (text.includes("Vibe & Intent:")) {
-                          const vibe = text.replace("Vibe & Intent:", "").trim().replace(/^"(.*)"$/, '$1');
-                          return (
-                            <div className="p-3.5 bg-teal-50/20 border border-teal-100/50 rounded-xl mb-4 text-[11px]">
-                              <span className="block text-[8px] font-black text-teal-600 uppercase tracking-wider mb-1 flex items-center gap-1">
-                                <ThunderboltOutlined className="text-teal-500" /> Express Vibe & Intent
-                              </span>
-                              <span className="italic text-teal-950 font-serif leading-relaxed">"{vibe}"</span>
-                            </div>
-                          );
-                        }
-
-                        if (text.includes("💡 Why This Was Chosen:") || text.includes("Why This Was Chosen:")) {
-                          const cleanText = text.replace(/^(💡\s*)?(Why This Was Chosen:\s*)?/i, "").trim();
-                          return (
-                            <div className="my-3 p-3.5 bg-gradient-to-r from-amber-50/60 to-amber-100/30 border-l-4 border-amber-500 rounded-r-xl text-amber-955 font-medium shadow-xs flex items-start gap-2.5 animate-pulse-subtle">
-                              <span className="text-sm mt-0.5 select-none">💡</span>
-                              <div>
-                                <span className="block text-[9px] font-black text-amber-800 uppercase tracking-wider mb-0.5">XAI Decision Rationale</span>
-                                <p className="text-[11px] text-amber-950 leading-relaxed font-semibold">{cleanText}</p>
-                              </div>
-                            </div>
-                          );
-                        }
-
-                        if (text.includes("Inter-city transfers across")) {
-                          return (
-                            <div className="p-4 bg-teal-50/10 border border-teal-100 rounded-2xl shadow-xs flex items-start gap-3 mt-5">
-                              <span className="text-lg">🚗</span>
-                              <div>
-                                <span className="block text-[8px] font-black text-teal-700 uppercase tracking-wider mb-0.5">Transportation & Logistics</span>
-                                <p className="text-xs text-teal-900 font-semibold leading-relaxed">{text}</p>
-                              </div>
-                            </div>
-                          );
-                        }
-
-                        return <p className="mb-2 text-slate-700 font-medium leading-relaxed" {...props}>{children}</p>;
-                      },
-                      h1: ({ children }) => {
-                        const text = getPlainText(children);
-                        if (text.includes("🌴")) {
-                          return (
-                            <div className="relative overflow-hidden bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white p-6 rounded-2xl shadow-sm mb-6 border border-emerald-500/20">
-                              <div className="absolute right-0 bottom-0 translate-x-4 translate-y-4 opacity-10 text-9xl font-black select-none pointer-events-none">🌴</div>
-                              <h2 className="text-lg md:text-xl font-black tracking-tight flex items-center gap-2 mb-1.5 text-white">
-                                {children}
-                              </h2>
-                              <p className="text-[11px] font-medium m-0 flex items-center gap-1.5">
-                                <RobotOutlined className="text-emerald-300" />
-                                <span>Tailored using Explainable AI (XAI) for Sri Lankan Eco-tourism</span>
+                            <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#FFF3E9] via-[#FFF9F4] to-[#EAF6FF] border border-[#FFD9C4]/60 px-6 py-7 mb-6">
+                              <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-[#FF8B50]/20 blur-2xl" />
+                              <div className="absolute -left-8 -bottom-12 w-36 h-36 rounded-full bg-[#25A5FE]/15 blur-2xl" />
+                              <h2 className="itc-serif text-xl sm:text-2xl font-semibold tracking-tight flex items-center gap-2.5 mb-1.5 relative text-[#44403C]">{children}</h2>
+                              <p className="text-[11px] font-semibold flex items-center gap-1.5 relative text-[#8A8577]">
+                                <RobotOutlined className="text-[#25A5FE]" /> Tailored using Explainable AI (XAI) for Sri Lankan Eco-tourism
                               </p>
                             </div>
                           );
@@ -945,758 +1128,729 @@ export default function InteractiveTourCustomizer() {
                         if (text.includes("📍")) {
                           const cleanText = text.replace(/^(📍\s*)?(Destination:\s*)?/i, "").trim();
                           return (
-                            <div className="flex items-center gap-3 border-b border-slate-100 pb-3.5 mt-8 mb-4">
-                              <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-teal-50 text-teal-600 text-base shadow-sm border border-teal-100">
-                                📍
-                              </span>
+                            <div className="flex items-center gap-3 border-b border-[#F3EBDE] pb-3.5 mt-9 mb-4">
+                              <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#FF8B50]/10 text-[#FF8B50] text-base border border-[#FFD9C4]">📍</span>
                               <div>
-                                <h3 className="text-sm font-black text-slate-800 leading-tight m-0">
-                                  {cleanText}
-                                </h3>
-                                <span className="text-[9px] font-black text-teal-600 bg-teal-50/50 px-2 py-0.5 rounded tracking-wider uppercase">
-                                  Route Destination
-                                </span>
+                                <h3 className="text-[15px] font-black text-[#44403C] leading-tight m-0">{cleanText}</h3>
+                                <span className="text-[9px] font-black text-[#E05A1A] bg-[#FF8B50]/10 px-2 py-0.5 rounded tracking-wider uppercase">Route Destination</span>
                               </div>
                             </div>
                           );
                         }
-                        return <h1 className="text-base font-black text-slate-900 border-b border-slate-100 pb-1.5 mt-5 mb-3">{children}</h1>;
+                        return <h1 className="itc-serif text-lg font-semibold text-[#44403C] border-b border-[#F3EBDE] pb-1.5 mt-6 mb-3">{children}</h1>;
                       },
-                      h2: ({ children }) => {
+                      h2: ({ children }: { children?: React.ReactNode }) => {
                         const text = getPlainText(children);
-                        let icon = <CompassOutlined className="text-brand-primary" />;
+                        let icon: React.ReactNode = <CompassOutlined className="text-[#25A5FE]" />;
                         if (text.includes("🏨")) icon = <span>🏨</span>;
                         else if (text.includes("🗓️")) icon = <span>🗓️</span>;
                         else if (text.includes("🚗")) icon = <span>🚗</span>;
-
-                        const cleanText = text.replace(/^(🏨|🗓️|🚗)\s*/, "").trim();
-
                         return (
-                          <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 mt-6 mb-3 border-b border-slate-100/80 pb-2">
-                            {icon}
-                            <span>{cleanText}</span>
+                          <h3 className="text-[11px] font-black text-[#8A8577] uppercase tracking-[0.18em] flex items-center gap-2 mt-7 mb-3 border-b border-[#F3EBDE] pb-2">
+                            {icon}<span>{text.replace(/^(🏨|🗓️|🚗)\s*/, "").trim()}</span>
                           </h3>
                         );
                       },
-                      h3: ({ children }) => {
+                      h3: ({ children }: { children?: React.ReactNode }) => (
+                        <h4 className="text-xs font-black text-[#44403C] mt-5 mb-2 bg-gradient-to-r from-[#FFF3E9] to-transparent px-3 py-1.5 rounded-lg border-l-4 border-[#FF8B50]">{getPlainText(children)}</h4>
+                      ),
+                      h4: ({ children }: { children?: React.ReactNode }) => (
+                        <div className="text-xs font-black text-[#44403C] bg-[#F0F8FF] px-3 py-1.5 rounded-lg border border-[#25A5FE]/20 inline-flex items-center gap-1.5 mt-5 mb-2">
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#25A5FE]" />{getPlainText(children)}
+                        </div>
+                      ),
+                      li: ({ children, ...props }: { children?: React.ReactNode } & React.HTMLAttributes<HTMLLIElement>) => {
                         const text = getPlainText(children);
-                        return (
-                          <h4 className="text-xs font-black text-slate-900 mt-5 mb-2 bg-gradient-to-r from-slate-100/60 to-transparent px-3 py-1.5 rounded-lg border-l-4 border-slate-800">
-                            {text}
-                          </h4>
-                        );
-                      },
-                      h4: ({ children }) => {
-                        const text = getPlainText(children);
-                        return (
-                          <div className="text-xs font-black text-slate-800 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200/50 inline-flex items-center gap-1.5 mt-5 mb-2 shadow-xs">
-                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            {text}
-                          </div>
-                        );
-                      },
-                      li: ({ children, ...props }) => {
-                        const text = getPlainText(children);
-
                         if (text.includes("Why This Was Chosen:")) {
                           const cleanText = text.replace(/^(💡\s*)?(Why This Was Chosen:\s*)?/i, "").trim();
                           return (
                             <li className="list-none ml-0 my-2.5">
-                              <div className="p-3 bg-amber-50 border-l-4 border-amber-500 rounded-r-xl text-amber-950 font-medium shadow-xs flex items-start gap-2.5">
+                              <div className="p-3.5 bg-amber-50 border-l-4 border-amber-400 rounded-r-xl flex items-start gap-2.5">
                                 <span className="text-sm mt-0.5 select-none">💡</span>
                                 <div>
-                                  <span className="block text-[9px] font-black text-amber-800 uppercase tracking-wider mb-0.5">XAI Decision Rationale</span>
-                                  <p className="text-[11px] text-amber-955 font-semibold leading-relaxed m-0">{cleanText}</p>
+                                  <span className="block text-[9px] font-black text-amber-600 uppercase tracking-wider mb-0.5">XAI Decision Rationale</span>
+                                  <p className="text-[11.5px] text-amber-800 font-semibold leading-relaxed m-0">{cleanText}</p>
                                 </div>
                               </div>
                             </li>
                           );
                         }
-
                         if (text.startsWith("Rating:")) {
-                          const ratingStr = text.replace("Rating:", "").trim();
                           return (
-                            <li className="list-none ml-0 my-1 flex items-center gap-1.5 text-xs text-slate-605 font-semibold">
-                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Rating</span>
-                              <span className="flex items-center gap-1 bg-amber-50/50 px-2 py-0.5 rounded text-amber-700 border border-amber-100">
-                                <StarFilled className="text-amber-500 text-[10px]" />
-                                {ratingStr}
+                            <li className="list-none ml-0 my-1 flex items-center gap-1.5 text-xs text-[#6E6759] font-semibold">
+                              <span className="text-[9px] font-bold text-[#B5AC9A] uppercase tracking-wider">Rating</span>
+                              <span className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded text-amber-600 border border-amber-100">
+                                <StarFilled className="text-amber-400 text-[10px]" />{text.replace("Rating:", "").trim()}
                               </span>
                             </li>
                           );
                         }
-
                         if (text.startsWith("Estimated Rate:")) {
-                          const priceStr = text.replace("Estimated Rate:", "").trim();
                           return (
-                            <li className="list-none ml-0 my-1 flex items-center gap-1.5 text-xs text-slate-605 font-semibold">
-                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Est. Cost</span>
-                              <span className="flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
-                                {priceStr}
-                              </span>
+                            <li className="list-none ml-0 my-1 flex items-center gap-1.5 text-xs text-[#6E6759] font-semibold">
+                              <span className="text-[9px] font-bold text-[#B5AC9A] uppercase tracking-wider">Est. Cost</span>
+                              <span className="bg-emerald-50 border border-emerald-100 text-emerald-600 px-2 py-0.5 rounded font-bold">{text.replace("Estimated Rate:", "").trim()}</span>
                             </li>
                           );
                         }
-
                         if (text.startsWith("Overview:") || text.startsWith("Details:")) {
                           const cleanText = text.replace(/^(Overview:|Details:)/, "").trim();
                           return (
-                            <li className="list-none ml-0 my-1.5 text-xs text-slate-600 font-medium leading-relaxed">
-                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
-                                {text.startsWith("Overview:") ? "Overview & Features" : "Description"}
-                              </span>
-                              <p className="bg-slate-50/30 p-2.5 rounded-lg border border-slate-200/50 text-slate-700 font-medium m-0">{cleanText}</p>
+                            <li className="list-none ml-0 my-1.5 text-xs text-[#6E6759] font-medium leading-relaxed">
+                              <span className="text-[9px] font-bold text-[#B5AC9A] uppercase tracking-wider block mb-0.5">{text.startsWith("Overview:") ? "Overview & Features" : "Description"}</span>
+                              <p className="bg-[#FDFBF7] p-2.5 rounded-lg border border-[#F3EBDE] text-[#6E6759] font-medium m-0">{cleanText}</p>
                             </li>
                           );
                         }
-
                         if (text.startsWith("Visit:")) {
-                          const cleanText = text.replace("Visit:", "").trim();
                           return (
-                            <li className="list-none ml-0 mt-4 mb-2 text-sm font-black text-slate-900 flex items-center gap-2">
-                              <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-teal-50 text-teal-600 text-xs shadow-sm border border-teal-100 select-none">
-                                🌴
-                              </span>
-                              <span>{cleanText}</span>
+                            <li className="list-none ml-0 mt-4 mb-2 text-sm font-black text-[#44403C] flex items-center gap-2">
+                              <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-emerald-50 text-emerald-500 text-xs border border-emerald-100 select-none">🌴</span>
+                              <span>{text.replace("Visit:", "").trim()}</span>
                             </li>
                           );
                         }
-
-                        return <li className="ml-4 list-disc text-slate-600 my-0.5" {...props}>{children}</li>;
-                      }
+                        return <li className="ml-4 list-disc text-[#6E6759] my-0.5" {...props}>{children}</li>;
+                      },
                     }}
                   >
                     {aiItinerary}
                   </ReactMarkdown>
                 </div>
-              </section>
+              </motion.section>
             )}
+          </AnimatePresence>
 
-            {/* Selectable AI Suggested Places with Real Scraped Pricing */}
+          {/* AI suggested places */}
+          <AnimatePresence>
             {Object.keys(suggestedPlacesByDestination).length > 0 && (
-              <section className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6 animate-fade-in-up">
-                <div className="border-b border-slate-100 pb-3">
-                  <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                    <SafetyCertificateOutlined className="text-brand-primary" />
-                    <span>{t("suggestedPlacesTitle")}</span>
-                  </h3>
-                  <p className="text-xs text-slate-500 font-medium mt-1">
-                    {t("suggestedPlacesDesc")}
-                  </p>
-                </div>
+              <motion.section initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="itc-card">
+                <header className="itc-sec-head">
+                  <span className="itc-step-no">✦</span>
+                  <div>
+                    <h3 className="itc-sec-title">{t("suggestedPlacesTitle")}</h3>
+                    <p className="itc-sec-hint">{t("suggestedPlacesDesc")}</p>
+                  </div>
+                  <SafetyCertificateOutlined className="itc-sec-icon" />
+                </header>
 
-                {Object.entries(suggestedPlacesByDestination).map(([city, data]) => {
-                  const cityHotels = data.hotels || [];
-                  const cityPois = data.poi || [];
-                  if (cityHotels.length === 0 && cityPois.length === 0) return null;
-
-                  return (
-                    <div key={city} className="space-y-4 bg-slate-50/70 p-4 rounded-2xl border border-slate-200/80">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-black text-slate-900 uppercase flex items-center gap-1.5">
-                          <EnvironmentOutlined className="text-brand-primary" />
-                          <span>{city} Recommendations</span>
-                        </span>
-                        <span className="text-[10px] font-bold text-slate-500 bg-white px-2.5 py-0.5 rounded-md border border-slate-200">
-                          {cityHotels.length} Hotels & {cityPois.length} Attractions
-                        </span>
-                      </div>
-
-                      {/* Hotels List */}
-                      {cityHotels.length > 0 && (
-                        <div className="space-y-2">
-                          <span className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
-                            🏨 AI-Selected Hotels
+                <div className="space-y-5">
+                  {Object.entries(suggestedPlacesByDestination).map(([city, data]) => {
+                    const cityHotels = data.hotels || [];
+                    const cityPois = data.poi || [];
+                    if (cityHotels.length === 0 && cityPois.length === 0) return null;
+                    return (
+                      <div key={city} className="rounded-[24px] bg-gradient-to-br from-[#FDFBF7] to-[#F5FAFF] border border-[#F0E7D8] p-5">
+                        <div className="flex items-center justify-between mb-4">
+                          <span className="text-xs font-black text-[#44403C] uppercase tracking-wide flex items-center gap-2">
+                            <EnvironmentOutlined className="text-[#FF8B50]" /> {city} Recommendations
                           </span>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {cityHotels.map((hotel) => {
-                              const isSelected = selectedPlaceIds.includes(String(hotel.id));
-                              const defaultCityImg = LOCATIONS.find((l) => l.id === city)?.img || "/images/colombo.png";
-                              const displayImg = (hotel.primary_image && !hotel.primary_image.includes("photos.app.goo.gl"))
-                                ? hotel.primary_image
-                                : defaultCityImg;
-                              return (
-                                <div
-                                  key={hotel.id}
-                                  onClick={() => handleToggleSuggestedPlace(hotel, city, true)}
-                                  className={`p-3.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${isSelected
-                                      ? "border-brand-primary bg-sky-50/70 shadow-sm"
-                                      : "border-slate-200 bg-white hover:border-slate-300"
-                                    }`}
-                                >
-                                  <div>
-                                    <div className="w-full h-28 relative rounded-lg overflow-hidden mb-2.5 bg-slate-100 border border-slate-200/50">
-                                      <img
-                                        src={displayImg}
-                                        alt={hotel.name}
-                                        loading="lazy"
-                                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                                        onError={(e) => {
-                                          (e.target as HTMLImageElement).src = defaultCityImg;
-                                        }}
-                                      />
-                                    </div>
-                                    <div className="flex items-start justify-between gap-2">
-                                      <h5 className="text-xs font-extrabold text-slate-900 leading-tight">
-                                        {hotel.name}
-                                      </h5>
-                                      <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded shrink-0">
-                                        ${hotel.avg_nightly_usd}/night
-                                      </span>
-                                    </div>
-                                    <span className="text-[10px] text-amber-600 font-bold block mt-1">
-                                      <StarFilled className="mr-1" />
-                                      {hotel.rating}/5.0 • {hotel.price_tier}
-                                    </span>
-                                    {hotel.description && (
-                                      <p className="text-[10px] text-slate-500 line-clamp-2 mt-1 font-medium">
-                                        {hotel.description}
-                                      </p>
-                                    )}
-                                  </div>
-
-                                  <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2">
-                                    <span className="text-[10px] font-bold text-slate-400">Real Scraped Rate</span>
-                                    <span
-                                      className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition ${isSelected
-                                          ? "bg-brand-primary text-white"
-                                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                                        }`}
-                                    >
-                                      {isSelected ? t("selectedPlace") : t("selectPlace")}
-                                    </span>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
+                          <span className="text-[10px] font-bold text-[#8A8577] bg-white px-2.5 py-1 rounded-lg border border-[#F0E7D8]">{cityHotels.length} Hotels · {cityPois.length} Attractions</span>
                         </div>
-                      )}
 
-                      {/* POIs List */}
-                      {cityPois.length > 0 && (
-                        <div className="space-y-2 pt-1">
-                          <span className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
-                            🏛️ Key Attractions
-                          </span>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {cityPois.map((poi) => {
-                              const isSelected = selectedPlaceIds.includes(String(poi.id));
-                              const defaultCityImg = LOCATIONS.find((l) => l.id === city)?.img || "/images/colombo.png";
-                              const isPoiImgFailed = failedPoiImages[String(poi.id)];
-                              const displayImg = (poi.primary_image && !poi.primary_image.includes("photos.app.goo.gl") && !isPoiImgFailed)
-                                ? poi.primary_image
-                                : defaultCityImg;
-                              return (
-                                <div
-                                  key={poi.id}
-                                  onClick={() => handleToggleSuggestedPlace(poi, city, false)}
-                                  className={`p-3.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${isSelected
-                                      ? "border-emerald-600 bg-emerald-50/40 shadow-sm"
-                                      : "border-slate-200 bg-white hover:border-slate-300"
-                                    }`}
-                                >
-                                  <div>
-                                    <div className="w-full h-28 relative rounded-lg overflow-hidden mb-2.5 bg-slate-100 border border-slate-200/50">
-                                      <img
-                                        src={displayImg}
-                                        alt={poi.name}
-                                        loading="lazy"
-                                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                                        onError={(e) => {
-                                          (e.target as HTMLImageElement).src = defaultCityImg;
-                                          setFailedPoiImages((prev) => ({ ...prev, [String(poi.id)]: true }));
-                                        }}
-                                      />
-                                    </div>
-                                    <div className="flex items-start justify-between gap-2">
-                                      <h5 className="text-xs font-extrabold text-slate-900 leading-tight">
-                                        {poi.name}
-                                      </h5>
-                                      <span className="text-[10px] font-black text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
-                                        {poi.ticket_price_usd > 0 ? `$${poi.ticket_price_usd}` : "Free"}
-                                      </span>
-                                    </div>
-                                    <span className="text-[10px] text-amber-600 font-bold block mt-1">
-                                      <StarFilled className="mr-1" />
-                                      {poi.rating}/5.0
-                                    </span>
-                                    {poi.description && (
-                                      <p className="text-[10px] text-slate-500 line-clamp-2 mt-1 font-medium">
-                                        {poi.description}
-                                      </p>
-                                    )}
-                                    {poi.street_view_url && (
-                                      <div className="mt-1">
-                                        <a
-                                          href={poi.street_view_url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          onClick={(e) => e.stopPropagation()}
-                                          className="inline-flex items-center gap-1 text-[10px] font-bold text-sky-600 hover:text-sky-800 hover:underline"
-                                        >
-                                          <span>View street view on Mapillary</span> ↗
-                                        </a>
+                        {cityHotels.length > 0 && (
+                          <div className="mb-4">
+                            <span className="block text-[9px] font-black text-[#B5AC9A] uppercase tracking-[0.2em] mb-2.5">🏨 AI-Selected Hotels</span>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              {cityHotels.map((hotel: MapPlaceHotel) => {
+                                const isSelected = selectedPlaceIds.includes(String(hotel.id));
+                                const defaultCityImg = LOCATIONS.find((l) => l.id === city)?.img || "/images/colombo.png";
+                                const displayImg = hotel.primary_image && !hotel.primary_image.includes("photos.app.goo.gl") ? hotel.primary_image : defaultCityImg;
+                                return (
+                                  <motion.div key={hotel.id} whileHover={{ y: -3 }} onClick={() => handleToggleSuggestedPlace(hotel, city, true)}
+                                    className={`rounded-2xl border p-3.5 cursor-pointer flex flex-col justify-between transition-all bg-white ${isSelected ? "border-[#FF8B50] shadow-[0_14px_34px_-14px_rgba(255,139,80,0.5)]" : "border-[#F0E7D8] hover:border-[#FFD9C4]"}`}>
+                                    <div>
+                                      <div className="w-full h-28 rounded-xl overflow-hidden mb-2.5 bg-[#F6F1E6] border border-[#F0E7D8]/70">
+                                        <img src={displayImg} alt={hotel.name} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" onError={(e) => { (e.target as HTMLImageElement).src = defaultCityImg; }} />
                                       </div>
-                                    )}
-                                  </div>
-
-                                  <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2">
-                                    <span className="text-[10px] font-bold text-slate-400">Entry Ticket</span>
-                                    <span
-                                      className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition ${isSelected
-                                          ? "bg-emerald-600 text-white"
-                                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                                        }`}
-                                    >
-                                      {isSelected ? t("selectedPlace") : t("selectPlace")}
-                                    </span>
-                                  </div>
-                                </div>
-                              );
-                            })}
+                                      <div className="flex items-start justify-between gap-2">
+                                        <h5 className="text-xs font-extrabold text-[#44403C] leading-tight">{hotel.name}</h5>
+                                        <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded shrink-0">${hotel.avg_nightly_usd}/night</span>
+                                      </div>
+                                      <span className="text-[10px] text-amber-500 font-bold block mt-1"><StarFilled className="mr-1" />{hotel.rating}/5.0 · {hotel.price_tier}</span>
+                                      {hotel.description && <p className="text-[10px] text-[#8A8577] line-clamp-2 mt-1 font-medium">{hotel.description}</p>}
+                                    </div>
+                                    <div className="mt-3 flex items-center justify-between border-t border-[#F3EBDE] pt-2.5">
+                                      <span className="text-[9px] font-black text-[#B5AC9A] uppercase tracking-wider">Real Scraped Rate</span>
+                                      <span className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition ${isSelected ? "bg-gradient-to-r from-[#FF8B50] to-[#FF6B2C] text-white shadow-md shadow-[#FF8B50]/30" : "bg-[#FFF6EF] text-[#E05A1A]"}`}>{isSelected ? t("selectedPlace") : t("selectPlace")}</span>
+                                    </div>
+                                  </motion.div>
+                                );
+                              })}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </section>
+                        )}
+
+                        {cityPois.length > 0 && (
+                          <div>
+                            <span className="block text-[9px] font-black text-[#B5AC9A] uppercase tracking-[0.2em] mb-2.5">🏛️ Key Attractions</span>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              {cityPois.map((poi: MapPlacePoi) => {
+                                const isSelected = selectedPlaceIds.includes(String(poi.id));
+                                const defaultCityImg = LOCATIONS.find((l) => l.id === city)?.img || "/images/colombo.png";
+                                const isPoiImgFailed = failedPoiImages[String(poi.id)];
+                                const displayImg = poi.primary_image && !poi.primary_image.includes("photos.app.goo.gl") && !isPoiImgFailed ? poi.primary_image : defaultCityImg;
+                                return (
+                                  <motion.div key={poi.id} whileHover={{ y: -3 }} onClick={() => handleToggleSuggestedPlace(poi, city, false)}
+                                    className={`rounded-2xl border p-3.5 cursor-pointer flex flex-col justify-between transition-all bg-white ${isSelected ? "border-[#25A5FE] shadow-[0_14px_34px_-14px_rgba(37,165,254,0.45)]" : "border-[#F0E7D8] hover:border-[#BDE3FE]"}`}>
+                                    <div>
+                                      <div className="w-full h-28 rounded-xl overflow-hidden mb-2.5 bg-[#F6F1E6] border border-[#F0E7D8]/70">
+                                        <img src={displayImg} alt={poi.name} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" onError={(e) => { (e.target as HTMLImageElement).src = defaultCityImg; setFailedPoiImages((prev) => ({ ...prev, [String(poi.id)]: true })); }} />
+                                      </div>
+                                      <div className="flex items-start justify-between gap-2">
+                                        <h5 className="text-xs font-extrabold text-[#44403C] leading-tight">{poi.name}</h5>
+                                        <span className="text-[10px] font-black text-[#5C5648] bg-[#F0F8FF] px-1.5 py-0.5 rounded shrink-0">{poi.ticket_price_usd > 0 ? `$${poi.ticket_price_usd}` : "Free"}</span>
+                                      </div>
+                                      <span className="text-[10px] text-amber-500 font-bold block mt-1"><StarFilled className="mr-1" />{poi.rating}/5.0</span>
+                                      {poi.description && <p className="text-[10px] text-[#8A8577] line-clamp-2 mt-1 font-medium">{poi.description}</p>}
+                                      {poi.street_view_url && (
+                                        <a href={poi.street_view_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-[10px] font-bold text-[#25A5FE] hover:text-[#0E7DD6] hover:underline mt-1">
+                                          View street view on Mapillary ↗
+                                        </a>
+                                      )}
+                                    </div>
+                                    <div className="mt-3 flex items-center justify-between border-t border-[#F3EBDE] pt-2.5">
+                                      <span className="text-[9px] font-black text-[#B5AC9A] uppercase tracking-wider">Entry Ticket</span>
+                                      <span className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition ${isSelected ? "bg-[#25A5FE] text-white shadow-md shadow-[#25A5FE]/30" : "bg-[#F0F8FF] text-[#25A5FE]"}`}>{isSelected ? t("selectedPlace") : t("selectPlace")}</span>
+                                    </div>
+                                  </motion.div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.section>
             )}
+          </AnimatePresence>
 
-            {/* Step 2: Duration & Group Setup */}
-            <section className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <h3 className="text-base font-black text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-                <CalendarOutlined className="text-brand-primary" />
-                <span>{t("step2")}</span>
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-xs font-black text-slate-700 uppercase">{t("tripDuration")}</label>
-                  <div className="flex items-center gap-3 mt-2">
-                    <button
-                      type="button"
-                      onClick={() => setInputs((prev) => ({ ...prev, duration: Math.max(1, prev.duration - 1) }))}
-                      className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 font-black text-lg flex items-center justify-center hover:bg-slate-200 text-slate-800"
-                    >
-                      -
-                    </button>
-                    <span className="text-base font-black text-slate-900 w-16 text-center">
-                      {inputs.duration} Days
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setInputs((prev) => ({ ...prev, duration: prev.duration + 1 }))}
-                      className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 font-black text-lg flex items-center justify-center hover:bg-slate-200 text-slate-800"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-black text-slate-700 uppercase flex items-center gap-1">
-                    <UsergroupAddOutlined /> {t("travelersCount")}
-                  </label>
-                  <div className="flex items-center gap-3 mt-2">
-                    <button
-                      type="button"
-                      onClick={() => setInputs((prev) => ({ ...prev, numberOfTravelers: Math.max(1, prev.numberOfTravelers - 1) }))}
-                      className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 font-black text-lg flex items-center justify-center hover:bg-slate-200 text-slate-800"
-                    >
-                      -
-                    </button>
-                    <span className="text-base font-black text-slate-900 w-16 text-center">
-                      {inputs.numberOfTravelers}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setInputs((prev) => ({ ...prev, numberOfTravelers: prev.numberOfTravelers + 1 }))}
-                      className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 font-black text-lg flex items-center justify-center hover:bg-slate-200 text-slate-800"
-                    >
-                      +
-                    </button>
-                  </div>
-                  {inputs.numberOfTravelers >= 4 && (
-                    <span className="inline-block mt-2 text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full uppercase">
-                      🎉 10% Group Discount Applied
-                    </span>
-                  )}
-                </div>
+          {/* STEP 2 — map */}
+          <motion.section {...fadeUp} className="itc-card">
+            <header className="itc-sec-head">
+              <span className="itc-step-no">02</span>
+              <div>
+                <h3 className="itc-sec-title">{stripStepNumber(t("step2"))}</h3>
+                <p className="itc-sec-hint">{t("mapInstruction")}</p>
               </div>
-            </section>
+              <span className="ml-auto shrink-0 text-[10px] font-black uppercase tracking-widest text-[#0E7DD6] bg-[#25A5FE]/10 border border-[#25A5FE]/25 px-3 py-1.5 rounded-full">
+                {t("destinationsSelected", { count: inputs.destinations.length })}
+              </span>
+            </header>
 
-            {/* Step 3: Interactive Route Map & Pins */}
-            <section className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                  <EnvironmentOutlined className="text-brand-primary" />
-                  <span>{t("step3")}</span>
-                </h3>
-                <span className="text-xs text-slate-500 font-bold">
-                  {t("destinationsSelected", { count: inputs.destinations.length })}
+            <div className="itc-map relative w-full h-[420px] rounded-[24px] overflow-hidden border border-[#F0E7D8] bg-[#EFF7FF] z-0 shadow-inner">
+              <div id="sri-lanka-map" className="w-full h-full" />
+              <div className="itc-glass absolute top-3 left-3 z-[500] flex items-center gap-2 px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-[#44403C] shadow-lg pointer-events-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#FF8B50] animate-pulse" /> {t("clickPinEdit")}
+              </div>
+            </div>
+
+            {/* hover preview */}
+            <div className="mt-4 min-h-[86px]">
+              <AnimatePresence mode="wait">
+                {hoveredLocation ? (
+                  <motion.div key={hoveredLocation.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.22 }}
+                    className="itc-glass flex items-center gap-4 p-3.5 rounded-2xl shadow-md">
+                    <div className="w-[72px] h-[58px] rounded-xl overflow-hidden shrink-0 border border-white/80">
+                      <img src={hoveredLocation.img} alt={hoveredLocation.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-black text-[#44403C]">{hoveredLocation.name}</span>
+                        <span className="text-[9px] font-black uppercase tracking-wider text-[#E05A1A] bg-[#FF8B50]/10 px-2 py-0.5 rounded-full">+${DESTINATION_SURCHARGES[hoveredLocation.id] || 40} entry</span>
+                      </div>
+                      <p className="text-[11px] text-[#8A8577] font-medium truncate mt-0.5">{hoveredLocation.description}</p>
+                    </div>
+                    <motion.button whileTap={{ scale: 0.94 }} onClick={() => handleToggleLocation(hoveredLocation.id)}
+                      className={`shrink-0 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition ${inputs.destinations.includes(hoveredLocation.id) ? "bg-rose-50 text-rose-500 border border-rose-200 hover:bg-rose-100" : "bg-gradient-to-r from-[#FF8B50] to-[#FF6B2C] text-white shadow-md shadow-[#FF8B50]/30"}`}>
+                      {inputs.destinations.includes(hoveredLocation.id) ? t("removeFromRoute") : t("addToRoute")}
+                    </motion.button>
+                  </motion.div>
+                ) : (
+                  <motion.div key="hint" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full flex items-center justify-center gap-2 text-[11px] font-semibold text-[#B5AC9A] rounded-2xl border border-dashed border-[#E8DFCC] bg-white/50 py-5">
+                    <InfoCircleOutlined /> {t("hoverPin")}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* chips */}
+            <div className="flex flex-wrap gap-2 mt-4">
+              {LOCATIONS.map((loc) => {
+                const isSelected = inputs.destinations.includes(loc.id);
+                return (
+                  <motion.button key={loc.id} whileHover={{ y: -2 }} whileTap={{ scale: 0.95 }} type="button"
+                    onClick={() => handleToggleLocation(loc.id)} onMouseEnter={() => setHoveredLocation(loc)} onMouseLeave={() => setHoveredLocation(null)}
+                    className={`px-3.5 py-1.5 rounded-full border text-[11px] font-bold transition flex items-center gap-1.5 ${isSelected ? "bg-gradient-to-r from-[#FF8B50] to-[#FF6B2C] text-white border-transparent shadow-md shadow-[#FF8B50]/30" : "bg-white text-[#6E6759] border-[#F0E7D8] hover:border-[#FFD9C4] hover:text-[#E05A1A]"}`}>
+                    {isSelected && <span className="w-4 h-4 rounded-full bg-white/25 text-white text-[8px] font-black flex items-center justify-center">{inputs.destinations.indexOf(loc.id) + 1}</span>}
+                    {loc.name}
+                  </motion.button>
+                );
+              })}
+            </div>
+
+            {/* active route ribbon */}
+            <div className="mt-5 pt-5 border-t border-[#F3EBDE]">
+              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[#B5AC9A]">{t("activeRoute")}</span>
+              <div className="itc-scroll flex items-center gap-2 mt-3 overflow-x-auto pb-2">
+                <AnimatePresence>
+                  {inputs.destinations.map((d, i) => (
+                    <motion.div key={d} layout initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ type: "spring", stiffness: 380, damping: 26 }} className="flex items-center gap-2 shrink-0">
+                      <span className="itc-glass flex items-center gap-2 px-3.5 py-2 rounded-xl text-[11px] font-black text-[#44403C] shadow-sm">
+                        <span className="w-5 h-5 rounded-full bg-gradient-to-br from-[#FF8B50] to-[#FF6B2C] text-white text-[9px] font-black flex items-center justify-center">{i + 1}</span>
+                        {d}
+                      </span>
+                      {i < inputs.destinations.length - 1 && <span className="text-[#FF8B50] font-black">→</span>}
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            </div>
+          </motion.section>
+
+          {/* STEP 3 — travelers & nights */}
+          <motion.section {...fadeUp} className="itc-card">
+            <header className="itc-sec-head">
+              <span className="itc-step-no">03</span>
+              <div>
+                <h3 className="itc-sec-title">{stripStepNumber(t("step3"))}</h3>
+                <p className="itc-sec-hint">{t("travelersCount")} · {t("tripDuration")} · {t("extraNights")}</p>
+              </div>
+              <UsergroupAddOutlined className="itc-sec-icon" />
+            </header>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                { label: t("tripDuration"), value: inputs.duration, suffix: "days", dec: () => setInputs((p) => ({ ...p, duration: Math.max(1, p.duration - 1) })), inc: () => setInputs((p) => ({ ...p, duration: p.duration + 1 })), decDis: inputs.duration <= 1 },
+                { label: t("travelersCount"), value: inputs.numberOfTravelers, suffix: inputs.numberOfTravelers === 1 ? "guest" : "guests", dec: () => setInputs((p) => ({ ...p, numberOfTravelers: Math.max(1, p.numberOfTravelers - 1) })), inc: () => setInputs((p) => ({ ...p, numberOfTravelers: p.numberOfTravelers + 1 })), decDis: inputs.numberOfTravelers <= 1 },
+                { label: t("extraNights"), value: inputs.extraNights, suffix: inputs.extraNights === 0 ? "" : "added", dec: () => setInputs((p) => ({ ...p, extraNights: Math.max(0, p.extraNights - 1) })), inc: () => setInputs((p) => ({ ...p, extraNights: p.extraNights + 1 })), decDis: inputs.extraNights <= 0 },
+              ].map((f) => (
+                <div key={f.label} className="rounded-[22px] border border-[#F0E7D8] bg-gradient-to-b from-white to-[#FDF9F2] p-5 flex flex-col items-center text-center gap-3">
+                  <span className="itc-label !mb-0">{f.label}</span>
+                  <Stepper value={f.value} suffix={f.suffix} onDec={f.dec} onInc={f.inc} decDisabled={f.decDis} />
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2.5">
+              <AnimatePresence>
+                {inputs.numberOfTravelers >= 4 && (
+                  <motion.span initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.85 }} className="inline-flex items-center gap-1.5 text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full uppercase tracking-wider">
+                    🎉 10% Group Discount Applied
+                  </motion.span>
+                )}
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-black text-[#0E7DD6] bg-[#25A5FE]/10 border border-[#25A5FE]/20 px-3 py-1.5 rounded-full uppercase tracking-wider">
+                  <CalendarOutlined /> {inputs.extraNights === 0 ? t("zeroNights") : t("nights", { count: inputs.extraNights })}
                 </span>
-              </div>
+              </AnimatePresence>
+            </div>
+          </motion.section>
 
-              <div className="relative w-full h-[380px] rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 z-0">
-                <div id="sri-lanka-map" className="w-full h-full" />
+          {/* STEP 4 — accommodation */}
+          <motion.section {...fadeUp} className="itc-card">
+            <header className="itc-sec-head">
+              <span className="itc-step-no">04</span>
+              <div>
+                <h3 className="itc-sec-title">{stripStepNumber(t("step4"))}</h3>
+                <p className="itc-sec-hint">Supplier-contracted stays · per traveler / night</p>
               </div>
+              <CrownOutlined className="itc-sec-icon" />
+            </header>
 
-              {/* Destination Chip List */}
-              <div className="flex flex-wrap gap-2 pt-2">
-                {LOCATIONS.map((loc) => {
-                  const isSelected = inputs.destinations.includes(loc.id);
-                  return (
-                    <button
-                      key={loc.id}
-                      type="button"
-                      onClick={() => handleToggleLocation(loc.id)}
-                      onMouseEnter={() => setHoveredLocation(loc)}
-                      onMouseLeave={() => setHoveredLocation(null)}
-                      className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 ${isSelected
-                          ? "bg-brand-primary text-white border-brand-primary shadow-sm"
-                          : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
-                        }`}
-                    >
-                      <span>{loc.name}</span>
-                      {isSelected && <CheckOutlined className="text-[10px]" />}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {(["budget", "standard", "luxury", "premium-boutique"] as const).map((tier, i) => {
+                const isSelected = inputs.hotelClass === tier;
+                const stars = [3, 4, 5, 5][i];
+                const rate = HOTEL_RATES[tier];
+                return (
+                  <motion.button key={tier} type="button" whileHover={{ y: -3 }} whileTap={{ scale: 0.98 }}
+                    onClick={() => setInputs((prev) => ({ ...prev, hotelClass: tier }))}
+                    className={`relative text-left rounded-[22px] border p-5 transition-all duration-300 overflow-hidden ${isSelected ? "border-[#FF8B50] bg-gradient-to-br from-[#FFF6EF] to-white shadow-[0_16px_40px_-16px_rgba(255,139,80,0.5)]" : "border-[#F0E7D8] bg-white hover:border-[#FFD9C4] hover:shadow-md"}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="flex text-amber-400 gap-0.5">{Array.from({ length: stars }).map((_, s) => <StarFilled key={s} className="text-[11px]" />)}</span>
+                      {tier === "premium-boutique" && <span className="text-[8px] font-black uppercase tracking-[0.18em] text-[#E05A1A] bg-[#FF8B50]/10 border border-[#FFD9C4] px-2 py-1 rounded-md"><CrownOutlined className="mr-1" />Signature</span>}
+                    </div>
+                    <span className="block text-sm font-black text-[#44403C] mt-3">{translateKey(`hotelTiers.${tier === "premium-boutique" ? "premiumBoutique" : tier}`)}</span>
+                    <span className="block text-[10.5px] text-[#8A8577] font-medium mt-1 leading-snug">{HOTEL_LABELS[tier]}</span>
+                    <div className="mt-3.5 flex items-end justify-between">
+                      <span className="itc-serif text-2xl font-semibold text-[#44403C]">${rate}<span className="text-[10px] font-sans font-bold text-[#B5AC9A] uppercase"> /night</span></span>
+                      <AnimatePresence>
+                        {isSelected && (
+                          <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} transition={{ type: "spring", stiffness: 400, damping: 22 }} className="w-6 h-6 rounded-full bg-gradient-to-br from-[#FF8B50] to-[#FF6B2C] text-white flex items-center justify-center text-[10px] shadow-md shadow-[#FF8B50]/40">
+                            <CheckOutlined />
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </motion.section>
+
+          {/* STEP 5 — transport (secondary blue accent) */}
+          <motion.section {...fadeUp} className="itc-card">
+            <header className="itc-sec-head">
+              <span className="itc-step-no">05</span>
+              <div>
+                <h3 className="itc-sec-title">{stripStepNumber(t("step5"))}</h3>
+                <p className="itc-sec-hint">{t("pricingModeLabel")} · {t("baggageCount")}</p>
+              </div>
+              <CarOutlined className="itc-sec-icon sky" />
+            </header>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {(["self-drive", "private-driver", "first-class-train", "charter-flight"] as const).map((mode) => {
+                const isSelected = inputs.transportMode === mode;
+                const modeIcon = mode === "self-drive" ? <CarOutlined /> : mode === "private-driver" ? <UsergroupAddOutlined /> : mode === "first-class-train" ? <SendOutlined /> : <ThunderboltOutlined />;
+                return (
+                  <motion.button key={mode} type="button" whileHover={{ y: -3 }} whileTap={{ scale: 0.98 }}
+                    onClick={() => setInputs((prev) => ({ ...prev, transportMode: mode }))}
+                    className={`relative text-left rounded-[22px] border p-5 transition-all duration-300 flex gap-4 items-start ${isSelected ? "border-[#25A5FE] bg-gradient-to-br from-[#F0F8FF] to-white shadow-[0_16px_40px_-16px_rgba(37,165,254,0.45)]" : "border-[#F0E7D8] bg-white hover:border-[#BDE3FE] hover:shadow-md"}`}>
+                    <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-base shrink-0 transition ${isSelected ? "bg-gradient-to-br from-[#25A5FE] to-[#0E7DD6] text-white shadow-md shadow-[#25A5FE]/30" : "bg-[#F0F8FF] text-[#25A5FE]"}`}>{modeIcon}</span>
+                    <span className="min-w-0">
+                      <span className="block text-[13px] font-black text-[#44403C] leading-snug">{translateKey(`transportModes.${mode === "self-drive" ? "selfDrive" : mode === "private-driver" ? "privateDriver" : mode === "first-class-train" ? "firstClassTrain" : "charterFlight"}`)}</span>
+                      <span className="block text-[10.5px] text-[#8A8577] font-medium mt-1">{TRANSPORT_LABELS[mode]}</span>
+                    </span>
+                    <AnimatePresence>
+                      {isSelected && (
+                        <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} transition={{ type: "spring", stiffness: 400, damping: 22 }} className="absolute top-3 right-3 w-6 h-6 rounded-full bg-[#25A5FE] text-white flex items-center justify-center text-[10px] shadow-md shadow-[#25A5FE]/40">
+                          <CheckOutlined />
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </motion.button>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-[22px] bg-gradient-to-r from-[#FDF9F2] to-[#F2F9FF] border border-[#F0E7D8] p-5">
+              <div>
+                <label className="itc-label">{t("baggageCount")}</label>
+                <div className="mt-2"><Stepper value={inputs.baggageCount || 0} suffix="bags" onDec={() => setInputs((p) => ({ ...p, baggageCount: Math.max(0, (p.baggageCount || 0) - 1) }))} onInc={() => setInputs((p) => ({ ...p, baggageCount: (p.baggageCount || 0) + 1 }))} decDisabled={(inputs.baggageCount || 0) <= 0} /></div>
+                <span className="block text-[10px] text-[#B5AC9A] font-medium mt-2">1 free bag per traveler · +$15 each beyond</span>
+              </div>
+              <div>
+                <label className="itc-label">{t("pricingModeLabel")}</label>
+                <div className="relative grid grid-cols-2 gap-1.5 mt-2 p-1.5 bg-white rounded-2xl border border-[#F0E7D8]">
+                  {(["per-day", "per-trip"] as const).map((mode) => (
+                    <button key={mode} type="button" onClick={() => setInputs((prev) => ({ ...prev, pricingMode: mode }))}
+                      className={`relative py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition ${inputs.pricingMode === mode ? "text-white" : "text-[#8A8577] hover:text-[#44403C]"}`}>
+                      {inputs.pricingMode === mode && <motion.span layoutId="pricingModePill" className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#25A5FE] to-[#0E7DD6] shadow-md shadow-[#25A5FE]/30" transition={{ type: "spring", stiffness: 380, damping: 32 }} />}
+                      <span className="relative z-10">{mode === "per-day" ? t("perDay") : t("perTrip")}</span>
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
-            </section>
+            </div>
+          </motion.section>
 
-            {/* Step 4: Accommodation Class */}
-            <section className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <h3 className="text-base font-black text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-                <CoffeeOutlined className="text-brand-primary" />
-                <span>{t("step4")}</span>
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {(["budget", "standard", "luxury", "premium-boutique"] as const).map((tier) => {
-                  const isSelected = inputs.hotelClass === tier;
-                  return (
-                    <button
-                      key={tier}
-                      type="button"
-                      onClick={() => setInputs((prev) => ({ ...prev, hotelClass: tier }))}
-                      className={`p-4 rounded-2xl border text-left hover:bg-slate-50/50 transition ${isSelected
-                          ? "border-brand-primary bg-brand-primary/5"
-                          : "border-slate-200 bg-white"
-                        }`}
-                    >
-                      <span className="block text-xs font-black text-slate-900 uppercase">
-                        {t(`hotelTiers.${tier === "premium-boutique" ? "premiumBoutique" : tier}` as any)}
-                      </span>
-                      <span className="block text-[10px] text-slate-500 font-bold mt-1">
-                        {HOTEL_LABELS[tier]}
-                      </span>
-                    </button>
-                  );
-                })}
+          {/* STEP 6 — season, activities, meals */}
+          <motion.section {...fadeUp} className="itc-card">
+            <header className="itc-sec-head">
+              <span className="itc-step-no">06</span>
+              <div>
+                <h3 className="itc-sec-title">{stripStepNumber(t("step6"))}</h3>
+                <p className="itc-sec-hint">Travel season · signature experiences · dining</p>
               </div>
-            </section>
+              <CoffeeOutlined className="itc-sec-icon" />
+            </header>
 
-            {/* Step 5: Logistics & Transport Options */}
-            <section className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <h3 className="text-base font-black text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-                <CarOutlined className="text-brand-primary" />
-                <span>{t("step5")}</span>
-              </h3>
+            <label className="itc-label">Travel Season</label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-1.5 mb-6">
+              {SEASONS.map((s) => {
+                const isSelected = inputs.season === s.id;
+                return (
+                  <button key={s.id} type="button" onClick={() => setInputs((prev) => ({ ...prev, season: s.id }))}
+                    className={`relative rounded-2xl border p-4 text-left transition-all duration-300 ${isSelected ? "border-[#FF8B50] bg-[#FFF9F4] shadow-[0_14px_34px_-14px_rgba(255,139,80,0.5)]" : "border-[#F0E7D8] bg-white hover:border-[#FFD9C4]"}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-[#44403C] uppercase">{s.name}</span>
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${s.mult < 1 ? "bg-emerald-50 text-emerald-600" : s.mult > 1.1 ? "bg-[#FF8B50]/10 text-[#E05A1A]" : "bg-[#25A5FE]/10 text-[#0E7DD6]"}`}>×{s.mult.toFixed(2)}</span>
+                    </div>
+                    <span className="block text-[10px] text-[#B5AC9A] font-semibold mt-1">{s.window}</span>
+                    {isSelected && <motion.span layoutId="seasonTick" className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-gradient-to-br from-[#FF8B50] to-[#FF6B2C] text-white flex items-center justify-center text-[9px] shadow-md shadow-[#FF8B50]/40"><CheckOutlined /></motion.span>}
+                  </button>
+                );
+              })}
+            </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {(["self-drive", "private-driver", "first-class-train", "charter-flight"] as const).map((mode) => {
-                  const isSelected = inputs.transportMode === mode;
-                  return (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => setInputs((prev) => ({ ...prev, transportMode: mode }))}
-                      className={`p-4 rounded-2xl border text-left hover:bg-slate-50/50 transition ${isSelected
-                          ? "border-brand-primary bg-orange-50/40"
-                          : "border-slate-200 bg-white"
-                        }`}
-                    >
-                      <span className="block text-xs font-black text-slate-900 uppercase">
-                        {t(`transportModes.${mode === "self-drive" ? "selfDrive" : mode === "private-driver" ? "privateDriver" : mode === "first-class-train" ? "firstClassTrain" : "charterFlight"}` as any)}
-                      </span>
-                      <span className="block text-[10px] text-slate-500 font-bold mt-1">
-                        {TRANSPORT_LABELS[mode]}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+            <label className="itc-label">Signature Experiences</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-1.5 mb-6">
+              {Object.keys(ACTIVITY_RATES).map((act) => {
+                const isSelected = inputs.activities.includes(act);
+                return (
+                  <motion.button key={act} type="button" whileTap={{ scale: 0.98 }} onClick={() => handleToggleActivity(act)}
+                    className={`flex items-center gap-3.5 rounded-2xl border p-4 text-left transition-all duration-300 ${isSelected ? "border-[#FF8B50] bg-[#FFF9F4]" : "border-[#F0E7D8] bg-white hover:border-[#FFD9C4]"}`}>
+                    <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-base shrink-0 transition ${isSelected ? "bg-gradient-to-br from-[#FF8B50] to-[#FF6B2C] text-white shadow-md shadow-[#FF8B50]/30" : "bg-[#FFF6EF] text-[#FF8B50]"}`}>{ACTIVITY_ICONS[act]}</span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-xs font-black text-[#44403C] leading-snug">{cleanLabel(ACTIVITY_LABELS[act as keyof typeof ACTIVITY_LABELS] || act)}</span>
+                      <span className="block text-[10px] text-[#8A8577] font-semibold mt-0.5">${ACTIVITY_RATES[act]} / traveler</span>
+                    </span>
+                    <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center text-[9px] transition ${isSelected ? "bg-[#FF8B50] border-[#FF8B50] text-white" : "border-[#E4DCCB] text-transparent"}`}><CheckOutlined /></span>
+                  </motion.button>
+                );
+              })}
+            </div>
 
-              {/* Baggage Count Stepper & Pricing Mode Toggle */}
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+            <label className="itc-label">Dining & Concierge Extras</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-1.5">
+              {ADDONS.map((addon) => {
+                const isSelected = inputs.addOns.includes(addon.id);
+                const label = addon.id === "breakfast" || addon.id === "dinner" ? translateKey(`addOnLabels.${addon.id}`) : cleanLabel(addon.id === "airport-transfer" ? "VIP Airport Transfer (+$40 flat)" : "Private Tour Guide (+$30/day)");
+                return (
+                  <motion.button key={addon.id} type="button" whileTap={{ scale: 0.98 }} onClick={() => handleToggleAddOn(addon.id)}
+                    className={`flex items-center gap-3.5 rounded-2xl border p-4 text-left transition-all duration-300 ${isSelected ? "border-[#25A5FE] bg-[#F5FAFF]" : "border-[#F0E7D8] bg-white hover:border-[#BDE3FE]"}`}>
+                    <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-base shrink-0 transition ${isSelected ? "bg-gradient-to-br from-[#25A5FE] to-[#0E7DD6] text-white shadow-md shadow-[#25A5FE]/30" : "bg-[#F0F8FF] text-[#25A5FE]"}`}>{addon.icon}</span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-xs font-black text-[#44403C] leading-snug">{label}</span>
+                      <span className="block text-[10px] text-[#8A8577] font-semibold mt-0.5">${addon.price} / {addon.per}</span>
+                    </span>
+                    <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center text-[9px] transition ${isSelected ? "bg-[#25A5FE] border-[#25A5FE] text-white" : "border-[#E4DCCB] text-transparent"}`}><CheckOutlined /></span>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </motion.section>
+        </div>
+
+        {/* ---------------- RIGHT: glass estimate ---------------- */}
+        <aside className="lg:sticky lg:top-8 space-y-5">
+          <motion.section
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className="rounded-[30px] bg-white/75 backdrop-blur-xl border border-white shadow-[0_34px_80px_-30px_rgba(255,139,80,0.4)] overflow-hidden"
+          >
+            {/* header */}
+            <div className="relative bg-gradient-to-br from-[#FFF3E9] via-[#FFF9F4] to-[#EAF6FF] px-6 py-5 overflow-hidden border-b border-[#FFD9C4]/50">
+              <div className="absolute -right-10 -top-12 w-40 h-40 rounded-full bg-[#FF8B50]/20 blur-2xl pointer-events-none" />
+              <div className="absolute -left-8 bottom-0 w-28 h-28 rounded-full bg-[#25A5FE]/15 blur-2xl pointer-events-none" />
+              <div className="relative flex items-center justify-between">
                 <div>
-                  <label className="block text-xs font-black text-slate-700 uppercase">{t("baggageCount")}</label>
-                  <div className="flex items-center gap-3 mt-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setInputs((prev) => ({ ...prev, baggageCount: Math.max(0, (prev.baggageCount || 0) - 1) }))}
-                      className="w-8 h-8 rounded-lg bg-white border border-slate-300 font-black text-sm flex items-center justify-center hover:bg-slate-100"
-                    >
-                      -
-                    </button>
-                    <span className="text-sm font-black text-slate-900">{t("bags", { count: inputs.baggageCount || 0 })}</span>
-                    <button
-                      type="button"
-                      onClick={() => setInputs((prev) => ({ ...prev, baggageCount: (prev.baggageCount || 0) + 1 }))}
-                      className="w-8 h-8 rounded-lg bg-white border border-slate-300 font-black text-sm flex items-center justify-center hover:bg-slate-100"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <span className="block text-[10px] text-slate-400 font-medium mt-1">1 bag free per traveler</span>
+                  <span className="text-[9px] font-black uppercase tracking-[0.24em] text-[#E05A1A]">{t("liveEstimate")}</span>
+                  <h3 className="itc-serif text-xl font-semibold mt-0.5 text-[#44403C]">{t("tripSummary")}</h3>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-black text-slate-700 uppercase">{t("pricingModeLabel")}</label>
-                  <div className="grid grid-cols-2 gap-1.5 mt-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setInputs((prev) => ({ ...prev, pricingMode: "per-day" }))}
-                      className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold text-center transition ${inputs.pricingMode === "per-day"
-                          ? "bg-brand-primary text-white border-brand-primary"
-                          : "bg-white text-slate-700 border-slate-200"
-                        }`}
-                    >
-                      {t("perDay")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setInputs((prev) => ({ ...prev, pricingMode: "per-trip" }))}
-                      className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold text-center transition ${inputs.pricingMode === "per-trip"
-                          ? "bg-brand-primary text-white border-brand-primary"
-                          : "bg-white text-slate-700 border-slate-200"
-                        }`}
-                    >
-                      {t("perTrip")}
-                    </button>
-                  </div>
-                </div>
+                <span className="w-10 h-10 rounded-2xl bg-white/80 border border-[#FFD9C4] text-[#FF8B50] flex items-center justify-center shadow-sm"><DollarOutlined /></span>
               </div>
-            </section>
+            </div>
 
-            {/* Step 6: Inclusions & Meal Add-ons Checklist */}
-            <section className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <h3 className="text-base font-black text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-                <CoffeeOutlined className="text-brand-primary" />
-                <span>{t("step6")}</span>
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {(["breakfast", "dinner"] as const).map((addon) => {
-                  const isSelected = inputs.addOns.includes(addon);
-                  return (
-                    <button
-                      key={addon}
-                      type="button"
-                      onClick={() => handleToggleAddOn(addon)}
-                      className={`p-4 rounded-2xl border text-left hover:bg-slate-50/50 relative flex items-center justify-between transition ${isSelected
-                          ? "border-brand-primary bg-orange-50/30"
-                          : "border-slate-200 bg-white"
-                        }`}
-                    >
-                      <div>
-                        <span className="block text-xs font-black text-slate-800 uppercase capitalize">{addon}</span>
-                        <span className="block text-[10px] text-slate-400 font-bold mt-0.5">{t(`addOnLabels.${addon}` as any)}</span>
-                      </div>
-                      <div
-                        className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold border transition ${isSelected
-                            ? "bg-brand-primary text-white border-brand-primary"
-                            : "bg-white text-transparent border-slate-300"
-                          }`}
-                      >
-                        <CheckOutlined />
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-
-          </div>
-
-          {/* Right Column: Sticky Real-time Pricing Summary (5 cols) */}
-          <div className="lg:col-span-5 lg:sticky lg:top-24 space-y-6">
-
-            <section className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xl relative overflow-hidden">
-              <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-                <div>
-                  <span className="text-[10px] font-black text-brand-primary uppercase tracking-widest block">
-                    {t("liveEstimate")}
-                  </span>
-                  <h3 className="text-lg font-black text-slate-900">{t("tripSummary")}</h3>
-                </div>
-                <div className="w-10 h-10 bg-slate-900 text-white rounded-2xl flex items-center justify-center font-black text-sm">
-                  <DollarOutlined />
+            <div className="p-6">
+              <div className="rounded-2xl bg-gradient-to-r from-[#FDF9F2] to-[#F5FAFF] border border-[#F0E7D8] p-3.5">
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[#B5AC9A]">{t("route")}</span>
+                <div className="itc-scroll flex items-center gap-1.5 mt-2 overflow-x-auto pb-1 text-[11px] font-bold text-[#5C5648]">
+                  {inputs.destinations.map((d, i) => (
+                    <React.Fragment key={d}>
+                      <span className="shrink-0 px-2.5 py-1 rounded-lg bg-white border border-[#F0E7D8] shadow-sm">{d}</span>
+                      {i < inputs.destinations.length - 1 && <span className="text-[#FF8B50] shrink-0">→</span>}
+                    </React.Fragment>
+                  ))}
                 </div>
               </div>
 
-              {/* Summary Items list */}
-              <div className="mt-4 space-y-3 text-xs font-bold text-slate-700">
-                <div className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                  <span className="text-slate-500 uppercase text-[9px] font-bold">{t("route")}</span>
-                  <span className="text-slate-900 font-black text-right max-w-[200px] truncate">
-                    {inputs.destinations.join(" → ")}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-center">
-                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 flex justify-between">
-                    <span className="text-slate-400 uppercase text-[9px] font-bold">{t("travelers")}</span>
-                    <span className="text-slate-850 font-black">{inputs.numberOfTravelers}</span>
+              <div className="grid grid-cols-3 gap-2 mt-3">
+                {[
+                  { label: t("travelers"), value: String(inputs.numberOfTravelers) },
+                  { label: t("totalNights"), value: String(totalNights) },
+                  { label: "Season", value: `×${SEASON_MULTIPLIERS[inputs.season].toFixed(2)}` },
+                ].map((s) => (
+                  <div key={s.label} className="rounded-xl bg-white border border-[#F0E7D8] px-2 py-2.5 text-center shadow-sm">
+                    <span className="block text-[8px] font-black uppercase tracking-wider text-[#B5AC9A]">{s.label}</span>
+                    <span className="block text-sm font-black text-[#44403C] mt-0.5">{s.value}</span>
                   </div>
-                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 flex justify-between">
-                    <span className="text-slate-400 uppercase text-[9px] font-bold">{t("totalNights")}</span>
-                    <span className="text-slate-850 font-black">{inputs.duration + inputs.extraNights} Nights</span>
-                  </div>
-                </div>
+                ))}
               </div>
 
-              {/* Dynamic cost breakdown list */}
-              <div className="mt-6 border-t border-slate-100 pt-6 space-y-3 text-xs font-semibold text-slate-550">
-                <div className="flex justify-between">
-                  <span>{t("baseCost", { duration: inputs.duration })}</span>
-                  <span className="text-slate-800 font-bold">{formatPrice(pricing.baseCost)}</span>
-                </div>
-
+              <div className="mt-5 pt-5 border-t border-dashed border-[#EAE2D2] space-y-2.5 text-xs font-semibold text-[#8A8577]">
+                <div className="flex justify-between"><span>{t("baseCost", { duration: inputs.duration })}</span><BreakdownAmt value={pricing.baseCost} /></div>
                 <div className="flex justify-between items-center">
-                  <span className="flex items-center gap-1.5">
-                    <span>{t("hotelSurcharges", { nights: inputs.duration + inputs.extraNights })}</span>
-                    {pricing.hasRealHotelRates && (
-                      <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                        {t("aiMatchedRate")}
-                      </span>
-                    )}
+                  <span className="flex items-center gap-1.5 flex-wrap">
+                    <span>{t("hotelSurcharges", { nights: totalNights })}</span>
+                    {pricing.hasRealHotelRates && <span className="text-[8px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded uppercase">{t("aiMatchedRate")}</span>}
                   </span>
-                  <span className="text-slate-800 font-bold">{formatPrice(pricing.accommodationCost)}</span>
+                  <BreakdownAmt value={pricing.accommodationCost} />
                 </div>
-
-                <div className="flex justify-between">
-                  <span>{t("transportLogistics")}</span>
-                  <span className="text-slate-800 font-bold">{formatPrice(pricing.transportCost)}</span>
-                </div>
-
+                <div className="flex justify-between"><span>{t("transportLogistics")}</span><BreakdownAmt value={pricing.transportCost} /></div>
                 {pricing.baggageSurcharge > 0 && (
-                  <div className="flex justify-between text-amber-700">
-                    <span>{t("baggageSurcharge")}</span>
-                    <span className="font-bold">+{formatPrice(pricing.baggageSurcharge)}</span>
-                  </div>
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-between text-amber-500"><span>{t("baggageSurcharge")}</span><span className="font-bold tabular-nums">+{formatPrice(pricing.baggageSurcharge)}</span></motion.div>
                 )}
-
                 <div className="flex justify-between items-center">
-                  <span className="flex items-center gap-1.5">
+                  <span className="flex items-center gap-1.5 flex-wrap">
                     <span>{t("destinationTickets", { count: inputs.destinations.length })}</span>
-                    {pricing.hasRealPoiCosts && (
-                      <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                        {t("aiMatchedRate")}
-                      </span>
-                    )}
+                    {pricing.hasRealPoiCosts && <span className="text-[8px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded uppercase">{t("aiMatchedRate")}</span>}
                   </span>
-                  <span className="text-slate-800 font-bold">{formatPrice(pricing.destinationSurcharges + (pricing.hasRealPoiCosts ? pricing.activityCost : 0))}</span>
+                  <BreakdownAmt value={pricing.destinationSurcharges + pricing.activityCost} />
                 </div>
-
-                {pricing.addOnsCost > 0 && (
-                  <div className="flex justify-between">
-                    <span>{t("mealAddOns")}</span>
-                    <span className="text-slate-800 font-bold">{formatPrice(pricing.addOnsCost)}</span>
-                  </div>
-                )}
-
-                {pricing.discount > 0 && (
-                  <div className="flex justify-between text-emerald-600">
-                    <span>{t("groupDiscount", { rate: (pricing.discountRate * 100).toFixed(0) })}</span>
-                    <span>-{formatPrice(pricing.discount)}</span>
-                  </div>
-                )}
-
-                <div className="flex justify-between">
-                  <span>{t("taxesFees")}</span>
-                  <span className="text-slate-800 font-bold">{formatPrice(pricing.taxes)}</span>
-                </div>
-              </div>
-
-              {/* Grand Total */}
-              <div className="mt-6 border-t border-slate-100 pt-6 flex justify-between items-baseline">
-                <span className="text-sm font-black text-slate-900">{t("totalQuote")}</span>
-                <div className="text-right">
-                  <span className="text-2xl font-black text-brand-primary">{formatPrice(pricing.totalPrice)}</span>
-                  <span className="text-xs text-slate-400 font-bold uppercase ml-1.5">{currency}</span>
-                </div>
-              </div>
-
-              {/* Checkout Form */}
-              <div className="mt-8 border-t border-slate-100 pt-6 space-y-4">
-
-                {/* Preferred Date */}
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-700 uppercase flex items-center gap-1.5">
-                    <CalendarOutlined /> {t("departureDate")}
-                  </label>
-                  <input
-                    type="date"
-                    min={new Date().toISOString().split("T")[0]}
-                    value={preferredStartDate}
-                    onChange={(e) => setPreferredStartDate(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-primary text-xs font-semibold cursor-pointer"
-                  />
-                  {errors.preferredStartDate && (
-                    <span className="text-red-500 text-xs font-black">{errors.preferredStartDate}</span>
+                {pricing.addOnsCost > 0 && <div className="flex justify-between"><span>{t("mealAddOns")}</span><BreakdownAmt value={pricing.addOnsCost} /></div>}
+                <AnimatePresence>
+                  {pricing.discount > 0 && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="flex justify-between text-emerald-500 overflow-hidden">
+                      <span>{t("groupDiscount", { rate: (pricing.discountRate * 100).toFixed(0) })}</span><span className="font-bold tabular-nums">−{formatPrice(pricing.discount)}</span>
+                    </motion.div>
                   )}
+                </AnimatePresence>
+                <div className="flex justify-between"><span>{t("taxesFees")}</span><BreakdownAmt value={pricing.taxes} /></div>
+              </div>
+
+              <div className="mt-5 pt-5 border-t border-[#EAE2D2]">
+                <div className="flex justify-between items-end">
+                  <span className="text-xs font-black uppercase tracking-[0.18em] text-[#44403C]">{t("totalQuote")}</span>
+                  <div className="text-right">
+                    <span className="itc-serif text-[2.1rem] leading-none font-semibold text-[#E05A1A] tabular-nums">{formatPrice(animatedTotal)}</span>
+                    <span className="text-[10px] text-[#B5AC9A] font-black uppercase ml-1.5">{currency}</span>
+                  </div>
+                </div>
+                <div className="text-right text-[10px] font-bold text-[#B5AC9A] mt-1.5">≈ {formatPrice(perTraveler)} per traveler</div>
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-[#EAE2D2] space-y-4">
+                <div>
+                  <label className="itc-label flex items-center gap-1.5"><CalendarOutlined /> {t("departureDate")}</label>
+                  <input type="date" min={todayStr} value={preferredStartDate} onChange={(e) => setPreferredStartDate(e.target.value)} className={`itc-input mt-1.5 ${errors.preferredStartDate ? "!border-rose-300" : ""}`} />
+                  <AnimatePresence>
+                    {errors.preferredStartDate && <motion.span initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="block text-rose-500 text-[11px] font-bold mt-1.5">{errors.preferredStartDate}</motion.span>}
+                  </AnimatePresence>
                 </div>
 
-                {/* Traveler Notes */}
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-700 uppercase">
-                    {t("travelerPreferences")}
-                  </label>
-                  <textarea
-                    rows={3}
-                    placeholder={t("placeholderPreferences")}
-                    value={specialRequests}
-                    onChange={(e) => setSpecialRequests(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-primary text-xs font-semibold resize-none"
-                  />
+                <div>
+                  <label className="itc-label">{t("travelerPreferences")}</label>
+                  <textarea rows={3} placeholder={t("placeholderPreferences")} value={specialRequests} onChange={(e) => setSpecialRequests(e.target.value)} className="itc-input mt-1.5 resize-none !py-3" />
                 </div>
 
                 {sessionStatus !== "authenticated" && (
-                  <div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-2xl flex items-start gap-2 text-amber-700 text-left text-[11px] leading-normal">
-                    <InfoCircleOutlined className="text-sm mt-0.5" />
-                    <span>{t("planningAsGuest")}</span>
+                  <div className="flex items-start gap-2.5 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-amber-600 text-[11px] font-semibold leading-relaxed">
+                    <InfoCircleOutlined className="mt-0.5 shrink-0" /> {t("planningAsGuest")}
                   </div>
                 )}
 
-                <button
-                  type="button"
-                  onClick={handleSubmitBooking}
-                  disabled={isSubmitting}
-                  className={`w-full py-3.5 rounded-xl text-white font-black text-xs transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer ${sessionStatus !== "authenticated"
-                      ? "bg-amber-600 hover:bg-amber-500"
-                      : "bg-slate-900 hover:bg-slate-800"
-                    }`}
-                >
-                  {isSubmitting
-                    ? t("savingQuote")
-                    : sessionStatus !== "authenticated"
-                      ? t("signInSubmit")
-                      : t("submitCustom")}
-                </button>
+                <motion.button whileHover={isSubmitting ? {} : { y: -2 }} whileTap={{ scale: 0.98 }} type="button" onClick={handleSubmitBooking} disabled={isSubmitting} className={`itc-submit ${sessionStatus !== "authenticated" ? "!bg-gradient-to-r !from-amber-400 !to-amber-500" : ""}`}>
+                  {isSubmitting ? (
+                    <span className="flex items-center gap-2.5">
+                      <motion.span animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full inline-block" />
+                      {t("savingQuote")}
+                    </span>
+                  ) : sessionStatus !== "authenticated" ? (
+                    t("signInSubmit")
+                  ) : (
+                    <span className="flex items-center gap-2">{t("submitCustom")} <SendOutlined /></span>
+                  )}
+                </motion.button>
+
+                <p className="text-center text-[9.5px] font-semibold text-[#B5AC9A] tracking-wide">No payment required today · Coordinator confirms slots & final pricing</p>
               </div>
-
-            </section>
-          </div>
-
-        </div>
-
-      </div>
+            </div>
+          </motion.section>
+        </aside>
+      </main>
     </div>
   );
 }
 
-// Added premium micro-interactions and map routing logic
+function BreakdownAmt({ value }: { value: number }) {
+  const v = useAnimatedNumber(value);
+  return <span className="text-[#44403C] font-bold tabular-nums">{`$${Math.round(v).toLocaleString()}`}</span>;
+}
+
+/* ================= scoped styles ================= */
+const ITC_CSS = `
+@import url('https://cdn.jsdelivr.net/npm/@fontsource/fraunces@5.0.12/500.css');
+@import url('https://cdn.jsdelivr.net/npm/@fontsource/fraunces@5.0.12/600.css');
+@import url('https://cdn.jsdelivr.net/npm/@fontsource/fraunces@5.0.12/600-italic.css');
+@import url('https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.16/400.css');
+@import url('https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.16/500.css');
+@import url('https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.16/600.css');
+@import url('https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.16/700.css');
+
+.itc-root { font-family: 'Inter', system-ui, sans-serif; }
+.itc-serif { font-family: 'Fraunces', Georgia, serif; }
+
+.itc-glass {
+  background: rgba(255,255,255,.66);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255,255,255,.75);
+}
+
+.itc-card {
+  background: rgba(255,255,255,.86);
+  backdrop-filter: blur(10px);
+  border: 1px solid #F3EBDE;
+  border-radius: 30px;
+  padding: 26px;
+  box-shadow: 0 1px 2px rgba(120,90,50,.05), 0 26px 60px -32px rgba(120,90,50,.25);
+}
+@media (min-width: 640px) { .itc-card { padding: 32px; } }
+
+.itc-sec-head { display:flex; align-items:flex-start; gap:14px; padding-bottom:18px; margin-bottom:22px; border-bottom:1px solid #F3EBDE; }
+.itc-step-no { font-family:'Fraunces',Georgia,serif; font-style:italic; font-weight:600; color:#FF8B50; font-size:15px; line-height:1.7; letter-spacing:.04em; }
+.itc-sec-title { font-family:'Fraunces',Georgia,serif; font-weight:600; font-size:20px; color:#44403C; letter-spacing:-.01em; line-height:1.25; }
+.itc-sec-hint { font-size:11.5px; color:#8A8577; font-weight:500; margin-top:3px; }
+.itc-sec-icon { margin-left:auto; align-self:center; font-size:17px; color:#FF8B50; background:rgba(255,139,80,.1); border:1px solid rgba(255,139,80,.22); width:40px; height:40px; border-radius:14px; display:flex; align-items:center; justify-content:center; flex:none; }
+.itc-sec-icon.sky { color:#25A5FE; background:rgba(37,165,254,.1); border-color:rgba(37,165,254,.22); }
+
+.itc-label { display:block; font-size:10px; font-weight:800; color:#8A8577; text-transform:uppercase; letter-spacing:.16em; margin-bottom:2px; }
+.itc-input {
+  width:100%; padding:10px 14px; background:#fff; border:1.5px solid #F0E7D8; border-radius:12px;
+  font-size:12.5px; font-weight:600; color:#44403C; outline:none; transition:all .2s; font-family:'Inter',sans-serif;
+}
+.itc-input::placeholder { color:#C4BCA9; font-weight:500; }
+.itc-input:focus { border-color:#FF8B50; box-shadow:0 0 0 3px rgba(255,139,80,.16); }
+
+.itc-gen-btn {
+  width:100%; padding:15px; border:none; border-radius:16px; cursor:pointer;
+  background:linear-gradient(100deg,#FF8B50,#FF6B2C 70%,#FF8B50);
+  background-size:180% 100%;
+  color:#fff; font-size:12px; font-weight:900; letter-spacing:.08em; text-transform:uppercase;
+  display:flex; align-items:center; justify-content:center; transition:all .3s;
+  box-shadow:0 16px 36px -14px rgba(255,139,80,.65);
+  font-family:'Inter',sans-serif;
+}
+.itc-gen-btn:hover:not(:disabled) { transform:translateY(-2px); background-position:100% 0; box-shadow:0 22px 44px -14px rgba(255,139,80,.7); }
+.itc-gen-btn:disabled { opacity:.65; cursor:not-allowed; }
+
+.itc-btn-primary {
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:14px 28px; border:none; border-radius:16px; cursor:pointer;
+  background:linear-gradient(100deg,#FF8B50,#FF6B2C); color:#fff;
+  font-size:12px; font-weight:900; letter-spacing:.1em; text-transform:uppercase;
+  box-shadow:0 16px 36px -14px rgba(255,139,80,.6); transition:all .25s;
+  font-family:'Inter',sans-serif;
+}
+.itc-btn-primary:hover { transform:translateY(-2px); }
+
+.itc-submit {
+  width:100%; padding:16px; border:none; border-radius:16px; cursor:pointer;
+  background:linear-gradient(100deg,#FF8B50,#FF6B2C); color:#fff;
+  font-size:12.5px; font-weight:900; letter-spacing:.06em; text-transform:uppercase;
+  display:flex; align-items:center; justify-content:center; transition:all .25s;
+  box-shadow:0 18px 40px -14px rgba(255,139,80,.6);
+  font-family:'Inter',sans-serif; position:relative; overflow:hidden;
+}
+.itc-submit::before { content:""; position:absolute; inset:0; background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.35) 50%,transparent 70%); transform:translateX(-120%); transition:transform .7s; }
+.itc-submit:hover:not(:disabled)::before { transform:translateX(120%); }
+.itc-submit:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 22px 46px -14px rgba(255,139,80,.65); }
+.itc-submit:disabled { opacity:.65; cursor:not-allowed; }
+
+/* leaflet pins */
+.itc-pin-wrap { background:transparent; border:none; }
+.itc-pin { position:relative; width:15px; height:15px; border-radius:9999px; background:#fff; border:2.5px solid #FF8B50; box-shadow:0 2px 8px rgba(255,107,44,.4); margin:7px; transition:transform .2s; }
+.itc-pin:hover { transform:scale(1.25); }
+.itc-pin.sel { width:30px; height:30px; margin:0; background:linear-gradient(135deg,#FF8B50,#FF6B2C); border:2.5px solid #fff; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:12px; font-family:'Inter',sans-serif; box-shadow:0 4px 14px rgba(255,107,44,.5); }
+.itc-pin-pulse { position:absolute; inset:-8px; border-radius:9999px; border:2px solid #FF8B50; opacity:.5; animation:itcPulse 2s ease-out infinite; pointer-events:none; }
+@keyframes itcPulse { 0% { transform:scale(.5); opacity:.75; } 100% { transform:scale(1.35); opacity:0; } }
+
+.itc-map .leaflet-container { font-family:'Inter',sans-serif; background:#E8F3FD; }
+.itc-map .leaflet-popup-content-wrapper { border-radius:18px; box-shadow:0 20px 50px -18px rgba(120,90,50,.35); border:1px solid #F3EBDE; }
+.itc-map .leaflet-popup-content { margin:12px; }
+.itc-map .leaflet-popup-tip { background:#fff; }
+.itc-map .leaflet-control-zoom { border:none !important; box-shadow:0 8px 24px -8px rgba(120,90,50,.3); border-radius:12px !important; overflow:hidden; }
+.itc-map .leaflet-control-zoom a { color:#44403C !important; }
+
+.itc-scroll::-webkit-scrollbar { height:5px; }
+.itc-scroll::-webkit-scrollbar-track { background:transparent; }
+.itc-scroll::-webkit-scrollbar-thumb { background:#F0E2CC; border-radius:99px; }
+
+.itc-md p { margin:.4rem 0; }
+.itc-md ul { padding-left:0; list-style:none; margin:.3rem 0; }
+`;
