@@ -177,6 +177,51 @@ def compute_cosine_similarity(query_embedding: np.ndarray, doc_embedding: Any) -
     return similarity
 
 
+REGION_ALIASES = {
+    "sigiriya": ["sigiriya", "dambulla", "matale", "inagaluwa", "habarana"],
+    "yala": ["yala", "tissamaharama", "kataragama", "kirinda"],
+    "bentota": ["bentota", "beruwala", "induruwa", "aluthgama"],
+    "ella": ["ella", "demodara", "bandarawela", "badulla"],
+    "mirissa": ["mirissa", "weligama", "kamburugamuwa", "matara"],
+    "galle": ["galle", "unawatuna", "ahangama", "hikkaduwa"],
+    "nuwara eliya": ["nuwara eliya", "nanu oya", "pundaluoya", "hatton"],
+    "kandy": ["kandy", "peradeniya", "katugastota", "digana"],
+    "colombo": ["colombo", "mount lavinia", "dehiwala", "negombo"]
+}
+
+
+def is_city_match(doc: dict, target_dest: str) -> bool:
+    """
+    Strict location matcher preventing cross-city leakage while accounting for regional sub-town aliases.
+    """
+    if not target_dest:
+        return True
+        
+    target_lower = target_dest.strip().lower()
+    doc_city = (doc.get("city") or "").strip().lower()
+    doc_district = (doc.get("district") or "").strip().lower()
+    doc_address = (doc.get("address") or "").strip().lower()
+    doc_name = (doc.get("name") or "").strip().lower()
+
+    allowed_terms = REGION_ALIASES.get(target_lower, [target_lower])
+
+    # Rule 1: If doc_city is explicitly defined
+    if doc_city:
+        return any(term in doc_city for term in allowed_terms)
+
+    # Rule 2: Check district if defined
+    if doc_district:
+        return any(term in doc_district for term in allowed_terms)
+
+    # Rule 3: Check name or address only if city and district are not set
+    if any(term in doc_name for term in allowed_terms):
+        return True
+    if any(term in doc_address for term in allowed_terms):
+        return True
+
+    return False
+
+
 DESTINATION_FALLBACK_POIS = {
     "kandy": [
         {
@@ -448,23 +493,11 @@ def search_travel_database(
     hotels_cursor = mongo.db["hotels"].find(hotel_query)
     all_hotels = list(hotels_cursor)
 
-    # Filter by destination strictly checking location fields (city, address, district, province, name)
+    # Filter by destination strictly checking location fields using is_city_match
     filtered_hotels = []
-    if dest_pattern:
+    if destination:
         for doc in all_hotels:
-            city = doc.get("city") or ""
-            address = doc.get("address") or ""
-            district = doc.get("district") or ""
-            province = doc.get("province") or ""
-            name = doc.get("name") or ""
-            
-            # Note: Do NOT match on text_blob to avoid false positives (e.g. 'Distance to Colombo airport')
-            if destination.lower() != "colombo" and "colombo" in (name + " " + city).lower():
-                continue
-
-            if (dest_pattern.search(city) or dest_pattern.search(address) or 
-                dest_pattern.search(district) or dest_pattern.search(province) or
-                dest_pattern.search(name)):
+            if is_city_match(doc, destination):
                 filtered_hotels.append(doc)
                 
         if len(filtered_hotels) < 3:
@@ -472,12 +505,8 @@ def search_travel_database(
             broader_cursor = mongo.db["hotels"].find(base_filter)
             existing_ids = {str(h.get("_id")) for h in filtered_hotels}
             for doc in broader_cursor:
-                city = doc.get("city") or ""
-                address = doc.get("address") or ""
-                district = doc.get("district") or ""
-                name = doc.get("name") or ""
                 if str(doc.get("_id")) not in existing_ids:
-                    if (dest_pattern.search(city) or dest_pattern.search(address) or dest_pattern.search(district) or dest_pattern.search(name)):
+                    if is_city_match(doc, destination):
                         filtered_hotels.append(doc)
     else:
         filtered_hotels = all_hotels
@@ -510,7 +539,7 @@ def search_travel_database(
                 "id": doc_id,
                 "source_id": source_id,
                 "name": doc.get("name"),
-                "city": doc.get("city"),
+                "city": doc.get("city") or destination,
                 "address": doc.get("address"),
                 "price_tier": doc.get("price_tier"),
                 "avg_nightly_usd": doc.get("avg_nightly"),
@@ -538,20 +567,11 @@ def search_travel_database(
     poi_cursor = mongo.db["poi"].find(base_filter)
     all_pois = list(poi_cursor)
 
-    # Filter POIs strictly by location fields (city, address, district, province, name)
+    # Filter POIs strictly by location fields using is_city_match
     filtered_pois = []
-    if dest_pattern:
+    if destination:
         for doc in all_pois:
-            city = doc.get("city") or ""
-            address = doc.get("address") or ""
-            district = doc.get("district") or ""
-            province = doc.get("province") or ""
-            name = doc.get("name") or ""
-
-            # Note: Do NOT match on text_blob to avoid false positives (e.g. 'Distance to Colombo airport')
-            if (dest_pattern.search(city) or dest_pattern.search(address) or 
-                dest_pattern.search(district) or dest_pattern.search(province) or
-                dest_pattern.search(name)):
+            if is_city_match(doc, destination):
                 filtered_pois.append(doc)
 
         # Supplement with curated destination landmarks if database POIs are fewer than 5

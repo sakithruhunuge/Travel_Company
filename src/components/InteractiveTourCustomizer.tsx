@@ -1,11 +1,3 @@
-// ============================================================================
-//  src/components/InteractiveTourCustomizer.tsx  —  PREMIUM LIGHT REVAMP v2
-//  feature/agent_frontend · Travel_Company
-//  Palette: Primary #FF8B50 · Secondary #25A5FE · warm whites + glass.
-//  No black surfaces. Same exports / APIs / pricing engine / i18n keys.
-//  New: immersive Ceylon hero, island icons showcase (add-to-route postcards),
-//  glass live-estimate rail, coral/sky micro-interactions.
-// ============================================================================
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
@@ -882,8 +874,8 @@ export default function InteractiveTourCustomizer() {
                     type="button"
                     onClick={() => handleToggleLocation(spot.id)}
                     className={`mt-4 w-full py-3 rounded-2xl text-[10.5px] font-black uppercase tracking-[0.16em] transition ${onRoute
-                        ? "bg-[#FFF1E9] text-[#E05A1A] border border-[#FFD9C4] hover:bg-[#FFEDDF]"
-                        : "bg-gradient-to-r from-[#FF8B50] to-[#FF6B2C] text-white shadow-lg shadow-[#FF8B50]/30 hover:shadow-xl hover:shadow-[#FF8B50]/40"
+                      ? "bg-[#FFF1E9] text-[#E05A1A] border border-[#FFD9C4] hover:bg-[#FFEDDF]"
+                      : "bg-gradient-to-r from-[#FF8B50] to-[#FF6B2C] text-white shadow-lg shadow-[#FF8B50]/30 hover:shadow-xl hover:shadow-[#FF8B50]/40"
                       }`}
                   >
                     {onRoute ? "✓ On your route — tap to remove" : "+ Add to my route"}
@@ -919,8 +911,8 @@ export default function InteractiveTourCustomizer() {
               whileTap={{ scale: 0.99 }}
               onClick={() => setSelectedTour("ai-suggested")}
               className={`relative w-full text-left rounded-[24px] p-5 sm:p-6 mb-4 overflow-hidden transition-all duration-300 border ${selectedTour === "ai-suggested"
-                  ? "border-[#FF8B50] bg-gradient-to-br from-[#FFF6EF] via-white to-[#F0F8FF] shadow-[0_22px_50px_-20px_rgba(255,139,80,0.55)]"
-                  : "border-[#F0E7D8] bg-white hover:border-[#FFD9C4]"
+                ? "border-[#FF8B50] bg-gradient-to-br from-[#FFF6EF] via-white to-[#F0F8FF] shadow-[0_22px_50px_-20px_rgba(255,139,80,0.55)]"
+                : "border-[#F0E7D8] bg-white hover:border-[#FFD9C4]"
                 }`}
             >
               {selectedTour === "ai-suggested" && <motion.div layoutId="aiGlow" className="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-[#FF8B50]/20 blur-3xl pointer-events-none" />}
