@@ -18,7 +18,6 @@ import {
   Button,
   InputNumber,
   DatePicker,
-  Select,
   Input,
   Result,
   Space,
@@ -45,24 +44,6 @@ const BASE_PRICES: Record<string, number> = {
   "grand-tour": 1400,
   "custom": 350,
 };
-
-const ALL_DESTINATIONS = [
-  { value: "Colombo", label: "Colombo" },
-  { value: "Sigiriya", label: "Sigiriya" },
-  { value: "Dambulla", label: "Dambulla" },
-  { value: "Kandy", label: "Kandy" },
-  { value: "Polonnaruwa", label: "Polonnaruwa" },
-  { value: "Galle", label: "Galle" },
-  { value: "Mirissa", label: "Mirissa" },
-  { value: "Unawatuna", label: "Unawatuna" },
-  { value: "Bentota", label: "Bentota" },
-  { value: "Nuwara Eliya", label: "Nuwara Eliya" },
-  { value: "Ella", label: "Ella" },
-  { value: "Horton Plains", label: "Horton Plains" },
-  { value: "Yala National Park", label: "Yala National Park" },
-  { value: "Udawalawe", label: "Udawalawe" },
-  { value: "Bundala", label: "Bundala" },
-];
 
 
 

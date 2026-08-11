@@ -598,7 +598,6 @@ export default function InteractiveTourCustomizer() {
     totalRouteKm += distanceKm;
     routeLegs.push({ from, to, distanceKm, bearing, direction, driveTime });
   }
-  const totalDriveTime = estimateDriveTimeHours(totalRouteKm);
 
   /* Real road routes state (OSRM API) */
   const [realLegsData, setRealLegsData] = useState<RealRoadLegResult[]>([]);
