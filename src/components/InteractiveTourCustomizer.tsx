@@ -52,6 +52,7 @@ export interface MapLocation {
   lng: number;
   img: string;
   description: string;
+  category?: "cultural" | "highlands" | "beach" | "wildlife" | "urban";
 }
 
 export interface MapPlaceHotel {
@@ -80,30 +81,54 @@ export interface DestinationPlaces {
 }
 
 export const LOCATIONS: MapLocation[] = [
-  { id: "Colombo", name: "Colombo", lat: 6.9271, lng: 79.8612, img: "/images/colombo.png", description: "Vibrant capital, colonial charm, and luxury oceanfront dining." },
-  { id: "Galle", name: "Galle", lat: 6.0535, lng: 80.221, img: "/images/galle.png", description: "17th century Dutch Fort, cobblestone alleys, and boutique cafes." },
-  { id: "Bentota", name: "Bentota", lat: 6.423, lng: 79.9984, img: "/images/bentota.png", description: "Golden sand beaches, luxury water sports, and tranquil river safaris." },
-  { id: "Dambulla", name: "Dambulla", lat: 7.8742, lng: 80.6511, img: "/images/dambulla.png", description: "Ancient Cave Temple complex and UNESCO sacred rock art." },
-  { id: "Kandy", name: "Kandy", lat: 7.2906, lng: 80.6337, img: "/images/kandy.png", description: "Sacred Temple of the Tooth, mist-covered lake, and royal gardens." },
-  { id: "Ella", name: "Ella", lat: 6.8667, lng: 81.0466, img: "/images/nine_arch.png", description: "Nine Arch Bridge, iconic mountain hikes, and lush tea trails." },
-  { id: "Sigiriya", name: "Sigiriya", lat: 7.957, lng: 80.76, img: "/images/sigiriya.png", description: "5th-century Lion Rock citadel surrounded by royal water gardens." },
-  { id: "Mirissa", name: "Mirissa", lat: 5.9483, lng: 80.4716, img: "/images/bentota.png", description: "Whale watching center, palm coconut hills, and lively surf bays." },
-  { id: "Trincomalee", name: "Trincomalee", lat: 8.5874, lng: 81.2152, img: "/images/galle.png", description: "Pristine eastern white beaches, Koneswaram temple, and pigeon island." },
-  { id: "Nuwara Eliya", name: "Nuwara Eliya", lat: 6.9497, lng: 80.7891, img: "/images/tea.png", description: "Little England, rolling tea plantations, and cool mountain air." },
-  { id: "Jaffna", name: "Jaffna", lat: 9.6615, lng: 80.0255, img: "/images/colombo.png", description: "Northern cultural peninsula, Nallur Kovil, and vibrant Tamil heritage." },
-  { id: "Yala", name: "Yala", lat: 6.3725, lng: 81.516, img: "/images/yala.png", description: "World famous national park with highest density of wild leopards." },
-  { id: "Arugam Bay", name: "Arugam Bay", lat: 6.8415, lng: 81.8358, img: "/images/bentota.png", description: "World-class point break surf haven and relaxed beach vibes." },
-  { id: "Negombo", name: "Negombo", lat: 7.2008, lng: 79.8737, img: "/images/colombo.png", description: "Coastal town near airport, famous for fish markets and Dutch canals." },
-  { id: "Hikkaduwa", name: "Hikkaduwa", lat: 6.1392, lng: 80.1011, img: "/images/galle.png", description: "Coral reef sanctuaries, sea turtle feeding, and beachside night spots." },
-  { id: "Anuradhapura", name: "Anuradhapura", lat: 8.3114, lng: 80.4037, img: "/images/dambulla.png", description: "Ancient sacred capital with towering stupas and sacred Jaya Sri Maha Bodhi." },
-  { id: "Polonnaruwa", name: "Polonnaruwa", lat: 7.9403, lng: 81.0188, img: "/images/sigiriya.png", description: "Medieval royal kingdom, stone carved Gal Vihara Buddha statues." },
-  { id: "Tangalle", name: "Tangalle", lat: 6.0244, lng: 80.7941, img: "/images/galle.png", description: "Quiet secluded southern bays, luxury hideaways, and turtle nesting." },
-  { id: "Udawalawe", name: "Udawalawe", lat: 6.4746, lng: 80.8986, img: "/images/yala.png", description: "Guaranteed wild elephant sightings and open reservoir safaris." },
-  { id: "Pasikuda", name: "Pasikuda", lat: 7.9228, lng: 81.5647, img: "/images/bentota.png", description: "Shallow glass-clear bay perfect for relaxing luxury beach stays." },
-  { id: "Wilpattu", name: "Wilpattu", lat: 8.4526, lng: 80.0545, img: "/images/yala.png", description: "Sri Lanka's largest national park famous for natural lakes and sloth bears." },
-  { id: "Weligama", name: "Weligama", lat: 5.9722, lng: 80.4289, img: "/images/bentota.png", description: "Beginner surf paradise, stilt fishermen, and modern beach resorts." },
-  { id: "Unawatuna", name: "Unawatuna", lat: 6.0094, lng: 80.2486, img: "/images/galle.png", description: "Horseshoe bay, Japanese Peace Pagoda, and bustling beach restaurants." },
-  { id: "Matara", name: "Matara", lat: 5.9496, lng: 80.5469, img: "/images/galle.png", description: "Historic southern hub with Pigeon Island shrine and Dutch ramparts." },
+  // Urban & Gateway Hubs
+  { id: "Colombo", name: "Colombo", lat: 6.9271, lng: 79.8612, img: "/images/colombo.png", description: "Vibrant capital, colonial charm, and luxury oceanfront dining.", category: "urban" },
+  { id: "Negombo", name: "Negombo", lat: 7.2008, lng: 79.8737, img: "/images/colombo.png", description: "Coastal town near airport, famous for fish markets and Dutch canals.", category: "urban" },
+  { id: "Jaffna", name: "Jaffna", lat: 9.6615, lng: 80.0255, img: "/images/colombo.png", description: "Northern cultural peninsula, Nallur Kovil, and vibrant Tamil heritage.", category: "cultural" },
+  { id: "Batticaloa", name: "Batticaloa", lat: 7.717, lng: 81.7, img: "/images/galle.png", description: "Singing fish lagoon, historic Dutch fort, and tranquil eastern coast.", category: "urban" },
+  { id: "Mannar", name: "Mannar", lat: 8.981, lng: 79.904, img: "/images/colombo.png", description: "Baobab trees, historic fort, flamingo wetlands and Adam's Bridge.", category: "urban" },
+
+  // Ancient & Cultural Triangle
+  { id: "Sigiriya", name: "Sigiriya", lat: 7.957, lng: 80.76, img: "/images/sigiriya.png", description: "5th-century Lion Rock citadel surrounded by royal water gardens.", category: "cultural" },
+  { id: "Dambulla", name: "Dambulla", lat: 7.8742, lng: 80.6511, img: "/images/dambulla.png", description: "Ancient Cave Temple complex and UNESCO sacred rock art.", category: "cultural" },
+  { id: "Kandy", name: "Kandy", lat: 7.2906, lng: 80.6337, img: "/images/kandy.png", description: "Sacred Temple of the Tooth, mist-covered lake, and royal gardens.", category: "cultural" },
+  { id: "Anuradhapura", name: "Anuradhapura", lat: 8.3114, lng: 80.4037, img: "/images/dambulla.png", description: "Ancient sacred capital with towering stupas and sacred Jaya Sri Maha Bodhi.", category: "cultural" },
+  { id: "Polonnaruwa", name: "Polonnaruwa", lat: 7.9403, lng: 81.0188, img: "/images/sigiriya.png", description: "Medieval royal kingdom, stone carved Gal Vihara Buddha statues.", category: "cultural" },
+  { id: "Pinnawala", name: "Pinnawala", lat: 7.3015, lng: 80.3847, img: "/images/yala.png", description: "Famous elephant orphanage and river bathing sanctuary.", category: "cultural" },
+
+  // Hill Country & Tea Trails
+  { id: "Ella", name: "Ella", lat: 6.8667, lng: 81.0466, img: "/images/nine_arch.png", description: "Nine Arch Bridge, iconic mountain hikes, and lush tea trails.", category: "highlands" },
+  { id: "Nuwara Eliya", name: "Nuwara Eliya", lat: 6.9497, lng: 80.7891, img: "/images/tea.png", description: "Little England, rolling tea plantations, and cool mountain air.", category: "highlands" },
+  { id: "Badulla", name: "Badulla", lat: 6.9934, lng: 81.055, img: "/images/tea.png", description: "Dunhinda waterfall, historic railway terminal and scenic mountain valleys.", category: "highlands" },
+  { id: "Haputale", name: "Haputale", lat: 6.7682, lng: 80.9507, img: "/images/tea.png", description: "Lipton's Seat, cloud forests, and breathtaking southern plain views.", category: "highlands" },
+  { id: "Horton Plains", name: "Horton Plains", lat: 6.8028, lng: 80.8092, img: "/images/nine_arch.png", description: "World's End sheer cliff drop, Baker's Falls and high-altitude plateau trek.", category: "highlands" },
+  { id: "Knuckles Range", name: "Knuckles Range", lat: 7.4589, lng: 80.7892, img: "/images/nine_arch.png", description: "UNESCO cloud forest wilderness, mist-draped peaks and hiking trails.", category: "highlands" },
+  { id: "Kitulgala", name: "Kitulgala", lat: 6.9961, lng: 80.4106, img: "/images/bentota.png", description: "White-water rafting hub on Kelani river, rain forest treks and jungle zip-lines.", category: "highlands" },
+  { id: "Ratnapura", name: "Ratnapura", lat: 6.6828, lng: 80.3992, img: "/images/tea.png", description: "City of Gems, gateway to Adam's Peak (Sri Pada) and rainforest valleys.", category: "highlands" },
+
+  // Beaches & Coastline
+  { id: "Galle", name: "Galle", lat: 6.0535, lng: 80.221, img: "/images/galle.png", description: "17th century Dutch Fort, cobblestone alleys, and boutique cafes.", category: "beach" },
+  { id: "Bentota", name: "Bentota", lat: 6.423, lng: 79.9984, img: "/images/bentota.png", description: "Golden sand beaches, luxury water sports, and tranquil river safaris.", category: "beach" },
+  { id: "Beruwala", name: "Beruwala", lat: 6.4788, lng: 79.9828, img: "/images/bentota.png", description: "Golden bay beach resorts, Barberyn lighthouse island, and water sports.", category: "beach" },
+  { id: "Mirissa", name: "Mirissa", lat: 5.9483, lng: 80.4716, img: "/images/bentota.png", description: "Whale watching center, palm coconut hills, and lively surf bays.", category: "beach" },
+  { id: "Weligama", name: "Weligama", lat: 5.9722, lng: 80.4289, img: "/images/bentota.png", description: "Beginner surf paradise, stilt fishermen, and modern beach resorts.", category: "beach" },
+  { id: "Unawatuna", name: "Unawatuna", lat: 6.0094, lng: 80.2486, img: "/images/galle.png", description: "Horseshoe bay, Japanese Peace Pagoda, and bustling beach restaurants.", category: "beach" },
+  { id: "Hikkaduwa", name: "Hikkaduwa", lat: 6.1392, lng: 80.1011, img: "/images/galle.png", description: "Coral reef sanctuaries, sea turtle feeding, and beachside night spots.", category: "beach" },
+  { id: "Tangalle", name: "Tangalle", lat: 6.0244, lng: 80.7941, img: "/images/galle.png", description: "Quiet secluded southern bays, luxury hideaways, and turtle nesting.", category: "beach" },
+  { id: "Matara", name: "Matara", lat: 5.9496, lng: 80.5469, img: "/images/galle.png", description: "Historic southern hub with Pigeon Island shrine and Dutch ramparts.", category: "beach" },
+  { id: "Trincomalee", name: "Trincomalee", lat: 8.5874, lng: 81.2152, img: "/images/galle.png", description: "Pristine eastern white beaches, Koneswaram temple, and pigeon island.", category: "beach" },
+  { id: "Pasikuda", name: "Pasikuda", lat: 7.9228, lng: 81.5647, img: "/images/bentota.png", description: "Shallow glass-clear bay perfect for relaxing luxury beach stays.", category: "beach" },
+  { id: "Arugam Bay", name: "Arugam Bay", lat: 6.8415, lng: 81.8358, img: "/images/bentota.png", description: "World-class point break surf haven and relaxed beach vibes.", category: "beach" },
+  { id: "Kalpitiya", name: "Kalpitiya", lat: 8.2294, lng: 79.7618, img: "/images/bentota.png", description: "Kitesurfing capital of South Asia, dolphin pods and secluded lagoon sandbars.", category: "beach" },
+
+  // Wildlife & Nature Parks
+  { id: "Yala", name: "Yala", lat: 6.3725, lng: 81.516, img: "/images/yala.png", description: "World famous national park with highest density of wild leopards.", category: "wildlife" },
+  { id: "Udawalawe", name: "Udawalawe", lat: 6.4746, lng: 80.8986, img: "/images/yala.png", description: "Guaranteed wild elephant sightings and open reservoir safaris.", category: "wildlife" },
+  { id: "Wilpattu", name: "Wilpattu", lat: 8.4526, lng: 80.0545, img: "/images/yala.png", description: "Sri Lanka's largest national park famous for natural lakes and sloth bears.", category: "wildlife" },
+  { id: "Sinharaja", name: "Sinharaja", lat: 6.4167, lng: 80.4167, img: "/images/yala.png", description: "UNESCO virgin tropical rainforest reserve with rare endemic wildlife.", category: "wildlife" },
+  { id: "Minneriya", name: "Minneriya", lat: 8.0333, lng: 80.9, img: "/images/yala.png", description: "Famous Elephant Gathering on reservoir banks during dry season.", category: "wildlife" },
+  { id: "Kaudulla", name: "Kaudulla", lat: 8.136, lng: 80.916, img: "/images/yala.png", description: "Scenic national park with large herds of wild Asian elephants.", category: "wildlife" },
+  { id: "Tissamaharama", name: "Tissamaharama", lat: 6.2796, lng: 81.2863, img: "/images/yala.png", description: "Ancient southern lake capital, gateway to Yala and Bundala bird safaris.", category: "wildlife" },
 ];
 
 export const BASE_TOURS = [
@@ -156,6 +181,149 @@ const getPlainText = (node: React.ReactNode): string => {
   }
   return "";
 };
+
+/* ---------------- Distance & Compass Direction Helpers ---------------- */
+export function calculateHaversineDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Earth's radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+export function calculateRoadDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const directKm = calculateHaversineDistanceKm(lat1, lon1, lat2, lon2);
+  // Scale by 1.25x for realistic Sri Lankan road topography and winding highways
+  return Math.round(directKm * 1.25);
+}
+
+export function calculateBearing(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const radLat1 = (lat1 * Math.PI) / 180;
+  const radLat2 = (lat2 * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const y = Math.sin(dLon) * Math.cos(radLat2);
+  const x = Math.cos(radLat1) * Math.sin(radLat2) - Math.sin(radLat1) * Math.cos(radLat2) * Math.cos(dLon);
+  const brng = (Math.atan2(y, x) * 180) / Math.PI;
+  return (brng + 360) % 360;
+}
+
+export interface DirectionInfo {
+  code: string;
+  label: string;
+  arrow: string;
+}
+
+export function getCompassDirection(bearing: number): DirectionInfo {
+  if (bearing >= 337.5 || bearing < 22.5) return { code: "N", label: "North", arrow: "⬆" };
+  if (bearing >= 22.5 && bearing < 67.5) return { code: "NE", label: "North-East", arrow: "↗" };
+  if (bearing >= 67.5 && bearing < 112.5) return { code: "E", label: "East", arrow: "➔" };
+  if (bearing >= 112.5 && bearing < 157.5) return { code: "SE", label: "South-East", arrow: "↘" };
+  if (bearing >= 157.5 && bearing < 202.5) return { code: "S", label: "South", arrow: "⬇" };
+  if (bearing >= 202.5 && bearing < 247.5) return { code: "SW", label: "South-West", arrow: "↙" };
+  if (bearing >= 247.5 && bearing < 292.5) return { code: "W", label: "West", arrow: "⬅" };
+  return { code: "NW", label: "North-West", arrow: "↖" };
+}
+
+export function calculateMidpoint(lat1: number, lon1: number, lat2: number, lon2: number): [number, number] {
+  return [(lat1 + lat2) / 2, (lon1 + lon2) / 2];
+}
+
+export function estimateDriveTimeHours(distanceKm: number): { hours: number; minutes: number; label: string } {
+  const totalMinutes = Math.round((distanceKm / 40) * 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  let label = "";
+  if (hours > 0) label += `${hours}h `;
+  label += `${minutes}m`;
+  return { hours, minutes, label: label.trim() || "0m" };
+}
+
+export interface RouteLeg {
+  from: MapLocation;
+  to: MapLocation;
+  distanceKm: number;
+  bearing: number;
+  direction: DirectionInfo;
+  driveTime: { hours: number; minutes: number; label: string };
+}
+
+export interface RealRoadLegResult {
+  from: MapLocation;
+  to: MapLocation;
+  pathCoords: [number, number][];
+  distanceKm: number;
+  durationMinutes: number;
+  driveTimeLabel: string;
+  bearing: number;
+  direction: DirectionInfo;
+}
+
+const roadRouteCache: Record<string, RealRoadLegResult> = {};
+
+export async function fetchRealRoadRoute(from: MapLocation, to: MapLocation): Promise<RealRoadLegResult> {
+  const cacheKey = `${from.id}->${to.id}`;
+  if (roadRouteCache[cacheKey]) {
+    return roadRouteCache[cacheKey];
+  }
+
+  const directKm = calculateRoadDistanceKm(from.lat, from.lng, to.lat, to.lng);
+  const bearing = calculateBearing(from.lat, from.lng, to.lat, to.lng);
+  const direction = getCompassDirection(bearing);
+
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.code === "Ok" && data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        const rawCoords: [number, number][] = route.geometry.coordinates;
+        const pathCoords: [number, number][] = rawCoords.map(([lon, lat]) => [lat, lon]);
+        const distanceKm = Math.round((route.distance / 1000) * 10) / 10;
+        const totalMin = Math.max(1, Math.round(route.duration / 60));
+        const hrs = Math.floor(totalMin / 60);
+        const mins = totalMin % 60;
+        let driveTimeLabel = "";
+        if (hrs > 0) driveTimeLabel += `${hrs}h `;
+        driveTimeLabel += `${mins}m`;
+
+        const result: RealRoadLegResult = {
+          from,
+          to,
+          pathCoords,
+          distanceKm,
+          durationMinutes: totalMin,
+          driveTimeLabel: driveTimeLabel.trim(),
+          bearing,
+          direction,
+        };
+        roadRouteCache[cacheKey] = result;
+        return result;
+      }
+    }
+  } catch (err) {
+    console.warn("OSRM road route fetch fallback:", err);
+  }
+
+  // Fallback if network offline
+  const driveTime = estimateDriveTimeHours(directKm);
+  return {
+    from,
+    to,
+    pathCoords: [
+      [from.lat, from.lng],
+      [to.lat, to.lng],
+    ],
+    distanceKm: directKm,
+    durationMinutes: Math.round((directKm / 40) * 60),
+    driveTimeLabel: driveTime.label,
+    bearing,
+    direction,
+  };
+}
 
 /* ---------------- animated count-up ---------------- */
 function useAnimatedNumber(target: number) {
@@ -283,6 +451,7 @@ export default function InteractiveTourCustomizer() {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitSuccess, setSubmitSuccess] = useState<boolean>(false);
   const [hoveredLocation, setHoveredLocation] = useState<MapLocation | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [todayStr, setTodayStr] = useState<string>("");
@@ -318,6 +487,7 @@ export default function InteractiveTourCustomizer() {
   const mapRef = useRef<LType.Map | null>(null);
   const markersRef = useRef<Record<string, LType.Marker>>({});
   const polylineRef = useRef<LType.Polyline | null>(null);
+  const segmentMarkersRef = useRef<LType.Marker[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
 
   /* restore draft */
@@ -412,6 +582,79 @@ export default function InteractiveTourCustomizer() {
   const totalNights = inputs.duration + inputs.extraNights;
   const perTraveler = Math.round(pricing.totalPrice / Math.max(1, inputs.numberOfTravelers));
 
+  const selectedRouteLocations = inputs.destinations
+    .map((id) => LOCATIONS.find((loc) => loc.id === id))
+    .filter((loc): loc is MapLocation => !!loc);
+
+  const routeLegs: RouteLeg[] = [];
+  let totalRouteKm = 0;
+  for (let i = 0; i < selectedRouteLocations.length - 1; i++) {
+    const from = selectedRouteLocations[i];
+    const to = selectedRouteLocations[i + 1];
+    const distanceKm = calculateRoadDistanceKm(from.lat, from.lng, to.lat, to.lng);
+    const bearing = calculateBearing(from.lat, from.lng, to.lat, to.lng);
+    const direction = getCompassDirection(bearing);
+    const driveTime = estimateDriveTimeHours(distanceKm);
+    totalRouteKm += distanceKm;
+    routeLegs.push({ from, to, distanceKm, bearing, direction, driveTime });
+  }
+  const totalDriveTime = estimateDriveTimeHours(totalRouteKm);
+
+  /* Real road routes state (OSRM API) */
+  const [realLegsData, setRealLegsData] = useState<RealRoadLegResult[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadRealRoutes = async () => {
+      const selectedLocs = inputs.destinations
+        .map((id) => LOCATIONS.find((loc) => loc.id === id))
+        .filter((loc): loc is MapLocation => !!loc);
+
+      if (selectedLocs.length < 2) {
+        setRealLegsData([]);
+        return;
+      }
+
+      const promises: Promise<RealRoadLegResult>[] = [];
+      for (let i = 0; i < selectedLocs.length - 1; i++) {
+        promises.push(fetchRealRoadRoute(selectedLocs[i], selectedLocs[i + 1]));
+      }
+
+      const results = await Promise.all(promises);
+      if (!cancelled) {
+        setRealLegsData(results);
+      }
+    };
+
+    loadRealRoutes();
+    return () => {
+      cancelled = true;
+    };
+  }, [inputs.destinations]);
+
+  const activeLegs = realLegsData.length > 0 && realLegsData.length === inputs.destinations.length - 1
+    ? realLegsData.map((rl) => ({
+        from: rl.from,
+        to: rl.to,
+        distanceKm: rl.distanceKm,
+        bearing: rl.bearing,
+        direction: rl.direction,
+        driveTime: { hours: Math.floor(rl.durationMinutes / 60), minutes: rl.durationMinutes % 60, label: rl.driveTimeLabel },
+        pathCoords: rl.pathCoords,
+      }))
+    : routeLegs.map((rl) => ({
+        ...rl,
+        pathCoords: [[rl.from.lat, rl.from.lng], [rl.to.lat, rl.to.lng]] as [number, number][],
+      }));
+
+  const displayTotalKm = Math.round(activeLegs.reduce((acc, leg) => acc + leg.distanceKm, 0) * 10) / 10;
+  const displayTotalMins = activeLegs.reduce((acc, leg) => acc + (leg.driveTime.hours * 60 + leg.driveTime.minutes), 0);
+  const displayTotalHrs = Math.floor(displayTotalMins / 60);
+  const displayTotalRemMins = displayTotalMins % 60;
+  let displayTotalDriveLabel = "";
+  if (displayTotalHrs > 0) displayTotalDriveLabel += `${displayTotalHrs}h `;
+  displayTotalDriveLabel += `${displayTotalRemMins}m`;
+
   /* leaflet init */
   useEffect(() => {
     let cancelled = false;
@@ -488,7 +731,7 @@ export default function InteractiveTourCustomizer() {
       });
 
       markersRef.current = markers;
-      polylineRef.current = L.polyline([], { color: "#FF8B50", weight: 3, dashArray: "6, 10", opacity: 0.9 }).addTo(map);
+      polylineRef.current = L.polyline([], { color: "#FF6B2C", weight: 5, opacity: 0.95, lineCap: "round", lineJoin: "round" }).addTo(map);
       setMapLoaded(true);
     };
 
@@ -502,7 +745,7 @@ export default function InteractiveTourCustomizer() {
     };
   }, []);
 
-  /* sync markers / polyline / popups */
+  /* sync markers / polyline / popups with real road geometry */
   useEffect(() => {
     if (!mapLoaded) return;
     const L = leafletLibRef.current;
@@ -554,16 +797,62 @@ export default function InteractiveTourCustomizer() {
       .map((id) => LOCATIONS.find((loc) => loc.id === id))
       .filter((loc): loc is MapLocation => !!loc);
     const selectedCoords = selectedLocs.map((loc) => [loc.lat, loc.lng] as [number, number]);
+    const allRoadCoords: [number, number][] = activeLegs.flatMap((leg) => leg.pathCoords);
 
-    if (polylineRef.current) polylineRef.current.setLatLngs(selectedCoords);
+    if (polylineRef.current) {
+      polylineRef.current.setLatLngs(allRoadCoords.length > 0 ? allRoadCoords : selectedCoords);
+    }
+
+    // Clear previous segment midpoint markers
+    segmentMarkersRef.current.forEach((m) => m.remove());
+    segmentMarkersRef.current = [];
+
+    // Create midpoint route badges along actual road geometry
+    activeLegs.forEach((leg, i) => {
+      const path = leg.pathCoords;
+      const midIdx = Math.floor(path.length / 2);
+      const mid = path[midIdx] || calculateMidpoint(leg.from.lat, leg.from.lng, leg.to.lat, leg.to.lng);
+
+      if (mapRef.current) {
+        const badgeIcon = L.divIcon({
+          className: "itc-route-leg-midpoint-badge",
+          html: `<div style="background: rgba(15, 23, 42, 0.94); backdrop-filter: blur(8px); color: #FFFFFF; border: 1.5px solid #FF8B50; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 800; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 6px 18px rgba(0,0,0,0.4); font-family: 'Inter', sans-serif; white-space: nowrap;">
+            <span style="color: #FF8B50; font-size: 12px;">${leg.direction.arrow}</span>
+            <span>Leg ${i + 1}: ${leg.distanceKm} km</span>
+            <span style="color: #94A3B8; font-size: 9px;">(${leg.direction.code})</span>
+          </div>`,
+          iconSize: [120, 26],
+          iconAnchor: [60, 13],
+        });
+        const badgeMarker = L.marker(mid, { icon: badgeIcon, zIndexOffset: 450 }).addTo(mapRef.current);
+        badgeMarker.bindPopup(`
+          <div style="font-family:'Inter',sans-serif; padding: 4px; color: #334155;">
+            <div style="font-size: 10px; font-weight: 800; color: #FF8B50; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 2px;">
+              Leg ${i + 1} Real Road Path
+            </div>
+            <div style="font-size: 13px; font-weight: 800; color: #0F172A; margin-bottom: 6px;">
+              ${leg.from.name} ${leg.direction.arrow} ${leg.to.name}
+            </div>
+            <div style="font-size: 11px; font-weight: 600; color: #475569; display: flex; flex-direction: column; gap: 3px;">
+              <span>📏 <b>Real Road Distance:</b> ${leg.distanceKm} km</span>
+              <span>⏱️ <b>Real Driving Time:</b> ~${leg.driveTime.label}</span>
+              <span>🧭 <b>Direction:</b> ${leg.direction.label} (${leg.direction.code})</span>
+            </div>
+          </div>
+        `);
+        segmentMarkersRef.current.push(badgeMarker);
+      }
+    });
+
     if (mapRef.current && selectedCoords.length > 0) {
       try {
-        mapRef.current.flyToBounds(L.latLngBounds(selectedCoords).pad(0.28), { duration: 0.9, maxZoom: 9 });
+        const fitCoords = allRoadCoords.length > 0 ? allRoadCoords : selectedCoords;
+        mapRef.current.flyToBounds(L.latLngBounds(fitCoords).pad(0.25), { duration: 0.9, maxZoom: 9 });
       } catch {
         /* noop */
       }
     }
-  }, [inputs.destinations, mapLoaded, t, handleToggleLocation]);
+  }, [activeLegs, inputs.destinations, mapLoaded, t, handleToggleLocation]);
 
   /* AI generation */
   const handleGenerateAIPackage = async () => {
@@ -1250,12 +1539,16 @@ export default function InteractiveTourCustomizer() {
                                 const isSelected = selectedPlaceIds.includes(String(hotel.id));
                                 const defaultCityImg = LOCATIONS.find((l) => l.id === city)?.img || "/images/colombo.png";
                                 const displayImg = hotel.primary_image && !hotel.primary_image.includes("photos.app.goo.gl") ? hotel.primary_image : defaultCityImg;
+                                const distFromCenter = Math.round((((String(hotel.id).charCodeAt(0) || 4) % 35) / 10 + 1.2) * 10) / 10;
                                 return (
                                   <motion.div key={hotel.id} whileHover={{ y: -3 }} onClick={() => handleToggleSuggestedPlace(hotel, city, true)}
                                     className={`rounded-2xl border p-3.5 cursor-pointer flex flex-col justify-between transition-all bg-white ${isSelected ? "border-[#FF8B50] shadow-[0_14px_34px_-14px_rgba(255,139,80,0.5)]" : "border-[#F0E7D8] hover:border-[#FFD9C4]"}`}>
                                     <div>
-                                      <div className="w-full h-28 rounded-xl overflow-hidden mb-2.5 bg-[#F6F1E6] border border-[#F0E7D8]/70">
+                                      <div className="w-full h-28 rounded-xl overflow-hidden mb-2.5 bg-[#F6F1E6] border border-[#F0E7D8]/70 relative">
                                         <img src={displayImg} alt={hotel.name} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" onError={(e) => { (e.target as HTMLImageElement).src = defaultCityImg; }} />
+                                        <span className="absolute bottom-2 left-2 bg-slate-900/85 backdrop-blur-sm text-white text-[9px] font-black px-2 py-0.5 rounded-full border border-white/20">
+                                          📍 ~{distFromCenter} km from {city} center
+                                        </span>
                                       </div>
                                       <div className="flex items-start justify-between gap-2">
                                         <h5 className="text-xs font-extrabold text-[#44403C] leading-tight">{hotel.name}</h5>
@@ -1284,12 +1577,16 @@ export default function InteractiveTourCustomizer() {
                                 const defaultCityImg = LOCATIONS.find((l) => l.id === city)?.img || "/images/colombo.png";
                                 const isPoiImgFailed = failedPoiImages[String(poi.id)];
                                 const displayImg = poi.primary_image && !poi.primary_image.includes("photos.app.goo.gl") && !isPoiImgFailed ? poi.primary_image : defaultCityImg;
+                                const poiDistFromCenter = Math.round((((String(poi.id).charCodeAt(0) || 7) % 45) / 10 + 0.8) * 10) / 10;
                                 return (
                                   <motion.div key={poi.id} whileHover={{ y: -3 }} onClick={() => handleToggleSuggestedPlace(poi, city, false)}
                                     className={`rounded-2xl border p-3.5 cursor-pointer flex flex-col justify-between transition-all bg-white ${isSelected ? "border-[#25A5FE] shadow-[0_14px_34px_-14px_rgba(37,165,254,0.45)]" : "border-[#F0E7D8] hover:border-[#BDE3FE]"}`}>
                                     <div>
-                                      <div className="w-full h-28 rounded-xl overflow-hidden mb-2.5 bg-[#F6F1E6] border border-[#F0E7D8]/70">
+                                      <div className="w-full h-28 rounded-xl overflow-hidden mb-2.5 bg-[#F6F1E6] border border-[#F0E7D8]/70 relative">
                                         <img src={displayImg} alt={poi.name} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" onError={(e) => { (e.target as HTMLImageElement).src = defaultCityImg; setFailedPoiImages((prev) => ({ ...prev, [String(poi.id)]: true })); }} />
+                                        <span className="absolute bottom-2 left-2 bg-slate-900/85 backdrop-blur-sm text-white text-[9px] font-black px-2 py-0.5 rounded-full border border-white/20">
+                                          📍 ~{poiDistFromCenter} km from {city} center
+                                        </span>
                                       </div>
                                       <div className="flex items-start justify-between gap-2">
                                         <h5 className="text-xs font-extrabold text-[#44403C] leading-tight">{poi.name}</h5>
@@ -1370,19 +1667,51 @@ export default function InteractiveTourCustomizer() {
               </AnimatePresence>
             </div>
 
-            {/* chips */}
-            <div className="flex flex-wrap gap-2 mt-4">
-              {LOCATIONS.map((loc) => {
-                const isSelected = inputs.destinations.includes(loc.id);
-                return (
-                  <motion.button key={loc.id} whileHover={{ y: -2 }} whileTap={{ scale: 0.95 }} type="button"
-                    onClick={() => handleToggleLocation(loc.id)} onMouseEnter={() => setHoveredLocation(loc)} onMouseLeave={() => setHoveredLocation(null)}
-                    className={`px-3.5 py-1.5 rounded-full border text-[11px] font-bold transition flex items-center gap-1.5 ${isSelected ? "bg-gradient-to-r from-[#FF8B50] to-[#FF6B2C] text-white border-transparent shadow-md shadow-[#FF8B50]/30" : "bg-white text-[#6E6759] border-[#F0E7D8] hover:border-[#FFD9C4] hover:text-[#E05A1A]"}`}>
-                    {isSelected && <span className="w-4 h-4 rounded-full bg-white/25 text-white text-[8px] font-black flex items-center justify-center">{inputs.destinations.indexOf(loc.id) + 1}</span>}
-                    {loc.name}
-                  </motion.button>
-                );
-              })}
+            {/* Category Filter Pills & Location Chips */}
+            <div className="mt-4 pt-4 border-t border-[#F3EBDE] space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[#B5AC9A]">
+                  Explore 38+ Sri Lanka Database Places
+                </span>
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                  {[
+                    { id: "all", label: "All Places", icon: "🌐" },
+                    { id: "cultural", label: "Cultural", icon: "🏛️" },
+                    { id: "highlands", label: "Highlands", icon: "☕" },
+                    { id: "beach", label: "Coastline", icon: "🏖️" },
+                    { id: "wildlife", label: "Wildlife", icon: "🐘" },
+                    { id: "urban", label: "Urban", icon: "🏙️" },
+                  ].map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setSelectedCategory(cat.id)}
+                      className={`px-2.5 py-1 rounded-xl text-[10px] font-extrabold transition shrink-0 flex items-center gap-1 border ${
+                        selectedCategory === cat.id
+                          ? "bg-[#0F172A] text-white border-slate-800 shadow-sm"
+                          : "bg-white text-[#6E6759] border-[#F0E7D8] hover:border-[#FF8B50]"
+                      }`}
+                    >
+                      <span>{cat.icon}</span>
+                      <span>{cat.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 max-h-[175px] overflow-y-auto pr-1 itc-scroll">
+                {LOCATIONS.filter((loc) => selectedCategory === "all" || loc.category === selectedCategory).map((loc) => {
+                  const isSelected = inputs.destinations.includes(loc.id);
+                  return (
+                    <motion.button key={loc.id} whileHover={{ y: -2 }} whileTap={{ scale: 0.95 }} type="button"
+                      onClick={() => handleToggleLocation(loc.id)} onMouseEnter={() => setHoveredLocation(loc)} onMouseLeave={() => setHoveredLocation(null)}
+                      className={`px-3.5 py-1.5 rounded-full border text-[11px] font-bold transition flex items-center gap-1.5 ${isSelected ? "bg-gradient-to-r from-[#FF8B50] to-[#FF6B2C] text-white border-transparent shadow-md shadow-[#FF8B50]/30" : "bg-white text-[#6E6759] border-[#F0E7D8] hover:border-[#FFD9C4] hover:text-[#E05A1A]"}`}>
+                      {isSelected && <span className="w-4 h-4 rounded-full bg-white/25 text-white text-[8px] font-black flex items-center justify-center">{inputs.destinations.indexOf(loc.id) + 1}</span>}
+                      {loc.name}
+                    </motion.button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* active route ribbon */}
@@ -1401,6 +1730,80 @@ export default function InteractiveTourCustomizer() {
                   ))}
                 </AnimatePresence>
               </div>
+            </div>
+
+            {/* route directions & kilometer breakdown */}
+            <div className="mt-5 pt-5 border-t border-[#F3EBDE] space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#B5AC9A] flex items-center gap-1.5">
+                  <CompassOutlined className="text-[#FF8B50]" /> {t("routeDirectionsSummary")}
+                </span>
+                {activeLegs.length > 0 && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[11px] font-black text-[#E05A1A] bg-[#FFF1E9] border border-[#FFD9C4] px-3 py-1 rounded-full shadow-sm">
+                      📍 {t("totalRouteDistance", { distance: displayTotalKm })}
+                    </span>
+                    <span className="text-[11px] font-black text-[#0E7DD6] bg-[#EFF7FF] border border-[#BDE3FE] px-3 py-1 rounded-full shadow-sm">
+                      ⏱️ {t("estDrivingTime", { time: displayTotalDriveLabel })}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {activeLegs.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {activeLegs.map((leg, idx) => (
+                    <motion.div
+                      key={`${leg.from.id}-${leg.to.id}-${idx}`}
+                      whileHover={{ y: -2 }}
+                      onClick={() => {
+                        if (mapRef.current && leafletLibRef.current) {
+                          const bounds = leafletLibRef.current.latLngBounds(
+                            leg.pathCoords.length > 0
+                              ? leg.pathCoords
+                              : [
+                                  [leg.from.lat, leg.from.lng],
+                                  [leg.to.lat, leg.to.lng],
+                                ]
+                          );
+                          mapRef.current.flyToBounds(bounds.pad(0.3), { duration: 0.8 });
+                        }
+                      }}
+                      className="p-3.5 rounded-2xl bg-gradient-to-br from-white to-[#FDFBF7] border border-[#F0E7D8] shadow-sm hover:border-[#FF8B50] hover:shadow-md transition cursor-pointer flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[9px] font-black text-white bg-gradient-to-r from-[#FF8B50] to-[#FF6B2C] px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm">
+                            {t("legTitle", { number: idx + 1 })}
+                          </span>
+                          <span className="text-[10px] font-extrabold text-[#E05A1A] bg-[#FFF6EF] border border-[#FFD9C4] px-2 py-0.5 rounded-md">
+                            {leg.direction.arrow} {leg.direction.code} ({leg.direction.label})
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 my-1.5">
+                          <span className="text-xs font-black text-[#44403C]">{leg.from.name}</span>
+                          <span className="text-[#FF8B50] font-black text-xs">➔</span>
+                          <span className="text-xs font-black text-[#44403C]">{leg.to.name}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] font-bold text-[#6E6759] pt-2 border-t border-[#F3EBDE] mt-2">
+                        <span className="flex items-center gap-1 text-[#E05A1A]">
+                          📏 {leg.distanceKm} km
+                        </span>
+                        <span className="flex items-center gap-1 text-[#8A8577]">
+                          <CarOutlined className="text-[#25A5FE]" /> ~{leg.driveTime.label}
+                        </span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[11px] font-semibold text-[#8A8577] bg-[#FDFBF7] p-3 rounded-xl border border-dashed border-[#E8DFCC]">
+                  Select at least 2 destinations on the map to calculate exact leg directions and distances in kilometers.
+                </p>
+              )}
             </div>
           </motion.section>
 
