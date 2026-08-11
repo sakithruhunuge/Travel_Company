@@ -37,12 +37,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #FF8B50;
+  background: #1a1a1a;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #25A5FE;
+  background: #333333;
 }
 
 /* Glowing shadows */
