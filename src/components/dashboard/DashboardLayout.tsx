@@ -53,7 +53,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <div className="flex min-h-screen relative z-10">
         {/* Desktop sidebar */}
-        <div className={`hidden lg:flex ${isCollapsed ? "w-20" : "w-80"} transition-all duration-300 ease-in-out flex-shrink-0 h-screen fixed top-0 left-0 z-20`}>
+        <div className={`hidden lg:flex ${isCollapsed ? "w-20" : "w-[280px]"} transition-all duration-300 ease-in-out flex-shrink-0 h-screen fixed top-0 left-0 z-20`}>
           <Sidebar
             onNavigate={() => undefined}
             onLogout={() => signOut({ callbackUrl: `/${locale}/login` })}
@@ -62,7 +62,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           />
         </div>
 
-        <div className={`flex flex-1 flex-col min-w-0 ${isCollapsed ? "lg:pl-20" : "lg:pl-80"} transition-all duration-300 ease-in-out`}>
+        <div className={`flex flex-1 flex-col min-w-0 ${isCollapsed ? "lg:pl-20" : "lg:pl-[280px]"} transition-all duration-300 ease-in-out`}>
           {/* Mobile header bar */}
           <div className="flex items-center gap-3 border-b border-white/20 bg-white/40 backdrop-blur-md px-4 py-3 lg:hidden">
             <button
@@ -92,7 +92,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm"
                 onClick={() => setMobileSidebarOpen(false)}
               />
-              <div className="absolute inset-y-0 left-0 w-80 bg-white/90 backdrop-blur-lg shadow-lg">
+              <div className="absolute inset-y-0 left-0 w-[280px] bg-white/90 backdrop-blur-lg shadow-lg">
                 <Sidebar
                   onNavigate={() => setMobileSidebarOpen(false)}
                   onLogout={() => signOut({ callbackUrl: `/${locale}/login` })}
