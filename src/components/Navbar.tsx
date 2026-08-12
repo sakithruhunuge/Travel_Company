@@ -8,9 +8,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { useCurrency, Currency } from "@/context/CurrencyContext";
 import { useTenant } from "@/context/TenantBrandingContext";
+import { Menu, X } from "lucide-react";
 
 export default function Navbar() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const { data: session } = useSession();
   const tenant = useTenant();
 
@@ -20,20 +21,7 @@ export default function Navbar() {
   const t = useTranslations("Navbar");
   const { currency, setCurrency } = useCurrency();
 
-  const navLinks = [
-    { label: t("home"), href: `/${locale}/#home` },
-    { label: t("about"), href: `/${locale}/#about` },
-    { label: t("destinations"), href: `/${locale}/#destinations` },
-    { label: t("packages"), href: `/${locale}/#packages` },
-    { label: t("customize"), href: `/${locale}/customize-tour` },
-    { label: t("whyChooseUs"), href: `/${locale}/#why-choose-us` },
-    { label: t("contact"), href: `/${locale}/#contact` },
-  ];
-
-  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const nextLocale = e.target.value;
-    // Standard next/navigation pathname includes the current locale if middleware is used
-    // We just replace the current locale with the next one
+  const handleLanguageChange = (nextLocale: string) => {
     let newPath = pathname;
     if (pathname.startsWith(`/${locale}/`)) {
       newPath = pathname.replace(`/${locale}/`, `/${nextLocale}/`);
@@ -46,67 +34,76 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/70 backdrop-blur-md border-b border-white/20 transition-all duration-300 ease-in-out shadow-sm shadow-black/[0.03]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
-          {/* Dynamic Logo / Brand Name */}
-          <div className="flex-shrink-0 flex items-center">
-            <Link href={`/${locale}`} className="flex items-center gap-2 group transition-all duration-300 ease-in-out">
-              {tenant.branding?.logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={tenant.branding.logoUrl}
-                  alt={tenant.name}
-                  className="h-10 w-auto object-contain"
-                />
-              ) : (
-                <span className="text-2xl font-black tracking-wider text-brand-dark group-hover:text-brand-primary transition-all duration-300 ease-in-out uppercase">
-                  {tenant.name}
-                </span>
-              )}
-            </Link>
-          </div>
+    <header className="fixed top-0 left-0 right-0 z-50 w-full py-4 px-6 lg:px-12 bg-white/10 backdrop-blur-md border-b border-white/20 transition-all duration-300">
+      <div className="w-full mx-auto flex lg:grid lg:grid-cols-[1fr_auto_1fr] items-center justify-between">
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-8 items-center">
-            {navLinks.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                className="text-sm font-bold text-brand-muted hover:text-brand-secondary transition-all duration-300 ease-in-out relative py-1 group/item"
-              >
-                {link.label}
-                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-brand-primary transition-all duration-300 ease-in-out group-hover/item:w-full rounded-full" />
-              </Link>
-            ))}
+        {/* Mobile Logo */}
+        <div className="lg:hidden flex items-center">
+          <Link href={`/${locale}`}>
+            {tenant.branding?.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={tenant.branding.logoUrl} alt={tenant.name} className="h-8 w-auto object-contain" />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src="/horizon logo white.png" alt="Horizon Travel" className="h-8 w-auto object-contain" />
+            )}
+          </Link>
+        </div>
+
+        {/* Desktop Left Nav */}
+        <nav className="hidden lg:flex items-center justify-end pr-8 gap-8 font-semibold text-slate-900 text-base">
+          <Link href={`/${locale}/#home`} className="hover:text-amber-500 transition-colors">{t("home")}</Link>
+          <Link href={`/${locale}/#about`} className="hover:text-amber-500 transition-colors">{t("about")}</Link>
+          <Link href={`/${locale}/#destinations`} className="hover:text-amber-500 transition-colors">{t("destinations")}</Link>
+          <Link href={`/${locale}/#packages`} className="hover:text-amber-500 transition-colors">{t("packages")}</Link>
+        </nav>
+
+        {/* Desktop Center Logo */}
+        <div className="hidden lg:flex justify-center">
+          <Link href={`/${locale}`}>
+            {tenant.branding?.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={tenant.branding.logoUrl} alt={tenant.name} className="h-10 w-auto object-contain" />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src="/horizon logo white.png" alt="Horizon Travel Logo" className="h-10 w-auto object-contain" />
+            )}
+          </Link>
+        </div>
+
+        {/* Desktop Right Nav & Buttons */}
+        <div className="hidden lg:flex items-center justify-start pl-8 gap-6">
+          <nav className="flex items-center gap-8 font-semibold text-slate-900 text-base">
+            <Link href={`/${locale}/customize-tour`} className="hover:text-amber-500 transition-colors">{t("customize")}</Link>
+            <Link href={`/${locale}/#why-choose-us`} className="hover:text-amber-500 transition-colors">{t("whyChooseUs")}</Link>
+            <Link href={`/${locale}/#contact`} className="hover:text-amber-500 transition-colors">{t("contact")}</Link>
           </nav>
-
-          {/* Desktop CTA / Auth */}
-          <div className="hidden md:flex items-center gap-3">
+          
+          <div className="flex items-center gap-3">
             {/* Language Selector */}
             <select
-              aria-label="Language Selector"
+              aria-label="Language"
               value={locale}
-              onChange={handleLanguageChange}
-              className="bg-white/50 border border-black/10 rounded-full px-3 py-1.5 text-xs font-bold text-brand-muted hover:text-brand-secondary outline-none focus:border-brand-primary cursor-pointer transition-all"
+              onChange={(e) => handleLanguageChange(e.target.value)}
+              className="px-3 py-1.5 rounded-full bg-slate-900 text-white text-xs font-bold transition-all duration-300 hover:scale-105 cursor-pointer outline-none"
             >
-              <option value="en">EN</option>
-              <option value="fr">FR</option>
-              <option value="de">GE</option>
-              <option value="si">SI</option>
+              <option value="en" className="bg-slate-900 text-white">EN</option>
+              <option value="fr" className="bg-slate-900 text-white">FR</option>
+              <option value="de" className="bg-slate-900 text-white">DE</option>
+              <option value="si" className="bg-slate-900 text-white">SI</option>
             </select>
 
             {/* Currency Selector */}
-            <select 
-              aria-label="Currency Selector" 
+            <select
+              aria-label="Currency"
               value={currency}
               onChange={(e) => setCurrency(e.target.value as Currency)}
-              className="bg-white/50 border border-black/10 rounded-full px-3 py-1.5 text-xs font-bold text-brand-muted hover:text-brand-secondary outline-none focus:border-brand-primary cursor-pointer transition-all mr-1"
+              className="px-3 py-1.5 rounded-full bg-slate-900 text-white text-xs font-bold transition-all duration-300 hover:scale-105 cursor-pointer outline-none"
             >
-              <option value="USD">USD ($)</option>
-              <option value="LKR">LKR (Rs)</option>
-              <option value="EUR">EUR (€)</option>
-              <option value="GBP">GBP (£)</option>
+              <option value="USD" className="bg-slate-900 text-white">USD ($)</option>
+              <option value="LKR" className="bg-slate-900 text-white">LKR (Rs)</option>
+              <option value="EUR" className="bg-slate-900 text-white">EUR (€)</option>
+              <option value="GBP" className="bg-slate-900 text-white">GBP (£)</option>
             </select>
 
             {session ? (
@@ -114,93 +111,75 @@ export default function Navbar() {
             ) : (
               <Link
                 href={`/${locale}/login`}
-                className="inline-flex items-center justify-center px-6 py-2.5 rounded-full text-sm font-bold text-white bg-brand-primary hover:bg-brand-primary/90 shadow-[0_8px_30px_rgba(var(--brand-primary),0.3)] hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out"
+                className="px-6 py-2 rounded-full bg-slate-900 text-white text-sm font-bold transition-all duration-300 hover:scale-105"
               >
                 {t("login")}
               </Link>
             )}
           </div>
-
-          {/* Mobile Menu Button */}
-          <div className="flex items-center md:hidden">
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              type="button"
-              className="inline-flex items-center justify-center p-2.5 rounded-2xl text-brand-muted hover:text-brand-dark hover:bg-white/60 focus:outline-none transition-all duration-300 ease-in-out"
-              aria-controls="mobile-menu"
-              aria-expanded={isOpen}
-            >
-              <span className="sr-only">Open main menu</span>
-              {isOpen ? (
-                <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              ) : (
-                <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              )}
-            </button>
-          </div>
         </div>
+
+        {/* Mobile Menu Toggle */}
+        <button
+          className="lg:hidden text-slate-900 p-2"
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-label="Toggle menu"
+        >
+          {menuOpen ? <X size={26} /> : <Menu size={26} />}
+        </button>
       </div>
 
-      {/* Mobile Drawer */}
-      {isOpen && (
-        <div className="md:hidden animate-fade-in-down" id="mobile-menu">
-          <div className="px-3 pt-2 pb-5 space-y-1 bg-white/80 backdrop-blur-lg border-b border-white/20 shadow-xl">
-            {navLinks.map((link) => (
+      {/* Mobile Dropdown */}
+      {menuOpen && (
+        <div className="lg:hidden mt-4 bg-white/95 rounded-2xl p-6 flex flex-col gap-4 text-slate-900 shadow-xl backdrop-blur-md border border-black/10">
+          <Link href={`/${locale}/#home`} onClick={() => setMenuOpen(false)} className="font-bold hover:text-amber-500 transition-colors">{t("home")}</Link>
+          <Link href={`/${locale}/#about`} onClick={() => setMenuOpen(false)} className="font-bold hover:text-amber-500 transition-colors">{t("about")}</Link>
+          <Link href={`/${locale}/#destinations`} onClick={() => setMenuOpen(false)} className="font-bold hover:text-amber-500 transition-colors">{t("destinations")}</Link>
+          <Link href={`/${locale}/#packages`} onClick={() => setMenuOpen(false)} className="font-bold hover:text-amber-500 transition-colors">{t("packages")}</Link>
+          <Link href={`/${locale}/customize-tour`} onClick={() => setMenuOpen(false)} className="font-bold hover:text-amber-500 transition-colors">{t("customize")}</Link>
+          <Link href={`/${locale}/#why-choose-us`} onClick={() => setMenuOpen(false)} className="font-bold hover:text-amber-500 transition-colors">{t("whyChooseUs")}</Link>
+          <Link href={`/${locale}/#contact`} onClick={() => setMenuOpen(false)} className="font-bold hover:text-amber-500 transition-colors">{t("contact")}</Link>
+          
+          <div className="flex flex-wrap items-center gap-3 mt-2 pt-3 border-t border-slate-200">
+            <select
+              aria-label="Mobile Language Selector"
+              value={locale}
+              onChange={(e) => {
+                handleLanguageChange(e.target.value);
+                setMenuOpen(false);
+              }}
+              className="flex-1 bg-slate-900 text-white rounded-full px-4 py-2 text-sm font-bold"
+            >
+              <option value="en">English (EN)</option>
+              <option value="fr">French (FR)</option>
+              <option value="de">German (DE)</option>
+              <option value="si">Sinhala (SI)</option>
+            </select>
+            <select
+              aria-label="Mobile Currency Selector"
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value as Currency)}
+              className="flex-1 bg-slate-900 text-white rounded-full px-4 py-2 text-sm font-bold"
+            >
+              <option value="USD">USD ($)</option>
+              <option value="LKR">LKR (Rs)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+            </select>
+          </div>
+
+          <div className="mt-2">
+            {session ? (
+              <ProfileDropdown />
+            ) : (
               <Link
-                key={link.label}
-                href={link.href}
-                onClick={() => setIsOpen(false)}
-                className="block px-4 py-3 rounded-2xl text-base font-bold text-brand-muted hover:bg-white/60 hover:text-brand-secondary transition-all duration-300 ease-in-out"
+                href={`/${locale}/login`}
+                onClick={() => setMenuOpen(false)}
+                className="block text-center px-6 py-2.5 rounded-full bg-slate-900 text-white text-sm font-bold w-full"
               >
-                {link.label}
+                {t("login")}
               </Link>
-            ))}
-            <div className="pt-4 pb-2 px-4 border-t border-white/30 mt-2 space-y-4">
-              <div className="flex items-center gap-3">
-                <select
-                  aria-label="Mobile Language Selector"
-                  value={locale}
-                  onChange={(e) => {
-                    handleLanguageChange(e);
-                    setIsOpen(false);
-                  }}
-                  className="flex-1 bg-white border border-black/10 rounded-2xl px-4 py-2.5 text-sm font-bold text-brand-muted outline-none focus:border-brand-primary"
-                >
-                  <option value="en">English (EN)</option>
-                  <option value="fr">French (FR)</option>
-                  <option value="de">German (DE)</option>
-                  <option value="si">Sinhala (SI)</option>
-                </select>
-                <select
-                  aria-label="Mobile Currency Selector"
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value as Currency)}
-                  className="flex-1 bg-white border border-black/10 rounded-2xl px-4 py-2.5 text-sm font-bold text-brand-muted outline-none focus:border-brand-primary"
-                >
-                  <option value="USD">USD ($)</option>
-                  <option value="LKR">LKR (Rs)</option>
-                  <option value="EUR">EUR (€)</option>
-                  <option value="GBP">GBP (£)</option>
-                </select>
-              </div>
-              {session ? (
-                <div className="flex items-center gap-3 animate-fade-in-up">
-                  <ProfileDropdown />
-                </div>
-              ) : (
-                <Link
-                  href={`/${locale}/login`}
-                  onClick={() => setIsOpen(false)}
-                  className="block w-full text-center px-6 py-3 rounded-full text-base font-bold text-white bg-brand-primary hover:bg-brand-primary/90 shadow-[0_8px_30px_rgba(var(--brand-primary),0.3)] hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out"
-                >
-                  {t("login")}
-                </Link>
-              )}
-            </div>
+            )}
           </div>
         </div>
       )}
