@@ -44,40 +44,40 @@ export default function Packages() {
   const { openFormModal } = useTravelRequest();
 
   return (
-    <section id="packages" className="bg-white px-6 py-24 scroll-mt-20">
-      <div className="max-w-6xl mx-auto text-center mb-14">
-        <p data-aos="fade-up" className="text-amber-500 font-bold tracking-wide uppercase mb-2">Curated Escapes</p>
-        <h2 data-aos="fade-up" data-aos-delay="100" className="text-slate-900 text-5xl md:text-6xl lg:text-7xl font-extrabold mb-4 leading-tight">
-          Featured Sri Lanka <br className="hidden md:block" /> Packages
+    <section id="packages" className="bg-white px-6 py-12 md:py-16 scroll-mt-16">
+      <div className="max-w-6xl mx-auto text-center mb-10">
+        <p data-aos="fade-up" className="text-amber-500 font-bold text-xs tracking-wider uppercase mb-1">Curated Escapes</p>
+        <h2 data-aos="fade-up" data-aos-delay="100" className="text-slate-900 text-2xl sm:text-4xl font-extrabold mb-3 leading-tight tracking-tight">
+          Featured Sri Lanka Packages
         </h2>
-        <p data-aos="fade-up" data-aos-delay="200" className="text-slate-500 max-w-2xl mx-auto text-lg">
+        <p data-aos="fade-up" data-aos-delay="200" className="text-slate-500 max-w-xl mx-auto text-xs sm:text-sm leading-relaxed">
           Handpicked premium tours that combine comfort, adventure, and immersive local experiences. Explore Sri Lanka with our carefully crafted travel packages.
         </p>
       </div>
 
-      <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {DEFAULT_PACKAGES.map((pkg, idx) => (
           <div
             key={`${pkg.id}-${idx}`}
             data-aos="fade-up"
             data-aos-delay={idx * 100}
-            className="rounded-2xl bg-slate-900 overflow-hidden shadow-lg flex flex-col transition-transform duration-300 hover:-translate-y-2"
+            className="rounded-xl bg-slate-900 overflow-hidden shadow-md flex flex-col transition-transform duration-300 hover:-translate-y-1.5"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={pkg.image} alt={pkg.title} className="h-48 w-full object-cover" />
-            <div className="p-5 flex flex-col gap-3 flex-1">
-              <div className="flex items-start justify-between gap-3">
-                <h3 className="text-white font-bold leading-snug text-lg">{pkg.title}</h3>
+            <img src={pkg.image} alt={pkg.title} className="h-40 w-full object-cover" />
+            <div className="p-4 flex flex-col gap-2.5 flex-1">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="text-white font-bold text-sm sm:text-base leading-snug">{pkg.title}</h3>
                 <div className="text-right shrink-0">
-                  <p className="text-[10px] text-white/50 uppercase tracking-wide">From</p>
-                  <p className="text-amber-400 font-bold text-sm">{pkg.price}</p>
+                  <p className="text-[9px] text-white/50 uppercase tracking-wide">From</p>
+                  <p className="text-amber-400 font-bold text-xs sm:text-sm">{pkg.price}</p>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {pkg.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="text-[10px] uppercase tracking-wide bg-white/10 text-white/80 rounded-full px-3 py-1"
+                    className="text-[9px] uppercase tracking-wide bg-white/10 text-white/80 rounded-full px-2.5 py-0.5"
                   >
                     {tag}
                   </span>
@@ -85,7 +85,7 @@ export default function Packages() {
               </div>
               <button
                 onClick={() => openFormModal(pkg.id)}
-                className="mt-auto w-full rounded-lg bg-amber-400 text-slate-900 text-sm font-semibold py-2.5 hover:bg-amber-300 transition-colors"
+                className="mt-auto w-full rounded-lg bg-amber-400 text-slate-900 text-xs font-bold py-2 hover:bg-amber-300 transition-colors"
               >
                 Select This Package
               </button>
