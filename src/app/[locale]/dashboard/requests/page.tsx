@@ -7,6 +7,7 @@ import EmptyState from "@/components/dashboard/EmptyState";
 import StatsOverviewCard from "@/components/dashboard/StatsOverviewCard";
 import Image from "next/image";
 import { parseRequestPricing } from "@/lib/pricingParser";
+import { detectRequestedServices } from "@/lib/requestedServices";
 import {
   CheckOutlined,
   CloseOutlined,
@@ -23,6 +24,12 @@ import {
   LinkOutlined,
 } from "@ant-design/icons";
 
+interface AssignedPerson {
+  name?: string;
+  email?: string;
+  phone?: string;
+}
+
 interface RequestData {
   _id: string;
   packageName: string;
@@ -34,6 +41,10 @@ interface RequestData {
   userId: string;
   userName: string;
   userEmail: string;
+  tourGuide?: AssignedPerson;
+  driver?: AssignedPerson;
+  agencyNotes?: string;
+  pricingInputs?: any;
 }
 
 const DESTINATION_IMAGES: Record<string, string> = {
@@ -83,6 +94,7 @@ export default function TenantRequestsPage() {
   // Filters & Search
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "pending" | "approved" | "rejected" | "cancelled">("all");
+  const [serviceFilter, setServiceFilter] = useState<"all" | "driver" | "guide">("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
   // Drawer details state
@@ -95,12 +107,43 @@ export default function TenantRequestsPage() {
   const [additionalTaxes, setAdditionalTaxes] = useState<number>(0);
   const [paymentLinkCopied, setPaymentLinkCopied] = useState<boolean>(false);
 
+  // Guide & Driver assignment state
+  const [tourGuideName, setTourGuideName] = useState("");
+  const [tourGuideEmail, setTourGuideEmail] = useState("");
+  const [tourGuidePhone, setTourGuidePhone] = useState("");
+  const [driverName, setDriverName] = useState("");
+  const [driverEmail, setDriverEmail] = useState("");
+  const [driverPhone, setDriverPhone] = useState("");
+  const [agencyNotes, setAgencyNotes] = useState("");
+
+  // Send trip brief state
+  const [briefRecipientEmail, setBriefRecipientEmail] = useState("");
+  const [briefRecipientName, setBriefRecipientName] = useState("");
+  const [briefRole, setBriefRole] = useState<"Tour Guide" | "Car Driver">("Tour Guide");
+  const [briefLoading, setBriefLoading] = useState(false);
+  const [briefSuccess, setBriefSuccess] = useState(false);
+  const [briefError, setBriefError] = useState<string | null>(null);
+
   useEffect(() => {
     if (selectedRequest) {
       const { metrics } = parseRequestPricing(selectedRequest.specialRequests || "");
       setCustomCharges(metrics.customCharges || 0);
       setAdditionalTaxes(metrics.additionalTaxes || 0);
       setPaymentLinkCopied(false);
+      // Pre-fill guide/driver fields from persisted data
+      setTourGuideName(selectedRequest.tourGuide?.name || "");
+      setTourGuideEmail(selectedRequest.tourGuide?.email || "");
+      setTourGuidePhone(selectedRequest.tourGuide?.phone || "");
+      setDriverName(selectedRequest.driver?.name || "");
+      setDriverEmail(selectedRequest.driver?.email || "");
+      setDriverPhone(selectedRequest.driver?.phone || "");
+      setAgencyNotes(selectedRequest.agencyNotes || "");
+      // Pre-populate brief fields from existing assignment
+      setBriefRecipientEmail("");
+      setBriefRecipientName("");
+      setBriefRole("Tour Guide");
+      setBriefSuccess(false);
+      setBriefError(null);
     }
   }, [selectedRequest]);
 
@@ -110,7 +153,7 @@ export default function TenantRequestsPage() {
   const travelerNotes = parsedData?.notes;
 
   useEffect(() => {
-    if (userRole === "tenant_admin") {
+    if (userRole === "tenant_admin" || userRole === "super_admin" || userRole === "admin") {
       loadRequests();
     }
   }, [userRole]);
@@ -136,10 +179,16 @@ export default function TenantRequestsPage() {
     setActionLoading(true);
     setActionError(null);
     try {
+      const body: Record<string, any> = { status: nextStatus };
+      // Always persist guide/driver/notes even on simple approve
+      if (tourGuideName) body.tourGuide = { name: tourGuideName, email: tourGuideEmail, phone: tourGuidePhone };
+      if (driverName) body.driver = { name: driverName, email: driverEmail, phone: driverPhone };
+      if (agencyNotes) body.agencyNotes = agencyNotes;
+
       const res = await fetch(`/api/travel-requests/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: nextStatus }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
 
@@ -176,29 +225,62 @@ export default function TenantRequestsPage() {
           status: "approved",
           customCharges,
           additionalTaxes,
+          tourGuide: {
+            name: tourGuideName.trim() || undefined,
+            email: tourGuideEmail.trim() || undefined,
+            phone: tourGuidePhone.trim() || undefined,
+          },
+          driver: {
+            name: driverName.trim() || undefined,
+            email: driverEmail.trim() || undefined,
+            phone: driverPhone.trim() || undefined,
+          },
+          agencyNotes: agencyNotes.trim() || undefined,
         }),
       });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to recalculate and approve.");
 
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to update pricing adjustments.");
-      }
-
-      // Update requests locally
-      setRequests((prev) =>
-        prev.map((req) => (req._id === selectedRequest._id ? data.request : req))
+      await loadRequests();
+      setSelectedRequest((prev) =>
+        prev ? { ...prev, status: "approved", specialRequests: data.updatedSpecialRequests || prev.specialRequests } : null
       );
-      setSelectedRequest(data.request);
     } catch (err) {
-      console.error(err);
-      setActionError(err instanceof Error ? err.message : "Recalculation and approval failed.");
+      setActionError(err instanceof Error ? err.message : "Failed to execute calculation update.");
     } finally {
       setActionLoading(false);
     }
   };
 
+  const handleSendTripBrief = async () => {
+    if (!selectedRequest || !briefRecipientEmail || !briefRecipientName) return;
+    setBriefLoading(true);
+    setBriefSuccess(false);
+    setBriefError(null);
+    try {
+      const res = await fetch(`/api/travel-requests/${selectedRequest._id}/send-trip-brief`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipientEmail: briefRecipientEmail,
+          recipientName: briefRecipientName,
+          role: briefRole,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send trip brief.");
+      setBriefSuccess(true);
+      setTimeout(() => setBriefSuccess(false), 4000);
+    } catch (err) {
+      setBriefError(err instanceof Error ? err.message : "Failed to send trip brief.");
+    } finally {
+      setBriefLoading(false);
+    }
+  };
+
   // Guard Access
-  if (userRole !== "tenant_admin") {
+  const isAuthorizedAdmin = userRole === "tenant_admin" || userRole === "super_admin" || userRole === "admin";
+  if (!isAuthorizedAdmin) {
     return (
       <div className="py-20 text-center text-slate-800">
         <EmptyState title="Access Denied" description="Only tenant organization admins are authorized to view bookings." />
@@ -214,19 +296,40 @@ export default function TenantRequestsPage() {
     rejected: requests.filter((r) => r.status === "rejected").length,
   };
 
+  // Counts of customer requested services
+  const driverRequestsCount = requests.filter((r) => detectRequestedServices(r).driverRequested).length;
+  const guideRequestsCount = requests.filter((r) => detectRequestedServices(r).guideRequested).length;
+
   // Filter & Search computation
   const filteredRequests = requests
     .filter((req) => {
       // Tab filter
       if (activeTab !== "all" && req.status !== activeTab) return false;
 
+      const services = detectRequestedServices(req);
+
+      // Service filter
+      if (serviceFilter === "driver" && !services.driverRequested) return false;
+      if (serviceFilter === "guide" && !services.guideRequested) return false;
+
       // Search text filter
-      const search = searchTerm.toLowerCase();
+      const search = searchTerm.toLowerCase().trim();
+      if (!search) return true;
+
+      if (search === "driver" || search === "car driver") {
+        return services.driverRequested;
+      }
+      if (search === "guide" || search === "tour guide") {
+        return services.guideRequested;
+      }
+
       return (
         req.packageName.toLowerCase().includes(search) ||
         req.userName?.toLowerCase().includes(search) ||
         req.userEmail?.toLowerCase().includes(search) ||
-        req._id.toLowerCase().includes(search)
+        req._id.toLowerCase().includes(search) ||
+        Boolean(services.driverName && services.driverName.toLowerCase().includes(search)) ||
+        Boolean(services.guideName && services.guideName.toLowerCase().includes(search))
       );
     })
     .sort((a, b) => {
@@ -260,27 +363,62 @@ export default function TenantRequestsPage() {
       {/* Filter and Control Bar */}
       <div className="bg-white/60 backdrop-blur-sm border border-slate-200 rounded-3xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
 
-        {/* Navigation Tabs */}
-        <div className="flex flex-wrap gap-1.5 w-full md:w-auto">
-          {(["all", "pending", "approved", "rejected", "cancelled"] as const).map((tab) => {
-            const count =
-              tab === "all"
-                ? requests.length
-                : requests.filter((r) => r.status === tab).length;
+        {/* Navigation Tabs and Staff Request Quick Filters */}
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          <div className="flex flex-wrap gap-1">
+            {(["all", "pending", "approved", "rejected", "cancelled"] as const).map((tab) => {
+              const count =
+                tab === "all"
+                  ? requests.length
+                  : requests.filter((r) => r.status === tab).length;
 
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-xl text-xs font-black capitalize transition ${activeTab === tab
-                    ? "bg-slate-900 text-white shadow-sm"
-                    : "text-slate-500 hover:bg-white/40 hover:text-slate-900"
-                  }`}
-              >
-                {tab} ({count})
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black capitalize transition ${activeTab === tab
+                      ? "bg-slate-900 text-white shadow-sm"
+                      : "text-slate-500 hover:bg-white/40 hover:text-slate-900"
+                    }`}
+                >
+                  {tab} ({count})
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Service filter pills */}
+          <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
+            <button
+              onClick={() => setServiceFilter(serviceFilter === "driver" ? "all" : "driver")}
+              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                serviceFilter === "driver"
+                  ? "bg-amber-500 text-white shadow-sm"
+                  : "bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80"
+              }`}
+              title="Filter bookings where traveler requested a Car Driver"
+            >
+              <span>🚗 Driver</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${serviceFilter === "driver" ? "bg-white text-amber-600" : "bg-amber-200 text-amber-900"}`}>
+                {driverRequestsCount}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setServiceFilter(serviceFilter === "guide" ? "all" : "guide")}
+              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                serviceFilter === "guide"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200/80"
+              }`}
+              title="Filter bookings where traveler requested a Tour Guide"
+            >
+              <span>🧭 Guide</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${serviceFilter === "guide" ? "bg-white text-indigo-600" : "bg-indigo-200 text-indigo-900"}`}>
+                {guideRequestsCount}
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Search, Sort Inputs */}
@@ -289,10 +427,10 @@ export default function TenantRequestsPage() {
             <SearchOutlined className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
             <input
               type="text"
-              placeholder="Search traveler, package..."
+              placeholder="Search traveler, package, driver, guide..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full md:w-60 pl-10 pr-4 py-2 border border-slate-200 focus:outline-none focus:border-slate-450 bg-white/70 rounded-xl text-xs font-semibold"
+              className="w-full md:w-64 pl-10 pr-4 py-2 border border-slate-200 focus:outline-none focus:border-slate-450 bg-white/70 rounded-xl text-xs font-semibold"
             />
           </div>
 
@@ -329,63 +467,122 @@ export default function TenantRequestsPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                  <th className="px-6 py-4">Request ID</th>
-                  <th className="px-6 py-4">Traveler</th>
-                  <th className="px-6 py-4">Destination / Package</th>
-                  <th className="px-6 py-4">Dates & Size</th>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4 text-right">Inbox View</th>
+                  <th className="px-5 py-4">Request ID</th>
+                  <th className="px-5 py-4">Traveler</th>
+                  <th className="px-5 py-4">Destination / Package</th>
+                  <th className="px-5 py-4">Dates & Size</th>
+                  <th className="px-5 py-4">Requested Staff</th>
+                  <th className="px-5 py-4">Status</th>
+                  <th className="px-5 py-4 text-right">Inbox View</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
-                {filteredRequests.map((req) => (
-                  <tr
-                    key={req._id}
-                    onClick={() => setSelectedRequest(req)}
-                    className="hover:bg-slate-50/50 cursor-pointer transition"
-                  >
-                    <td className="px-6 py-4 font-mono font-bold text-slate-800">
-                      #{req._id.substring(req._id.length - 8).toUpperCase()}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="font-extrabold text-slate-800">{req.userName || "Traveler"}</div>
-                      <div className="text-[11px] text-slate-400 font-semibold mt-0.5">{req.userEmail}</div>
-                    </td>
-                    <td className="px-6 py-4 font-extrabold text-slate-800">
-                      {req.packageName}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-slate-800 flex items-center gap-1.5">
-                        <TeamOutlined className="text-slate-400" />
-                        <span>{req.numberOfTravelers} Travelers</span>
-                      </div>
-                      <div className="text-[11px] text-slate-400 font-semibold mt-0.5 flex items-center gap-1.5">
-                        <CalendarOutlined className="text-slate-400" />
-                        <span>Starts: {new Date(req.preferredStartDate).toLocaleDateString()}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${req.status === "approved"
-                            ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
-                            : req.status === "rejected"
-                              ? "bg-red-500/10 text-red-650 border border-red-500/20"
-                              : req.status === "cancelled"
-                                ? "bg-slate-100 text-slate-500 border border-slate-200"
-                                : "bg-amber-500/10 text-amber-600 border border-amber-500/20"
-                          }`}
-                      >
-                        {req.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button className="px-3.5 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-lg transition flex items-center gap-1.5 ml-auto">
-                        <span>Open Details</span>
-                        <ArrowRightOutlined />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {filteredRequests.map((req) => {
+                  const services = detectRequestedServices(req);
+                  return (
+                    <tr
+                      key={req._id}
+                      onClick={() => setSelectedRequest(req)}
+                      className="hover:bg-slate-50/50 cursor-pointer transition"
+                    >
+                      <td className="px-5 py-4 font-mono font-bold text-slate-800">
+                        #{req._id.substring(req._id.length - 8).toUpperCase()}
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="font-extrabold text-slate-800">{req.userName || "Traveler"}</div>
+                        <div className="text-[11px] text-slate-400 font-semibold mt-0.5">{req.userEmail}</div>
+                      </td>
+                      <td className="px-5 py-4 font-extrabold text-slate-800">
+                        {req.packageName}
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="font-bold text-slate-800 flex items-center gap-1.5">
+                          <TeamOutlined className="text-slate-400" />
+                          <span>{req.numberOfTravelers} Travelers</span>
+                        </div>
+                        <div className="text-[11px] text-slate-400 font-semibold mt-0.5 flex items-center gap-1.5">
+                          <CalendarOutlined className="text-slate-400" />
+                          <span>Starts: {new Date(req.preferredStartDate).toLocaleDateString()}</span>
+                        </div>
+                      </td>
+
+                      {/* Requested Staff / Personnel Badges */}
+                      <td className="px-5 py-4">
+                        {services.hasAnyServiceRequested ? (
+                          <div className="flex flex-col gap-1.5 items-start">
+                            {services.driverRequested && (
+                              <span
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10.5px] font-bold ${
+                                  services.driverAssigned
+                                    ? "bg-emerald-50 text-emerald-900 border border-emerald-300"
+                                    : "bg-amber-50 text-amber-900 border border-amber-300 shadow-sm"
+                                }`}
+                                title={services.driverReason}
+                              >
+                                <span>🚗</span>
+                                <span>Car Driver</span>
+                                {services.driverAssigned ? (
+                                  <span className="text-[8px] bg-emerald-600 text-white px-1.5 py-0.2 rounded font-black">
+                                    ✓ Assigned
+                                  </span>
+                                ) : (
+                                  <span className="text-[8px] bg-amber-500 text-white px-1.5 py-0.2 rounded font-black">
+                                    Needed
+                                  </span>
+                                )}
+                              </span>
+                            )}
+                            {services.guideRequested && (
+                              <span
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10.5px] font-bold ${
+                                  services.guideAssigned
+                                    ? "bg-emerald-50 text-emerald-900 border border-emerald-300"
+                                    : "bg-indigo-50 text-indigo-900 border border-indigo-300 shadow-sm"
+                                }`}
+                                title={services.guideReason}
+                              >
+                                <span>🧭</span>
+                                <span>Tour Guide</span>
+                                {services.guideAssigned ? (
+                                  <span className="text-[8px] bg-emerald-600 text-white px-1.5 py-0.2 rounded font-black">
+                                    ✓ Assigned
+                                  </span>
+                                ) : (
+                                  <span className="text-[8px] bg-indigo-600 text-white px-1.5 py-0.2 rounded font-black">
+                                    Needed
+                                  </span>
+                                )}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-[10.5px] text-slate-400 font-medium italic">Standard Tour</span>
+                        )}
+                      </td>
+
+                      <td className="px-5 py-4">
+                        <span
+                          className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${req.status === "approved"
+                              ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                              : req.status === "rejected"
+                                ? "bg-red-500/10 text-red-650 border border-red-500/20"
+                                : req.status === "cancelled"
+                                  ? "bg-slate-100 text-slate-500 border border-slate-200"
+                                  : "bg-amber-500/10 text-amber-600 border border-amber-500/20"
+                            }`}
+                        >
+                          {req.status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <button className="px-3.5 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-lg transition flex items-center gap-1.5 ml-auto">
+                          <span>Open Details</span>
+                          <ArrowRightOutlined />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -482,6 +679,116 @@ export default function TenantRequestsPage() {
                   </span>
                 </div>
 
+                {/* Customer Requested Staff Services Alert Banner */}
+                {(() => {
+                  const selectedServices = detectRequestedServices(selectedRequest);
+                  if (!selectedServices.hasAnyServiceRequested) return null;
+                  return (
+                    <div className="bg-gradient-to-br from-amber-50/90 via-white to-indigo-50/90 border-2 border-amber-300/80 rounded-2xl p-4 space-y-3 shadow-sm">
+                      <div className="flex items-center justify-between border-b border-amber-200/60 pb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base">🛎️</span>
+                          <div>
+                            <h5 className="text-xs font-black text-slate-900 uppercase tracking-wide">
+                              Customer Requested Staff Services
+                            </h5>
+                            <p className="text-[10px] text-slate-500 font-semibold">
+                              Traveler specifically requested dedicated personnel for this booking
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-[9px] font-black px-2.5 py-0.5 rounded-full bg-amber-500 text-white uppercase tracking-wider">
+                          Action Required
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {/* Driver Card */}
+                        {selectedServices.driverRequested && (
+                          <div className={`p-3 rounded-xl border transition ${
+                            selectedServices.driverAssigned
+                              ? "bg-emerald-50/90 border-emerald-300 text-emerald-950"
+                              : "bg-amber-100/70 border-amber-400 text-amber-950 shadow-sm"
+                          }`}>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-black flex items-center gap-1.5">
+                                <span>🚗</span>
+                                <span>Car Driver</span>
+                              </span>
+                              {selectedServices.driverAssigned ? (
+                                <span className="text-[9px] font-black bg-emerald-600 text-white px-2 py-0.5 rounded-full">
+                                  ✓ Assigned
+                                </span>
+                              ) : (
+                                <span className="text-[9px] font-black bg-amber-600 text-white px-2 py-0.5 rounded-full animate-pulse">
+                                  Needed
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="mt-2 space-y-1">
+                              <p className="text-[10.5px] font-medium text-slate-700">
+                                {selectedServices.driverReason}
+                              </p>
+                              {selectedServices.driverAssigned ? (
+                                <p className="text-[10.5px] font-bold text-emerald-800 pt-1 border-t border-emerald-200/60">
+                                  Assigned: {selectedServices.driverName} {selectedServices.driverPhone ? `(${selectedServices.driverPhone})` : ""}
+                                </p>
+                              ) : (
+                                <p className="text-[10px] font-bold text-amber-800 pt-1 border-t border-amber-300/60 flex items-center gap-1">
+                                  <span>⚠️</span>
+                                  <span>Please assign a driver below</span>
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Guide Card */}
+                        {selectedServices.guideRequested && (
+                          <div className={`p-3 rounded-xl border transition ${
+                            selectedServices.guideAssigned
+                              ? "bg-emerald-50/90 border-emerald-300 text-emerald-950"
+                              : "bg-indigo-100/70 border-indigo-400 text-indigo-950 shadow-sm"
+                          }`}>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-black flex items-center gap-1.5">
+                                <span>🧭</span>
+                                <span>Tour Guide</span>
+                              </span>
+                              {selectedServices.guideAssigned ? (
+                                <span className="text-[9px] font-black bg-emerald-600 text-white px-2 py-0.5 rounded-full">
+                                  ✓ Assigned
+                                </span>
+                              ) : (
+                                <span className="text-[9px] font-black bg-indigo-600 text-white px-2 py-0.5 rounded-full animate-pulse">
+                                  Needed
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="mt-2 space-y-1">
+                              <p className="text-[10.5px] font-medium text-slate-700">
+                                {selectedServices.guideReason}
+                              </p>
+                              {selectedServices.guideAssigned ? (
+                                <p className="text-[10.5px] font-bold text-indigo-800 pt-1 border-t border-indigo-200/60">
+                                  Assigned: {selectedServices.guideName} {selectedServices.guidePhone ? `(${selectedServices.guidePhone})` : ""}
+                                </p>
+                              ) : (
+                                <p className="text-[10px] font-bold text-indigo-800 pt-1 border-t border-indigo-300/60 flex items-center gap-1">
+                                  <span>⚠️</span>
+                                  <span>Please assign a tour guide below</span>
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Details Variables Block */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="border border-slate-200 rounded-2xl p-3">
@@ -562,50 +869,54 @@ export default function TenantRequestsPage() {
                             </div>
                           )}
                           {metrics.customCharges > 0 && (
-                            <div className="flex justify-between text-xs text-slate-300 font-bold text-amber-300">
+                            <div className="flex justify-between text-xs text-amber-300">
                               <span>Custom Agency Fee</span>
                               <span>+${metrics.customCharges.toLocaleString()}</span>
                             </div>
                           )}
-                          <div className="flex justify-between text-xs text-slate-300 border-t border-white/5 pt-1.5 mt-1">
-                            <span>Subtotal</span>
-                            <span>${metrics.subtotal.toLocaleString()}</span>
-                          </div>
                           {metrics.discount > 0 && (
                             <div className="flex justify-between text-xs text-emerald-400">
                               <span>Group Discount</span>
                               <span>-${metrics.discount.toLocaleString()}</span>
                             </div>
                           )}
-                          <div className="flex justify-between text-xs text-slate-300">
-                            <span>Local Taxes & Fees</span>
+                          <div className="flex justify-between text-xs text-slate-300 border-t border-white/10 pt-1.5">
+                            <span>Estimated Taxes (12%)</span>
                             <span>${metrics.taxes.toLocaleString()}</span>
                           </div>
-                          <div className="flex justify-between text-sm font-black text-cyan-400 border-t border-white/10 pt-2.5 mt-2">
-                            <span>Grand Total</span>
-                            <span>${metrics.totalPrice.toLocaleString()} USD</span>
-                          </div>
-                          <div className="flex justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wide">
-                            <span>Payment Status</span>
-                            <span className={metrics.paymentStatus === "PAID" ? "text-emerald-400 animate-pulse font-extrabold" : "text-amber-400 font-extrabold"}>
-                              {metrics.paymentStatus}
-                            </span>
+                          <div className="flex justify-between text-sm font-black text-white border-t border-white/20 pt-2">
+                            <span>Calculated Total</span>
+                            <span className="text-cyan-400">${metrics.totalPrice.toLocaleString()} USD</span>
                           </div>
                         </div>
                       </div>
                     ) : (
-                      // Curated tour or basic quote details
+                      /* Fallback view for traditional packages */
                       <div className="space-y-4">
-                        <div className="flex justify-between py-1 border-b border-slate-100">
-                          <span className="text-slate-450 uppercase text-[10px] font-bold">Selected Tour</span>
-                          <span className="text-slate-800 font-black">{selectedRequest.packageName}</span>
+                        <div className="flex items-center gap-3">
+                          <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200">
+                            <Image
+                              src={getPackageImage(selectedRequest.packageName)}
+                              alt={selectedRequest.packageName}
+                              fill
+                              sizes="64px"
+                              className="object-cover"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-black uppercase text-brand-secondary">Catalog Tour</span>
+                            <h4 className="text-sm font-black text-slate-900 leading-snug">{selectedRequest.packageName}</h4>
+                          </div>
                         </div>
-                        <div className="flex flex-col gap-1 mt-2">
-                          <span className="text-slate-450 uppercase text-[10px] font-bold">Itinerary Notes & Requests</span>
-                          <p className="text-slate-800 mt-1 leading-relaxed bg-slate-50 border border-slate-150 p-3.5 rounded-xl font-medium whitespace-pre-wrap">
-                            {selectedRequest.specialRequests || "No custom traveler notes specified."}
-                          </p>
-                        </div>
+
+                        {selectedRequest.specialRequests && !selectedRequest.specialRequests.includes("### 📝 Traveler Special Requests") && (
+                          <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                            <span className="text-[9px] uppercase font-bold text-slate-400 block mb-1">Customer Notes</span>
+                            <p className="text-xs text-slate-700 font-medium leading-relaxed">
+                              {selectedRequest.specialRequests}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -622,7 +933,124 @@ export default function TenantRequestsPage() {
                   </div>
                 </div>
 
+                {/* Guide & Driver Assignment Panel (editable when pending or approved) */}
+                {(selectedRequest.status === "pending" || selectedRequest.status === "approved") && (() => {
+                  const drawerServices = detectRequestedServices(selectedRequest);
+                  return (
+                    <div className="bg-indigo-50/60 border border-indigo-200 rounded-2xl p-4 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="block text-[10px] font-black uppercase text-indigo-800 tracking-wider">
+                          🧭 Tour Guide & Driver Assignment
+                        </span>
+                        {drawerServices.hasAnyServiceRequested && (
+                          <span className="text-[8px] font-black bg-indigo-600 text-white px-2 py-0.5 rounded-full uppercase tracking-wider">
+                            Customer Requested
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Tour Guide */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] text-indigo-700 font-black uppercase tracking-wide">Tour Guide</span>
+                          {drawerServices.guideRequested && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8.5px] font-black bg-indigo-600 text-white uppercase tracking-wider shadow-sm">
+                              <span>⭐</span>
+                              <span>Requested by Customer</span>
+                            </span>
+                          )}
+                        </div>
+                        {drawerServices.guideRequested && (
+                          <p className="text-[10px] text-indigo-800 font-semibold bg-indigo-100/70 px-2.5 py-1 rounded-lg">
+                            Customer Note: {drawerServices.guideReason}
+                          </p>
+                        )}
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="text"
+                            placeholder="Full Name"
+                            value={tourGuideName}
+                            onChange={(e) => setTourGuideName(e.target.value)}
+                            className="px-2.5 py-1.5 border border-indigo-200 rounded-xl focus:outline-none focus:border-indigo-400 text-xs font-semibold text-slate-800 bg-white"
+                          />
+                          <input
+                            type="email"
+                            placeholder="Email address"
+                            value={tourGuideEmail}
+                            onChange={(e) => setTourGuideEmail(e.target.value)}
+                            className="px-2.5 py-1.5 border border-indigo-200 rounded-xl focus:outline-none focus:border-indigo-400 text-xs font-semibold text-slate-800 bg-white"
+                          />
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Phone / WhatsApp (optional)"
+                          value={tourGuidePhone}
+                          onChange={(e) => setTourGuidePhone(e.target.value)}
+                          className="w-full px-2.5 py-1.5 border border-indigo-200 rounded-xl focus:outline-none focus:border-indigo-400 text-xs font-semibold text-slate-800 bg-white"
+                        />
+                      </div>
+
+                      {/* Divider */}
+                      <div className="border-t border-indigo-100" />
+
+                      {/* Car Driver */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] text-indigo-700 font-black uppercase tracking-wide">Car Driver</span>
+                          {drawerServices.driverRequested && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8.5px] font-black bg-amber-600 text-white uppercase tracking-wider shadow-sm">
+                              <span>⭐</span>
+                              <span>Requested by Customer</span>
+                            </span>
+                          )}
+                        </div>
+                        {drawerServices.driverRequested && (
+                          <p className="text-[10px] text-amber-900 font-semibold bg-amber-100/80 px-2.5 py-1 rounded-lg">
+                            Customer Note: {drawerServices.driverReason}
+                          </p>
+                        )}
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="text"
+                            placeholder="Full Name"
+                            value={driverName}
+                            onChange={(e) => setDriverName(e.target.value)}
+                            className="px-2.5 py-1.5 border border-indigo-200 rounded-xl focus:outline-none focus:border-indigo-400 text-xs font-semibold text-slate-800 bg-white"
+                          />
+                          <input
+                            type="email"
+                            placeholder="Email address"
+                            value={driverEmail}
+                            onChange={(e) => setDriverEmail(e.target.value)}
+                            className="px-2.5 py-1.5 border border-indigo-200 rounded-xl focus:outline-none focus:border-indigo-400 text-xs font-semibold text-slate-800 bg-white"
+                          />
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Phone / WhatsApp (optional)"
+                          value={driverPhone}
+                          onChange={(e) => setDriverPhone(e.target.value)}
+                          className="w-full px-2.5 py-1.5 border border-indigo-200 rounded-xl focus:outline-none focus:border-indigo-400 text-xs font-semibold text-slate-800 bg-white"
+                        />
+                      </div>
+
+                      {/* Agency Notes */}
+                      <div className="space-y-1.5">
+                        <span className="text-[9px] text-indigo-700 font-black uppercase tracking-wide">Agency Notes / Instructions for Assignee</span>
+                        <textarea
+                          rows={3}
+                          placeholder="e.g. Meet at Colombo Airport Gate 3. Customer requires wheelchair access..."
+                          value={agencyNotes}
+                          onChange={(e) => setAgencyNotes(e.target.value)}
+                          className="w-full px-2.5 py-1.5 border border-indigo-200 rounded-xl focus:outline-none focus:border-indigo-400 text-xs font-semibold text-slate-800 bg-white resize-none"
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Cost Adjustments Panel (only editable when status is 'pending') */}
+
                 {selectedRequest.status === "pending" && isCustomCalc && (
                   <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
                     <span className="block text-[10px] font-black uppercase text-slate-800 tracking-wider">
@@ -664,6 +1092,70 @@ export default function TenantRequestsPage() {
                     >
                       {actionLoading ? "Processing Calculation..." : "Recalculate & Approve"}
                     </button>
+                  </div>
+                )}
+
+                {/* Send Trip Brief Panel (visible when approved) */}
+                {selectedRequest.status === "approved" && (
+                  <div className="bg-violet-50 border border-violet-200 rounded-2xl p-4 space-y-3">
+                    <span className="block text-[10px] font-black uppercase text-violet-800 tracking-wider flex items-center gap-1.5">
+                      📄 Send Trip Brief PDF to Guide / Driver
+                    </span>
+                    <p className="text-[10px] text-violet-700 leading-normal font-semibold">
+                      Generate a PDF trip brief and email it directly to the assigned tour guide or car driver.
+                    </p>
+
+                    {briefSuccess && (
+                      <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-[10px] font-bold">
+                        ✅ Trip brief sent successfully!
+                      </div>
+                    )}
+                    {briefError && (
+                      <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-[10px] font-bold">
+                        ❌ {briefError}
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[9px] text-violet-700 font-black uppercase">Recipient Name</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. John Silva"
+                          value={briefRecipientName}
+                          onChange={(e) => setBriefRecipientName(e.target.value)}
+                          className="w-full px-2.5 py-1.5 border border-violet-200 rounded-xl focus:outline-none focus:border-violet-400 text-xs font-semibold text-slate-800 bg-white"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] text-violet-700 font-black uppercase">Role</label>
+                        <select
+                          value={briefRole}
+                          onChange={(e) => setBriefRole(e.target.value as "Tour Guide" | "Car Driver")}
+                          className="w-full px-2.5 py-1.5 border border-violet-200 rounded-xl focus:outline-none bg-white text-xs font-semibold text-slate-800"
+                        >
+                          <option value="Tour Guide">Tour Guide</option>
+                          <option value="Car Driver">Car Driver</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <input
+                        type="email"
+                        placeholder="guide@gmail.com or driver@gmail.com"
+                        value={briefRecipientEmail}
+                        onChange={(e) => setBriefRecipientEmail(e.target.value)}
+                        className="flex-grow px-2.5 py-1.5 border border-violet-200 rounded-xl focus:outline-none focus:border-violet-400 text-xs font-semibold text-slate-800 bg-white"
+                      />
+                      <button
+                        onClick={handleSendTripBrief}
+                        disabled={briefLoading || !briefRecipientEmail || !briefRecipientName}
+                        className="px-4 py-1.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-black text-[10px] tracking-wide transition flex items-center gap-1.5 disabled:opacity-50"
+                      >
+                        {briefLoading ? "Sending..." : "Send ▶"}
+                      </button>
+                    </div>
                   </div>
                 )}
 
