@@ -46,7 +46,8 @@ export default function Sidebar({ onNavigate, onLogout, isCollapsed = false, onT
         { href: `/${locale}/dashboard`, label: t("dashboard"), icon: AppstoreOutlined },
     ];
 
-    if (userRole === "tenant_admin") {
+    const isAuthorizedAdmin = userRole === "tenant_admin" || userRole === "super_admin" || userRole === "admin";
+    if (isAuthorizedAdmin) {
         menuItems.push(
             { href: `/${locale}/dashboard/packages`, label: "Manage Packages", icon: GiftOutlined },
             { href: `/${locale}/dashboard/requests`, label: "Approve Bookings", icon: CheckCircleOutlined },

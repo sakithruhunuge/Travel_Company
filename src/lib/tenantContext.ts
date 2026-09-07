@@ -29,12 +29,12 @@ export function getTenantContext(): TenantContext {
  * Robustly resolves active tenantId across session, x-tenant-id header, and host header lookup.
  */
 export async function resolveTenantId(sessionUser?: any): Promise<string | null> {
-  if (sessionUser?.tenantId) {
-    return sessionUser.tenantId;
-  }
   const { tenantId: headerTenantId } = getTenantContext();
   if (headerTenantId) {
     return headerTenantId;
+  }
+  if (sessionUser?.tenantId) {
+    return sessionUser.tenantId;
   }
   try {
     const requestHeaders = headers();
