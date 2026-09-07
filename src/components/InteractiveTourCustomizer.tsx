@@ -31,6 +31,7 @@ import {
 } from "@ant-design/icons";
 
 import { useToast } from "@/context/ToastContext";
+import { resolvePoiPhoto } from "@/utils/aiPlacePhotos";
 import {
   calculateTripPricing,
   PricingInputs,
@@ -73,6 +74,7 @@ export interface MapPlacePoi {
   description?: string;
   primary_image?: string;
   street_view_url?: string;
+  is_ai_generated?: boolean;
 }
 
 export interface DestinationPlaces {
@@ -1573,16 +1575,24 @@ export default function InteractiveTourCustomizer() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               {cityPois.map((poi: MapPlacePoi) => {
                                 const isSelected = selectedPlaceIds.includes(String(poi.id));
-                                const defaultCityImg = LOCATIONS.find((l) => l.id === city)?.img || "/images/colombo.png";
                                 const isPoiImgFailed = failedPoiImages[String(poi.id)];
-                                const displayImg = poi.primary_image && !poi.primary_image.includes("photos.app.goo.gl") && !isPoiImgFailed ? poi.primary_image : defaultCityImg;
+                                const { photoUrl: displayImg, isAiGenerated, fallbackAiUrl } = resolvePoiPhoto(poi, city, isPoiImgFailed);
                                 const poiDistFromCenter = Math.round((((String(poi.id).charCodeAt(0) || 7) % 45) / 10 + 0.8) * 10) / 10;
                                 return (
                                   <motion.div key={poi.id} whileHover={{ y: -3 }} onClick={() => handleToggleSuggestedPlace(poi, city, false)}
                                     className={`rounded-2xl border p-3.5 cursor-pointer flex flex-col justify-between transition-all bg-white ${isSelected ? "border-[#25A5FE] shadow-[0_14px_34px_-14px_rgba(37,165,254,0.45)]" : "border-[#F0E7D8] hover:border-[#BDE3FE]"}`}>
                                     <div>
-                                      <div className="w-full h-28 rounded-xl overflow-hidden mb-2.5 bg-[#F6F1E6] border border-[#F0E7D8]/70 relative">
-                                        <img src={displayImg} alt={poi.name} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" onError={(e) => { (e.target as HTMLImageElement).src = defaultCityImg; setFailedPoiImages((prev) => ({ ...prev, [String(poi.id)]: true })); }} />
+                                      <div className="w-full h-28 rounded-xl overflow-hidden mb-2.5 bg-[#F6F1E6] border border-[#F0E7D8]/70 relative group">
+                                        <img
+                                          src={displayImg}
+                                          alt={poi.name}
+                                          loading="lazy"
+                                          className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                                          onError={(e) => {
+                                            (e.target as HTMLImageElement).src = fallbackAiUrl;
+                                            setFailedPoiImages((prev) => ({ ...prev, [String(poi.id)]: true }));
+                                          }}
+                                        />
                                         <span className="absolute bottom-2 left-2 bg-slate-900/85 backdrop-blur-sm text-white text-[9px] font-black px-2 py-0.5 rounded-full border border-white/20">
                                           📍 ~{poiDistFromCenter} km from {city} center
                                         </span>

@@ -237,7 +237,7 @@ DESTINATION_FALLBACK_POIS = {
             "airport_distance_km": 105.0,
             "airport_travel_time_min": 150.0,
             "description": "Sri Lanka's most sacred Buddhist temple housing the sacred tooth relic of Lord Buddha.",
-            "images": ["/images/kandy.png"],
+            "images": ["/maliga.png"],
             "ticket_price_usd": 15.0
         },
         {
@@ -253,7 +253,7 @@ DESTINATION_FALLBACK_POIS = {
             "airport_distance_km": 100.0,
             "airport_travel_time_min": 140.0,
             "description": "Renowned botanical garden famous for its collection of orchids, giant bamboo, and palm avenues.",
-            "images": ["/images/kandy.png"],
+            "images": ["/sri3.png"],
             "ticket_price_usd": 10.0
         }
     ],
@@ -271,7 +271,7 @@ DESTINATION_FALLBACK_POIS = {
             "airport_distance_km": 240.0,
             "airport_travel_time_min": 240.0,
             "description": "Famous wildlife park renowned for having one of the highest leopard densities in the world.",
-            "images": ["/images/yala.png"],
+            "images": ["/chita.png"],
             "ticket_price_usd": 35.0
         },
         {
@@ -287,7 +287,7 @@ DESTINATION_FALLBACK_POIS = {
             "airport_distance_km": 245.0,
             "airport_travel_time_min": 250.0,
             "description": "Ancient 2nd-century BC monastic complex built on massive rock formations deep within Yala.",
-            "images": ["/images/yala.png"],
+            "images": ["/pilima.png"],
             "ticket_price_usd": 5.0
         }
     ],
@@ -321,7 +321,7 @@ DESTINATION_FALLBACK_POIS = {
             "airport_distance_km": 152.0,
             "airport_travel_time_min": 135.0,
             "description": "Picturesque golden horseshoe bay famous for calm turquoise waters, coral reefs, and beach cafes.",
-            "images": ["/images/galle.png"],
+            "images": ["/miris.png"],
             "ticket_price_usd": 0.0
         }
     ],
@@ -339,7 +339,7 @@ DESTINATION_FALLBACK_POIS = {
             "airport_distance_km": 145.0,
             "airport_travel_time_min": 180.0,
             "description": "World-famous 5th-century ancient citadel perched atop a 200-meter sheer granite peak.",
-            "images": ["/images/sigiriya.png"],
+            "images": ["/sigiri.png"],
             "ticket_price_usd": 30.0
         }
     ],
@@ -357,7 +357,7 @@ DESTINATION_FALLBACK_POIS = {
             "airport_distance_km": 130.0,
             "airport_travel_time_min": 160.0,
             "description": "Best-preserved cave temple complex in Sri Lanka featuring 153 Buddha statues and ancient murals.",
-            "images": ["/images/dambulla.png"],
+            "images": ["/pilima.png"],
             "ticket_price_usd": 12.0
         }
     ],
@@ -375,7 +375,7 @@ DESTINATION_FALLBACK_POIS = {
             "airport_distance_km": 200.0,
             "airport_travel_time_min": 210.0,
             "description": "Iconic colonial-era viaduct bridge surrounded by lush green tea hills and cloud forests.",
-            "images": ["/images/nine_arch.png"],
+            "images": ["/ella.png"],
             "ticket_price_usd": 0.0
         }
     ],
@@ -393,7 +393,7 @@ DESTINATION_FALLBACK_POIS = {
             "airport_distance_km": 155.0,
             "airport_travel_time_min": 190.0,
             "description": "High-altitude tea plantation tour demonstrating the authentic process of crafting Ceylon Tea.",
-            "images": ["/images/tea.png"],
+            "images": ["/tea.png"],
             "ticket_price_usd": 5.0
         }
     ],
