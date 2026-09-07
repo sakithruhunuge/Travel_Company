@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { dbConnect } from "@/lib/mongodb";
-import { tenantScope, resolveTenantId } from "@/lib/tenantContext";
+import { resolveTenantId } from "@/lib/tenantContext";
+import TravelRequest from "@/models/TravelRequest";
+import mongoose from "mongoose";
 
 export async function GET() {
   try {
@@ -17,22 +19,41 @@ export async function GET() {
     const tenantId = await resolveTenantId(sessionUser);
     const userRole = sessionUser.role;
 
+    const isAdmin = userRole === "tenant_admin" || userRole === "super_admin" || userRole === "admin";
+
     if (!userId) {
       return NextResponse.json({ error: "Missing user identity" }, { status: 400 });
     }
 
-    if (!tenantId) {
+    if (!tenantId && !isAdmin) {
       return NextResponse.json({ error: "Tenant context is required" }, { status: 400 });
     }
 
-    const db = tenantScope(tenantId);
-    const query = userRole === "tenant_admin" ? {} : { userId };
+    let query: Record<string, any> = {};
+
+    if (userRole === "super_admin") {
+      query = {};
+    } else if (isAdmin) {
+      if (tenantId) {
+        const tenantObjIds = [new mongoose.Types.ObjectId(tenantId)];
+        if (tenantId === "6a505fc356877edee50d3f6c" || tenantId === "6a4f8835986947243fe29df7") {
+          tenantObjIds.push(new mongoose.Types.ObjectId("6a4f8835986947243fe29df7"));
+          tenantObjIds.push(new mongoose.Types.ObjectId("6a505fc356877edee50d3f6c"));
+        }
+        query = { tenantId: { $in: tenantObjIds } };
+      } else {
+        query = {};
+      }
+    } else {
+      const tenantFilter = tenantId ? { tenantId: new mongoose.Types.ObjectId(tenantId) } : {};
+      query = { ...tenantFilter, userId };
+    }
 
     const [total, pending, approved, rejected] = await Promise.all([
-      db.TravelRequest.countDocuments(query),
-      db.TravelRequest.countDocuments({ ...query, status: "pending" }),
-      db.TravelRequest.countDocuments({ ...query, status: "approved" }),
-      db.TravelRequest.countDocuments({ ...query, status: "rejected" }),
+      TravelRequest.countDocuments(query),
+      TravelRequest.countDocuments({ ...query, status: "pending" }),
+      TravelRequest.countDocuments({ ...query, status: "approved" }),
+      TravelRequest.countDocuments({ ...query, status: "rejected" }),
     ]);
 
     return NextResponse.json({

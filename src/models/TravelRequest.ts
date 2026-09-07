@@ -1,5 +1,11 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
+export interface IAssignedPerson {
+  name: string;
+  email: string;
+  phone?: string;
+}
+
 export interface ITravelRequest extends Document {
   tenantId?: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
@@ -16,9 +22,18 @@ export interface ITravelRequest extends Document {
   aiVibeQuery?: string;
   source?: "manual" | "ai-suggested";
   status: "pending" | "approved" | "rejected";
+  tourGuide?: IAssignedPerson;
+  driver?: IAssignedPerson;
+  agencyNotes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
+
+const AssignedPersonSchema = {
+  name: { type: String },
+  email: { type: String },
+  phone: { type: String },
+};
 
 const TravelRequestSchema: Schema = new Schema(
   {
@@ -46,6 +61,9 @@ const TravelRequestSchema: Schema = new Schema(
       default: "pending",
       required: true,
     },
+    tourGuide: { type: AssignedPersonSchema, default: undefined },
+    driver: { type: AssignedPersonSchema, default: undefined },
+    agencyNotes: { type: String, default: "" },
   },
   {
     timestamps: true,
