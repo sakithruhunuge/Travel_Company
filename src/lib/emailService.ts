@@ -124,3 +124,88 @@ export async function sendInvoiceEmail(
     ],
   });
 }
+
+/**
+ * Sends a trip brief PDF to an assigned tour guide or car driver.
+ */
+export async function sendTripBriefEmail(
+  recipientEmail: string,
+  recipientName: string,
+  role: "Tour Guide" | "Car Driver",
+  bookingId: string,
+  customerName: string,
+  packageName: string,
+  startDate: string,
+  pdfBuffer: Buffer,
+  routePlan?: {
+    destinationStops: string[];
+    totalDistanceKm: number;
+    totalDriveTimeFormatted: string;
+    segments?: { step: number; from: string; to: string; distanceKm: number; driveTimeFormatted: string }[];
+  }
+) {
+  const subject = `Trip Brief — ${packageName} (Booking #${bookingId.slice(-8).toUpperCase()})`;
+
+  const roleEmoji = role === "Tour Guide" ? "🧭" : "🚗";
+
+  const routeHtml = routePlan && routePlan.destinationStops.length > 0 ? `
+    <div style="background-color: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 15px; margin: 15px 0;">
+      <h4 style="margin-top: 0; color: #166534; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px;">
+        📍 Places to Go & Predicted Distance
+      </h4>
+      <div style="margin-bottom: 10px;">
+        <strong>Destinations (${routePlan.destinationStops.length} stops):</strong>
+        <div style="margin-top: 6px; font-size: 13px; color: #15803d; font-weight: bold;">
+          ${routePlan.destinationStops.map((s, idx) => `${idx + 1}. ${s}`).join(" &nbsp;➔&nbsp; ")}
+        </div>
+      </div>
+      <div style="display: flex; gap: 20px; font-size: 12px; color: #166534; border-top: 1px dashed #bbf7d0; padding-top: 8px;">
+        <span><strong>Total Predicted Distance:</strong> ${routePlan.totalDistanceKm > 0 ? `${routePlan.totalDistanceKm} km` : "Local Dispatch"}</span>
+        ${routePlan.totalDriveTimeFormatted ? `<span><strong>Est. Drive Time:</strong> ~${routePlan.totalDriveTimeFormatted}</span>` : ""}
+      </div>
+    </div>
+  ` : "";
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+      <h2 style="color: #0B7C8A;">${roleEmoji} Trip Assignment Brief</h2>
+      <p>Dear <strong>${recipientName}</strong>,</p>
+      <p>You have been assigned as the <strong>${role}</strong> for an upcoming tour. Please find your detailed route dispatch and trip brief attached to this email.</p>
+
+      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin: 20px 0;">
+        <h4 style="margin-top: 0; color: #041A16;">Assignment Summary</h4>
+        <ul style="padding-left: 20px; margin-bottom: 0;">
+          <li><strong>Role:</strong> ${role}</li>
+          <li><strong>Booking ID:</strong> #${bookingId.slice(-8).toUpperCase()}</li>
+          <li><strong>Customer:</strong> ${customerName}</li>
+          <li><strong>Package:</strong> ${packageName}</li>
+          <li><strong>Departure:</strong> ${startDate}</li>
+        </ul>
+      </div>
+
+      ${routeHtml}
+
+      <p>The attached PDF contains all the complete itinerary specifications, leg-by-leg road distance table, customer details, and agency directives.</p>
+      
+      <p>Please review the trip brief carefully and reach out to the agency if you have any questions or concerns before the departure date.</p>
+
+      <p style="font-size: 12px; color: #666; margin-top: 40px; border-top: 1px solid #eee; padding-top: 10px;">
+        This is a confidential operational document. Please do not share it with third parties.
+      </p>
+    </div>
+  `;
+
+  return sendEmail({
+    to: recipientEmail,
+    subject,
+    html,
+    attachments: [
+      {
+        filename: `TripBrief-${bookingId.slice(-8).toUpperCase()}.pdf`,
+        content: pdfBuffer,
+        contentType: "application/pdf",
+      },
+    ],
+  });
+}
+
