@@ -184,7 +184,8 @@ REGION_ALIASES = {
     "ella": ["ella", "demodara", "bandarawela", "badulla"],
     "mirissa": ["mirissa", "weligama", "kamburugamuwa", "matara"],
     "galle": ["galle", "unawatuna", "ahangama", "hikkaduwa"],
-    "nuwara eliya": ["nuwara eliya", "nanu oya", "pundaluoya", "hatton"],
+    "nuwara eliya": ["nuwara eliya", "nuwaraeliya", "nanu oya", "pundaluoya", "hatton", "little england"],
+    "nuwaraeliya": ["nuwara eliya", "nuwaraeliya", "nanu oya", "pundaluoya", "hatton", "little england"],
     "kandy": ["kandy", "peradeniya", "katugastota", "digana"],
     "colombo": ["colombo", "mount lavinia", "dehiwala", "negombo"]
 }
@@ -395,6 +396,72 @@ DESTINATION_FALLBACK_POIS = {
             "description": "High-altitude tea plantation tour demonstrating the authentic process of crafting Ceylon Tea.",
             "images": ["/tea.png"],
             "ticket_price_usd": 5.0
+        },
+        {
+            "id": "nuwara-eliya-gregory-lake",
+            "source_id": "nuwara-eliya-gregory-lake",
+            "name": "Lake Gregory Leisure Park & Promenade",
+            "city": "Nuwara Eliya",
+            "address": "Badulla Road, Nuwara Eliya",
+            "rating": 4.7,
+            "review_count": 1850,
+            "popularity_index": 0.95,
+            "categories": ["Lake", "Recreation", "Boating"],
+            "airport_distance_km": 156.0,
+            "airport_travel_time_min": 192.0,
+            "description": "Scenic colonial mountain lake offering swan pedal boats, jet skis, pony rides, and waterfront dining.",
+            "images": ["/images/tea.png"],
+            "ticket_price_usd": 3.0
+        },
+        {
+            "id": "nuwara-eliya-horton-plains",
+            "source_id": "nuwara-eliya-horton-plains",
+            "name": "Horton Plains National Park & World's End",
+            "city": "Nuwara Eliya",
+            "address": "Ohiya, Central Highlands",
+            "rating": 4.9,
+            "review_count": 2900,
+            "popularity_index": 0.98,
+            "categories": ["Trekking", "National Park", "Viewpoint"],
+            "airport_distance_km": 170.0,
+            "airport_travel_time_min": 210.0,
+            "description": "Cloud forest nature reserve featuring the sheer 880m World's End drop and Baker's Falls.",
+            "images": ["/images/nine_arch.png"],
+            "ticket_price_usd": 30.0
+        }
+    ],
+    "nuwaraeliya": [
+        {
+            "id": "nuwara-eliya-tea-factory",
+            "source_id": "nuwara-eliya-tea-factory",
+            "name": "Ceylon Tea Plantation & Pedro Tea Estate",
+            "city": "Nuwara Eliya",
+            "address": "Grand Hotel Road, Nuwara Eliya",
+            "rating": 4.8,
+            "review_count": 1600,
+            "popularity_index": 0.93,
+            "categories": ["Tea Estate", "Scenery", "Heritage"],
+            "airport_distance_km": 155.0,
+            "airport_travel_time_min": 190.0,
+            "description": "High-altitude tea plantation tour demonstrating the authentic process of crafting Ceylon Tea.",
+            "images": ["/tea.png"],
+            "ticket_price_usd": 5.0
+        },
+        {
+            "id": "nuwara-eliya-gregory-lake",
+            "source_id": "nuwara-eliya-gregory-lake",
+            "name": "Lake Gregory Leisure Park & Promenade",
+            "city": "Nuwara Eliya",
+            "address": "Badulla Road, Nuwara Eliya",
+            "rating": 4.7,
+            "review_count": 1850,
+            "popularity_index": 0.95,
+            "categories": ["Lake", "Recreation", "Boating"],
+            "airport_distance_km": 156.0,
+            "airport_travel_time_min": 192.0,
+            "description": "Scenic colonial mountain lake offering swan pedal boats, jet skis, pony rides, and waterfront dining.",
+            "images": ["/images/tea.png"],
+            "ticket_price_usd": 3.0
         }
     ],
     "bentota": [
@@ -413,6 +480,612 @@ DESTINATION_FALLBACK_POIS = {
             "description": "Prime coastal paradise for jet-skiing, boat safaris along the Madu Ganga mangrove lagoon, and relaxing.",
             "images": ["/images/bentota.png"],
             "ticket_price_usd": 15.0
+        }
+    ]
+}
+
+DESTINATION_FALLBACK_HOTELS: Dict[str, List[Dict[str, Any]]] = {
+    "nuwara eliya": [
+        {
+            "id": "heritance-tea-factory",
+            "source_id": "heritance-tea-factory",
+            "name": "Heritance Tea Factory Resort & Spa",
+            "city": "Nuwara Eliya",
+            "star_rating": 5,
+            "rating": 4.9,
+            "review_count": 1420,
+            "price_tier": "5-Star Luxury",
+            "avg_nightly_usd": 145.0,
+            "description": "5-star luxury heritage resort converted from an authentic 19th-century tea factory perched high in the misty cloud forest.",
+            "images": ["/images/tea.png"]
+        },
+        {
+            "id": "grand-hotel-nuwara-eliya",
+            "source_id": "grand-hotel-nuwara-eliya",
+            "name": "The Grand Hotel Nuwara Eliya & Heritage Colonial Estate",
+            "city": "Nuwara Eliya",
+            "star_rating": 4,
+            "rating": 4.8,
+            "review_count": 2100,
+            "price_tier": "4-Star Heritage",
+            "avg_nightly_usd": 85.0,
+            "description": "Historic 4-star colonial heritage hotel set amidst award-winning manicured English gardens, tea lounges, and billiards.",
+            "images": ["/images/tea.png"]
+        },
+        {
+            "id": "araliya-green-hills",
+            "source_id": "araliya-green-hills",
+            "name": "Araliya Green Hills Hotel",
+            "city": "Nuwara Eliya",
+            "star_rating": 4,
+            "rating": 4.7,
+            "review_count": 890,
+            "price_tier": "4-Star Premium",
+            "avg_nightly_usd": 75.0,
+            "description": "Modern 4-star hotel in the heart of town with heated indoor pool, wellness spa, and panoramic highland views.",
+            "images": ["/images/tea.png"]
+        },
+        {
+            "id": "alpine-hotel-gregory",
+            "source_id": "alpine-hotel-gregory",
+            "name": "Alpine Hotel & Lake Gregory Inn",
+            "city": "Nuwara Eliya",
+            "star_rating": 3,
+            "rating": 4.5,
+            "review_count": 450,
+            "price_tier": "Budget / 3-Star",
+            "avg_nightly_usd": 35.0,
+            "description": "Charming budget lakeside hotel within walking distance of Lake Gregory, boat rentals, and strawberry cafes.",
+            "images": ["/images/tea.png"]
+        },
+        {
+            "id": "little-england-budget-cottages",
+            "source_id": "little-england-budget-cottages",
+            "name": "Little England Cottages & Backpacker Hostel",
+            "city": "Nuwara Eliya",
+            "star_rating": 3,
+            "rating": 4.4,
+            "review_count": 320,
+            "price_tier": "Budget / 3-Star",
+            "avg_nightly_usd": 24.0,
+            "description": "Cozy budget guesthouse offering warm mountain hospitality, hot water, fireplace lounge, and backpacker rates.",
+            "images": ["/images/tea.png"]
+        }
+    ],
+    "nuwaraeliya": [
+        {
+            "id": "heritance-tea-factory",
+            "source_id": "heritance-tea-factory",
+            "name": "Heritance Tea Factory Resort & Spa",
+            "city": "Nuwara Eliya",
+            "star_rating": 5,
+            "rating": 4.9,
+            "review_count": 1420,
+            "price_tier": "5-Star Luxury",
+            "avg_nightly_usd": 145.0,
+            "description": "5-star luxury heritage resort converted from an authentic 19th-century tea factory perched high in the misty cloud forest.",
+            "images": ["/images/tea.png"]
+        },
+        {
+            "id": "grand-hotel-nuwara-eliya",
+            "source_id": "grand-hotel-nuwara-eliya",
+            "name": "The Grand Hotel Nuwara Eliya & Heritage Colonial Estate",
+            "city": "Nuwara Eliya",
+            "star_rating": 4,
+            "rating": 4.8,
+            "review_count": 2100,
+            "price_tier": "4-Star Heritage",
+            "avg_nightly_usd": 85.0,
+            "description": "Historic 4-star colonial heritage hotel set amidst award-winning manicured English gardens, tea lounges, and billiards.",
+            "images": ["/images/tea.png"]
+        },
+        {
+            "id": "araliya-green-hills",
+            "source_id": "araliya-green-hills",
+            "name": "Araliya Green Hills Hotel",
+            "city": "Nuwara Eliya",
+            "star_rating": 4,
+            "rating": 4.7,
+            "review_count": 890,
+            "price_tier": "4-Star Premium",
+            "avg_nightly_usd": 75.0,
+            "description": "Modern 4-star hotel in the heart of town with heated indoor pool, wellness spa, and panoramic highland views.",
+            "images": ["/images/tea.png"]
+        },
+        {
+            "id": "alpine-hotel-gregory",
+            "source_id": "alpine-hotel-gregory",
+            "name": "Alpine Hotel & Lake Gregory Inn",
+            "city": "Nuwara Eliya",
+            "star_rating": 3,
+            "rating": 4.5,
+            "review_count": 450,
+            "price_tier": "Budget / 3-Star",
+            "avg_nightly_usd": 35.0,
+            "description": "Charming budget lakeside hotel within walking distance of Lake Gregory, boat rentals, and strawberry cafes.",
+            "images": ["/images/tea.png"]
+        },
+        {
+            "id": "little-england-budget-cottages",
+            "source_id": "little-england-budget-cottages",
+            "name": "Little England Cottages & Backpacker Hostel",
+            "city": "Nuwara Eliya",
+            "star_rating": 3,
+            "rating": 4.4,
+            "review_count": 320,
+            "price_tier": "Budget / 3-Star",
+            "avg_nightly_usd": 24.0,
+            "description": "Cozy budget guesthouse offering warm mountain hospitality, hot water, fireplace lounge, and backpacker rates.",
+            "images": ["/images/tea.png"]
+        }
+    ],
+    "kandy": [
+        {
+            "id": "golden-crown-kandy",
+            "source_id": "golden-crown-kandy",
+            "name": "The Golden Crown Hotel Kandy",
+            "city": "Kandy",
+            "star_rating": 5,
+            "rating": 4.9,
+            "review_count": 1850,
+            "price_tier": "5-Star Luxury",
+            "avg_nightly_usd": 130.0,
+            "description": "Lavish 5-star resort boasting infinity mountain pools, fine dining, and panoramic vistas across Ampitiya hills.",
+            "images": ["/images/kandy.png"]
+        },
+        {
+            "id": "earls-regency-kandy",
+            "source_id": "earls-regency-kandy",
+            "name": "Earl's Regency Kandy Luxury Resort",
+            "city": "Kandy",
+            "star_rating": 5,
+            "rating": 4.8,
+            "review_count": 2200,
+            "price_tier": "5-Star Luxury",
+            "avg_nightly_usd": 110.0,
+            "description": "5-star hillside resort perched above the Mahaweli River with scenic gardens and Kandyan architecture.",
+            "images": ["/images/kandy.png"]
+        },
+        {
+            "id": "grand-kandyan-hotel",
+            "source_id": "grand-kandyan-hotel",
+            "name": "The Grand Kandyan Hotel",
+            "city": "Kandy",
+            "star_rating": 4,
+            "rating": 4.7,
+            "review_count": 1150,
+            "price_tier": "4-Star Premium",
+            "avg_nightly_usd": 70.0,
+            "description": "Elegant 4-star city stay with rooftop views of Kandy Lake and proximity to the Temple of the Sacred Tooth Relic.",
+            "images": ["/images/kandy.png"]
+        },
+        {
+            "id": "thilanka-hotel-kandy",
+            "source_id": "thilanka-hotel-kandy",
+            "name": "Hotel Thilanka Kandy Lakeview",
+            "city": "Kandy",
+            "star_rating": 4,
+            "rating": 4.6,
+            "review_count": 980,
+            "price_tier": "4-Star Standard",
+            "avg_nightly_usd": 55.0,
+            "description": "Tranquil 4-star hotel overlooking Udawatta Kele nature sanctuary and Kandy Lake.",
+            "images": ["/images/kandy.png"]
+        },
+        {
+            "id": "kandy-city-budget-inn",
+            "source_id": "kandy-city-budget-inn",
+            "name": "Kandy City Stay & Riverside Budget Inn",
+            "city": "Kandy",
+            "star_rating": 3,
+            "rating": 4.5,
+            "review_count": 520,
+            "price_tier": "Budget / 3-Star",
+            "avg_nightly_usd": 28.0,
+            "description": "Clean, highly rated budget hotel offering air conditioning, Ceylon breakfast, and easy tuk-tuk access to town.",
+            "images": ["/images/kandy.png"]
+        }
+    ],
+    "colombo": [
+        {
+            "id": "the-kingsbury-colombo",
+            "source_id": "the-kingsbury-colombo",
+            "name": "The Kingsbury Colombo & Ocean Suites",
+            "city": "Colombo",
+            "star_rating": 5,
+            "rating": 4.9,
+            "review_count": 3100,
+            "price_tier": "5-Star Luxury",
+            "avg_nightly_usd": 150.0,
+            "description": "Iconic 5-star luxury oceanfront hotel on Marine Drive with rooftop sky bar and harbour views.",
+            "images": ["/images/colombo.png"]
+        },
+        {
+            "id": "cinnamon-grand-colombo",
+            "source_id": "cinnamon-grand-colombo",
+            "name": "Cinnamon Grand Colombo",
+            "city": "Colombo",
+            "star_rating": 5,
+            "rating": 4.8,
+            "review_count": 4200,
+            "price_tier": "5-Star Luxury",
+            "avg_nightly_usd": 135.0,
+            "description": "Grand 5-star city resort offering 14 specialized restaurants, 2 outdoor swimming pools, and shopping arcade.",
+            "images": ["/images/colombo.png"]
+        },
+        {
+            "id": "fairway-colombo",
+            "source_id": "fairway-colombo",
+            "name": "Fairway Colombo Fort",
+            "city": "Colombo",
+            "star_rating": 4,
+            "rating": 4.7,
+            "review_count": 1600,
+            "price_tier": "4-Star Premium",
+            "avg_nightly_usd": 65.0,
+            "description": "Trendy 4-star hotel in Colombo's historic Dutch Hospital precinct, surrounded by boutique cafes and vibrant nightlife.",
+            "images": ["/images/colombo.png"]
+        },
+        {
+            "id": "cinnamon-red-colombo",
+            "source_id": "cinnamon-red-colombo",
+            "name": "Cinnamon Red Colombo Lean Luxury",
+            "city": "Colombo",
+            "star_rating": 3,
+            "rating": 4.6,
+            "review_count": 2800,
+            "price_tier": "Budget / 3-Star",
+            "avg_nightly_usd": 48.0,
+            "description": "Modern 3-star design hotel featuring rooftop infinity pool, skyline lounge, and comfortable smart rooms.",
+            "images": ["/images/colombo.png"]
+        },
+        {
+            "id": "city-rest-fort-colombo",
+            "source_id": "city-rest-fort-colombo",
+            "name": "City Rest Fort Backpacker Stay",
+            "city": "Colombo",
+            "star_rating": 3,
+            "rating": 4.4,
+            "review_count": 780,
+            "price_tier": "Budget / 3-Star",
+            "avg_nightly_usd": 22.0,
+            "description": "Convenient budget hotel in Central Colombo Fort near the railway station with fast Wi-Fi and air-conditioned rooms.",
+            "images": ["/images/colombo.png"]
+        }
+    ],
+    "galle": [
+        {
+            "id": "amangalla-galle-fort",
+            "source_id": "amangalla-galle-fort",
+            "name": "Amangalla Historic Luxury Resort",
+            "city": "Galle",
+            "star_rating": 5,
+            "rating": 5.0,
+            "review_count": 1200,
+            "price_tier": "5-Star Luxury",
+            "avg_nightly_usd": 210.0,
+            "description": "Ultra-exclusive 5-star colonial sanctuary inside the UNESCO Galle Fort ramparts dating back to 1684.",
+            "images": ["/images/galle.png"]
+        },
+        {
+            "id": "le-grand-galle",
+            "source_id": "le-grand-galle",
+            "name": "Le Grand Galle by Asia Leisure",
+            "city": "Galle",
+            "star_rating": 5,
+            "rating": 4.8,
+            "review_count": 1450,
+            "price_tier": "5-Star Luxury",
+            "avg_nightly_usd": 140.0,
+            "description": "5-star luxury seaside resort with unobstructed views of the UNESCO World Heritage Galle Fort and ocean waves.",
+            "images": ["/images/galle.png"]
+        },
+        {
+            "id": "the-fort-printers-galle",
+            "source_id": "the-fort-printers-galle",
+            "name": "The Fort Printers Heritage Hotel",
+            "city": "Galle",
+            "star_rating": 4,
+            "rating": 4.7,
+            "review_count": 820,
+            "price_tier": "4-Star Heritage",
+            "avg_nightly_usd": 85.0,
+            "description": "Restored 18th-century 4-star boutique mansion with private courtyard pool and acclaimed Mediterranean seafood dining.",
+            "images": ["/images/galle.png"]
+        },
+        {
+            "id": "closenberg-hotel-galle",
+            "source_id": "closenberg-hotel-galle",
+            "name": "Closenberg Hotel & Bay View",
+            "city": "Galle",
+            "star_rating": 3,
+            "rating": 4.6,
+            "review_count": 650,
+            "price_tier": "Budget / 3-Star",
+            "avg_nightly_usd": 42.0,
+            "description": "Historic colonial peninsula stay with panoramic views of Galle Bay, harbor breezes, and cozy vintage rooms.",
+            "images": ["/images/galle.png"]
+        },
+        {
+            "id": "galle-fort-budget-haven",
+            "source_id": "galle-fort-budget-haven",
+            "name": "Galle Fort Budget Haven & Hostel",
+            "city": "Galle",
+            "star_rating": 3,
+            "rating": 4.3,
+            "review_count": 410,
+            "price_tier": "Budget / 3-Star",
+            "avg_nightly_usd": 24.0,
+            "description": "Affordable budget guesthouse within walking distance of Galle Lighthouse, rampart sunsets, and gelato shops.",
+            "images": ["/images/galle.png"]
+        }
+    ],
+    "ella": [
+        {
+            "id": "98-acres-resort-ella",
+            "source_id": "98-acres-resort-ella",
+            "name": "98 Acres Resort & Spa Ella",
+            "city": "Ella",
+            "star_rating": 5,
+            "rating": 4.9,
+            "review_count": 3100,
+            "price_tier": "5-Star Luxury",
+            "avg_nightly_usd": 160.0,
+            "description": "World-famous 5-star eco-luxury resort built on a 98-acre scenic tea estate facing Ella Rock and Little Adam's Peak.",
+            "images": ["/ella.png"]
+        },
+        {
+            "id": "ella-mountain-heaven",
+            "source_id": "ella-mountain-heaven",
+            "name": "Ella Mountain Heaven Resort",
+            "city": "Ella",
+            "star_rating": 4,
+            "rating": 4.7,
+            "review_count": 1200,
+            "price_tier": "4-Star Premium",
+            "avg_nightly_usd": 75.0,
+            "description": "Spectacular 4-star mountain lodge featuring private cliffside balconies overlooking the famous Ella Gap.",
+            "images": ["/ella.png"]
+        },
+        {
+            "id": "zion-view-ella",
+            "source_id": "zion-view-ella",
+            "name": "Zion View Mountain Experience",
+            "city": "Ella",
+            "star_rating": 4,
+            "rating": 4.6,
+            "review_count": 940,
+            "price_tier": "4-Star Standard",
+            "avg_nightly_usd": 60.0,
+            "description": "Relaxing 4-star mountain retreat with yoga decks, infinity mountain views, and hearty Sri Lankan breakfast curries.",
+            "images": ["/ella.png"]
+        },
+        {
+            "id": "ella-ecolodge",
+            "source_id": "ella-ecolodge",
+            "name": "Ella Ecolodge & Nature Stay",
+            "city": "Ella",
+            "star_rating": 3,
+            "rating": 4.5,
+            "review_count": 620,
+            "price_tier": "Budget / 3-Star",
+            "avg_nightly_usd": 32.0,
+            "description": "Treehouse-style budget accommodation surrounded by birds and jungle flora, 5 minutes from Ella train station.",
+            "images": ["/ella.png"]
+        },
+        {
+            "id": "little-adams-hostel-ella",
+            "source_id": "little-adams-hostel-ella",
+            "name": "Little Adam's Backpacker Hostel & Cafe",
+            "city": "Ella",
+            "star_rating": 3,
+            "rating": 4.4,
+            "review_count": 480,
+            "price_tier": "Budget / 3-Star",
+            "avg_nightly_usd": 18.0,
+            "description": "Fun, welcoming budget hostel popular with hikers, solo travelers, and backpackers exploring the Nine Arch Bridge.",
+            "images": ["/ella.png"]
+        }
+    ],
+    "sigiriya": [
+        {
+            "id": "water-garden-sigiriya",
+            "source_id": "water-garden-sigiriya",
+            "name": "Water Garden Sigiriya Luxury Villas",
+            "city": "Sigiriya",
+            "star_rating": 5,
+            "rating": 4.9,
+            "review_count": 980,
+            "price_tier": "5-Star Luxury",
+            "avg_nightly_usd": 175.0,
+            "description": "Luxurious 5-star private pool villas surrounded by waterways, lotus ponds, and direct sightlines of Sigiriya Rock.",
+            "images": ["/sigiri.png"]
+        },
+        {
+            "id": "aliya-resort-sigiriya",
+            "source_id": "aliya-resort-sigiriya",
+            "name": "Aliya Resort & Spa Sigiriya",
+            "city": "Sigiriya",
+            "star_rating": 4,
+            "rating": 4.8,
+            "review_count": 1800,
+            "price_tier": "4-Star Premium",
+            "avg_nightly_usd": 85.0,
+            "description": "Themed 4-star resort celebrating the Sri Lankan elephant, featuring infinity pool facing the ancient fortress.",
+            "images": ["/sigiri.png"]
+        },
+        {
+            "id": "hotel-sigiriya",
+            "source_id": "hotel-sigiriya",
+            "name": "Hotel Sigiriya (Rock View Resort)",
+            "city": "Sigiriya",
+            "star_rating": 4,
+            "rating": 4.7,
+            "review_count": 1500,
+            "price_tier": "4-Star Standard",
+            "avg_nightly_usd": 65.0,
+            "description": "Established 4-star nature resort offering the closest pool-side views of the 5th-century rock citadel.",
+            "images": ["/sigiri.png"]
+        },
+        {
+            "id": "sigiriya-village-cottages",
+            "source_id": "sigiriya-village-cottages",
+            "name": "Sigiriya Village Cottages",
+            "city": "Sigiriya",
+            "star_rating": 3,
+            "rating": 4.5,
+            "review_count": 720,
+            "price_tier": "Budget / 3-Star",
+            "avg_nightly_usd": 38.0,
+            "description": "Charming village-style chalets set in tranquil woodlands with bird watching and authentic buffet spreads.",
+            "images": ["/sigiri.png"]
+        },
+        {
+            "id": "lions-rock-budget-stay",
+            "source_id": "lions-rock-budget-stay",
+            "name": "Lion's Rock Budget Homestay & B&B",
+            "city": "Sigiriya",
+            "star_rating": 3,
+            "rating": 4.3,
+            "review_count": 390,
+            "price_tier": "Budget / 3-Star",
+            "avg_nightly_usd": 20.0,
+            "description": "Friendly local homestay offering clean rooms, home-cooked rice and curry, and bicycle rentals to Pidurangala.",
+            "images": ["/sigiri.png"]
+        }
+    ],
+    "yala": [
+        {
+            "id": "chena-huts-yala",
+            "source_id": "chena-huts-yala",
+            "name": "Chena Huts by Uga Escapes Yala",
+            "city": "Yala",
+            "star_rating": 5,
+            "rating": 5.0,
+            "review_count": 750,
+            "price_tier": "5-Star Luxury",
+            "avg_nightly_usd": 240.0,
+            "description": "All-inclusive ultra-luxury 5-star safari pavilions with private plunge pools where jungle meets the Indian Ocean.",
+            "images": ["/chita.png"]
+        },
+        {
+            "id": "jetwing-yala",
+            "source_id": "jetwing-yala",
+            "name": "Jetwing Yala Safari Resort",
+            "city": "Yala",
+            "star_rating": 5,
+            "rating": 4.8,
+            "review_count": 1650,
+            "price_tier": "5-Star Luxury",
+            "avg_nightly_usd": 150.0,
+            "description": "Beachside 5-star wildlife sanctuary hotel near the Katagamuwa entrance with huge pool and leopard safaris.",
+            "images": ["/chita.png"]
+        },
+        {
+            "id": "cinnamon-wild-yala",
+            "source_id": "cinnamon-wild-yala",
+            "name": "Cinnamon Wild Yala Safari Lodge",
+            "city": "Yala",
+            "star_rating": 4,
+            "rating": 4.7,
+            "review_count": 1900,
+            "price_tier": "4-Star Premium",
+            "avg_nightly_usd": 95.0,
+            "description": "Rustic 4-star chalets positioned beside a natural crocodile lake directly bordering the Yala National Park buffer zone.",
+            "images": ["/chita.png"]
+        },
+        {
+            "id": "big-game-camp-yala",
+            "source_id": "big-game-camp-yala",
+            "name": "Big Game Tented Safari Camp Yala",
+            "city": "Yala",
+            "star_rating": 3,
+            "rating": 4.5,
+            "review_count": 510,
+            "price_tier": "Budget / 3-Star",
+            "avg_nightly_usd": 50.0,
+            "description": "Authentic semi-luxury tented safari camp offering campfire dinners, wildlife guides, and dawn game drives.",
+            "images": ["/chita.png"]
+        },
+        {
+            "id": "yala-safari-budget-lodge",
+            "source_id": "yala-safari-budget-lodge",
+            "name": "Yala Safari Budget Lodge & Guest Inn",
+            "city": "Yala",
+            "star_rating": 3,
+            "rating": 4.4,
+            "review_count": 380,
+            "price_tier": "Budget / 3-Star",
+            "avg_nightly_usd": 26.0,
+            "description": "Affordable safari basecamp in Tissamaharama providing budget private jeep packages and clean AC rooms.",
+            "images": ["/chita.png"]
+        }
+    ],
+    "bentota": [
+        {
+            "id": "taj-bentota-resort",
+            "source_id": "taj-bentota-resort",
+            "name": "Taj Bentota Resort & Spa",
+            "city": "Bentota",
+            "star_rating": 5,
+            "rating": 4.9,
+            "review_count": 2400,
+            "price_tier": "5-Star Luxury",
+            "avg_nightly_usd": 165.0,
+            "description": "World-class 5-star Taj luxury beach resort perched on a rocky headland overlooking golden southern beaches.",
+            "images": ["/images/bentota.png"]
+        },
+        {
+            "id": "cinnamon-bentota-beach",
+            "source_id": "cinnamon-bentota-beach",
+            "name": "Cinnamon Bentota Beach Resort",
+            "city": "Bentota",
+            "star_rating": 5,
+            "rating": 4.8,
+            "review_count": 1950,
+            "price_tier": "5-Star Luxury",
+            "avg_nightly_usd": 145.0,
+            "description": "Architect Geoffrey Bawa inspired 5-star beachfront haven between the Indian Ocean and the Bentota River.",
+            "images": ["/images/bentota.png"]
+        },
+        {
+            "id": "centara-ceysands-bentota",
+            "source_id": "centara-ceysands-bentota",
+            "name": "Centara Ceysands Resort & Spa",
+            "city": "Bentota",
+            "star_rating": 4,
+            "rating": 4.7,
+            "review_count": 1300,
+            "price_tier": "4-Star Premium",
+            "avg_nightly_usd": 75.0,
+            "description": "Island peninsula 4-star resort reached by short boat ferry, offering watersports, river safaris, and lagoon pool.",
+            "images": ["/images/bentota.png"]
+        },
+        {
+            "id": "marina-bentota-riverfront",
+            "source_id": "marina-bentota-riverfront",
+            "name": "Marina Bentota Riverfront Stay",
+            "city": "Bentota",
+            "star_rating": 3,
+            "rating": 4.5,
+            "review_count": 480,
+            "price_tier": "Budget / 3-Star",
+            "avg_nightly_usd": 40.0,
+            "description": "Scenic 3-star riverfront hotel offering watersports packages, jet ski rentals, and tranquil mangrove views.",
+            "images": ["/images/bentota.png"]
+        },
+        {
+            "id": "bentota-beach-budget-inn",
+            "source_id": "bentota-beach-budget-inn",
+            "name": "Bentota Beachside Budget Inn",
+            "city": "Bentota",
+            "star_rating": 3,
+            "rating": 4.4,
+            "review_count": 310,
+            "price_tier": "Budget / 3-Star",
+            "avg_nightly_usd": 25.0,
+            "description": "Family-run budget guesthouse 200m from the golden beach, offering friendly hosts and fresh seafood breakfasts.",
+            "images": ["/images/bentota.png"]
         }
     ]
 }
@@ -470,25 +1143,30 @@ def search_travel_database(
     # 1. SEARCH HOTELS COLLECTION
     # ==========================================
     hotel_query = dict(base_filter)
-    if budget_tier:
-        tier_lower = budget_tier.strip().lower()
-        if tier_lower == "budget":
-            hotel_query["$or"] = [
-                {"price_tier": {"$regex": "^Budget$", "$options": "i"}},
-                {"avg_nightly": {"$lt": 40.0}}
-            ]
-        elif tier_lower == "standard":
-            hotel_query["$or"] = [
-                {"price_tier": {"$regex": "^Standard$", "$options": "i"}},
-                {"avg_nightly": {"$gte": 40.0, "$lte": 120.0}}
-            ]
-        elif tier_lower == "luxury":
-            hotel_query["$or"] = [
-                {"price_tier": {"$regex": "^Luxury$", "$options": "i"}},
-                {"avg_nightly": {"$gt": 120.0}}
-            ]
-        else:
-            hotel_query["price_tier"] = {"$regex": f"^{re.escape(budget_tier)}$", "$options": "i"}
+    tier_lower = budget_tier.strip().lower() if budget_tier else None
+
+    if tier_lower in ["budget", "3-star", "3 star"]:
+        hotel_query["$or"] = [
+            {"price_tier": {"$regex": "^Budget$", "$options": "i"}},
+            {"avg_nightly": {"$lt": 50.0}},
+            {"star_rating": {"$lte": 3}}
+        ]
+        # Strictly exclude luxury or 5-star hotels when user suggests budget
+        hotel_query["price_tier"] = {"$not": {"$regex": "luxury|5-star", "$options": "i"}}
+    elif tier_lower in ["luxury", "5-star", "5 star"]:
+        hotel_query["$or"] = [
+            {"price_tier": {"$regex": "Luxury|5-Star", "$options": "i"}},
+            {"avg_nightly": {"$gte": 110.0}},
+            {"star_rating": 5}
+        ]
+    elif tier_lower in ["standard", "4-star", "4 star"]:
+        hotel_query["$or"] = [
+            {"price_tier": {"$regex": "Standard|4-Star", "$options": "i"}},
+            {"avg_nightly": {"$gte": 50.0, "$lte": 110.0}},
+            {"star_rating": 4}
+        ]
+    elif budget_tier:
+        hotel_query["price_tier"] = {"$regex": f"^{re.escape(budget_tier)}$", "$options": "i"}
 
     hotels_cursor = mongo.db["hotels"].find(hotel_query)
     all_hotels = list(hotels_cursor)
@@ -500,6 +1178,19 @@ def search_travel_database(
             if is_city_match(doc, destination):
                 filtered_hotels.append(doc)
                 
+        # 5-Star Fallback Rule: If 5-star was requested but 0 hotels found in DB, fallback to 4-star hotels!
+        if len(filtered_hotels) == 0 and tier_lower in ["luxury", "5-star", "5 star"]:
+            logger.info(f"0 5-Star hotels found for '{destination}'. Falling back to 4-Star hotels as requested.")
+            fallback_4star_query = dict(base_filter)
+            fallback_4star_query["$or"] = [
+                {"price_tier": {"$regex": "Standard|4-Star", "$options": "i"}},
+                {"avg_nightly": {"$gte": 50.0, "$lte": 110.0}},
+                {"star_rating": 4}
+            ]
+            for doc in mongo.db["hotels"].find(fallback_4star_query):
+                if is_city_match(doc, destination):
+                    filtered_hotels.append(doc)
+
         if len(filtered_hotels) < 3:
             logger.info(f"Strict destination match returned {len(filtered_hotels)} hotels; searching broader destination pool.")
             broader_cursor = mongo.db["hotels"].find(base_filter)
@@ -507,6 +1198,11 @@ def search_travel_database(
             for doc in broader_cursor:
                 if str(doc.get("_id")) not in existing_ids:
                     if is_city_match(doc, destination):
+                        # Verify strict budget rule on broader pool
+                        if tier_lower in ["budget", "3-star", "3 star"]:
+                            doc_tier = str(doc.get("price_tier", "")).lower()
+                            if "lux" in doc_tier or "5-star" in doc_tier or (doc.get("avg_nightly") or 0) > 60:
+                                continue
                         filtered_hotels.append(doc)
     else:
         filtered_hotels = all_hotels
@@ -542,6 +1238,7 @@ def search_travel_database(
                 "city": doc.get("city") or destination,
                 "address": doc.get("address"),
                 "price_tier": doc.get("price_tier"),
+                "star_rating": doc.get("star_rating") or (5 if (doc.get("avg_nightly") or 0) >= 115 else 4 if (doc.get("avg_nightly") or 0) >= 50 else 3),
                 "avg_nightly_usd": doc.get("avg_nightly"),
                 "rating": doc.get("rating"),
                 "review_count": doc.get("review_count"),
@@ -557,9 +1254,57 @@ def search_travel_database(
             }
         ))
 
+    # Supplement with curated destination hotels if DB returns fewer than 3-5 hotels
+    dest_key = destination.strip().lower() if destination else ""
+    city_fb_hotels = []
+    for key, fb_hotels in DESTINATION_FALLBACK_HOTELS.items():
+        if key in dest_key or dest_key in key:
+            city_fb_hotels = fb_hotels
+            break
+
+    if city_fb_hotels:
+        existing_names = {item[2]["name"].lower() for item in scored_hotels}
+        # Filter fallback hotels according to the budget policy
+        if tier_lower in ["luxury", "5-star", "5 star"]:
+            matching_fbs = [h for h in city_fb_hotels if h.get("star_rating") == 5]
+            # If 5-star not available, fallback to 4-star!
+            if not matching_fbs:
+                matching_fbs = [h for h in city_fb_hotels if h.get("star_rating") == 4]
+        elif tier_lower in ["budget", "3-star", "3 star"]:
+            # Strict rule: no 5-star hotels if user suggests budget!
+            matching_fbs = [h for h in city_fb_hotels if h.get("star_rating", 3) <= 3 and "5-star" not in h.get("price_tier", "").lower()]
+        elif tier_lower in ["standard", "4-star", "4 star"]:
+            matching_fbs = [h for h in city_fb_hotels if h.get("star_rating") == 4]
+            if not matching_fbs:
+                matching_fbs = city_fb_hotels
+        else:
+            matching_fbs = city_fb_hotels
+
+        for fb in matching_fbs:
+            if fb["name"].lower() not in existing_names and len(scored_hotels) < 5:
+                scored_hotels.append((
+                    0.85,
+                    0.85,
+                    {
+                        "id": fb["id"],
+                        "source_id": fb["source_id"],
+                        "name": fb["name"],
+                        "city": fb["city"],
+                        "price_tier": fb["price_tier"],
+                        "star_rating": fb.get("star_rating", 4),
+                        "avg_nightly_usd": fb["avg_nightly_usd"],
+                        "rating": fb["rating"],
+                        "review_count": fb["review_count"],
+                        "description": fb["description"],
+                        "images": fb["images"],
+                        "similarity_score": 0.85
+                    }
+                ))
+
     # Sort hotels by total score descending
     scored_hotels.sort(key=lambda x: x[0], reverse=True)
-    top_hotels = [item[2] for item in scored_hotels[:min(3, limit)]]
+    # Return minimum 3-5 hotels based on availability
+    top_hotels = [item[2] for item in scored_hotels[:min(5, max(3, limit))]]
 
     # ==========================================
     # 2. SEARCH POI COLLECTION

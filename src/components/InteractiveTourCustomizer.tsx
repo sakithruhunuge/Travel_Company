@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
@@ -28,6 +28,9 @@ import {
   FireOutlined,
   CameraOutlined,
   SendOutlined,
+  SearchOutlined,
+  CloseCircleOutlined,
+  PlusOutlined,
 } from "@ant-design/icons";
 
 import { useToast } from "@/context/ToastContext";
@@ -61,9 +64,56 @@ export interface MapPlaceHotel {
   name: string;
   avg_nightly_usd: number;
   rating?: number;
+  star_rating?: number;
   price_tier?: string;
   description?: string;
   primary_image?: string;
+}
+
+export function getHotelStars(hotel: MapPlaceHotel): number {
+  if (hotel.star_rating && hotel.star_rating >= 1 && hotel.star_rating <= 5) {
+    return hotel.star_rating;
+  }
+  const nameLower = (hotel.name || "").toLowerCase();
+  const tierLower = (hotel.price_tier || "").toLowerCase();
+  const rate = hotel.avg_nightly_usd || 0;
+
+  if (
+    tierLower.includes("5-star") ||
+    tierLower.includes("5 star") ||
+    tierLower.includes("luxury") ||
+    nameLower.includes("resort & spa") ||
+    nameLower.includes("amangalla") ||
+    nameLower.includes("chena huts") ||
+    nameLower.includes("heritance") ||
+    nameLower.includes("cinnamon grand") ||
+    nameLower.includes("golden crown") ||
+    nameLower.includes("kingsbury") ||
+    nameLower.includes("taj bentota") ||
+    nameLower.includes("98 acres") ||
+    nameLower.includes("water garden") ||
+    rate >= 120
+  ) {
+    return 5;
+  }
+
+  if (
+    tierLower.includes("4-star") ||
+    tierLower.includes("4 star") ||
+    tierLower.includes("heritage") ||
+    tierLower.includes("premium") ||
+    nameLower.includes("grand hotel") ||
+    nameLower.includes("earl's regency") ||
+    nameLower.includes("aliya resort") ||
+    nameLower.includes("centara") ||
+    nameLower.includes("fort printers") ||
+    nameLower.includes("thilanka") ||
+    (rate >= 50 && rate < 120)
+  ) {
+    return 4;
+  }
+
+  return 3;
 }
 
 export interface MapPlacePoi {
@@ -151,6 +201,612 @@ const SPOTLIGHTS = [
 ];
 
 const QUICK_CHIPS = ["beach", "ancient", "wildlife", "hill country", "quiet", "food"];
+
+const POPULAR_STARTING_LOCATIONS = [
+  { id: "Colombo", name: "Colombo", label: "Colombo" },
+  { id: "Negombo", name: "Negombo", label: "Negombo (Airport / BIA)" },
+  { id: "Kandy", name: "Kandy", label: "Kandy" },
+  { id: "Galle", name: "Galle", label: "Galle" },
+  { id: "Bentota", name: "Bentota", label: "Bentota" },
+];
+
+/* Destination aliases mapping (e.g. nuwaraeliya -> Nuwara Eliya, etc.) */
+const DESTINATION_ALIASES_MAP: Record<string, string> = {
+  "nuwara eliya": "Nuwara Eliya",
+  "nuwaraeliya": "Nuwara Eliya",
+  "nuwara-eliya": "Nuwara Eliya",
+  "little england": "Nuwara Eliya",
+  "nanu oya": "Nuwara Eliya",
+  "gregory lake": "Nuwara Eliya",
+  "pedro": "Nuwara Eliya",
+  "kandy": "Kandy",
+  "temple of the tooth": "Kandy",
+  "dalada maligawa": "Kandy",
+  "peradeniya": "Kandy",
+  "sigiriya": "Sigiriya",
+  "lion rock": "Sigiriya",
+  "pidurangala": "Sigiriya",
+  "dambulla": "Dambulla",
+  "cave temple": "Dambulla",
+  "ella": "Ella",
+  "nine arch": "Ella",
+  "galle": "Galle",
+  "galle fort": "Galle",
+  "bentota": "Bentota",
+  "colombo": "Colombo",
+  "negombo": "Negombo",
+  "mirissa": "Mirissa",
+  "whale watching": "Mirissa",
+  "yala": "Yala",
+  "leopard": "Yala",
+  "safari": "Yala",
+  "udawalawe": "Udawalawe",
+  "horton plains": "Horton Plains",
+  "hortonplains": "Horton Plains",
+  "world's end": "Horton Plains",
+  "worlds end": "Horton Plains",
+  "knuckles": "Knuckles Range",
+  "knuckles range": "Knuckles Range",
+  "trincomalee": "Trincomalee",
+  "jaffna": "Jaffna",
+  "arugam bay": "Arugam Bay",
+  "arugambay": "Arugam Bay",
+  "hikkaduwa": "Hikkaduwa",
+  "weligama": "Weligama",
+  "unawatuna": "Unawatuna",
+  "tangalle": "Tangalle",
+  "anuradhapura": "Anuradhapura",
+  "polonnaruwa": "Polonnaruwa",
+  "pasikuda": "Pasikuda",
+  "pinnawala": "Pinnawala",
+  "wilpattu": "Wilpattu",
+  "sinharaja": "Sinharaja",
+  "kitulgala": "Kitulgala",
+  "badulla": "Badulla",
+  "haputale": "Haputale",
+  "ratnapura": "Ratnapura",
+  "adam's peak": "Ratnapura",
+  "sri pada": "Ratnapura",
+  "kalpitiya": "Kalpitiya",
+  "batticaloa": "Batticaloa",
+  "mannar": "Mannar",
+  "beruwala": "Beruwala",
+  "minneriya": "Minneriya",
+  "kaudulla": "Kaudulla",
+  "tissamaharama": "Tissamaharama",
+};
+
+export function detectLocationsInText(text: string): string[] {
+  if (!text || typeof text !== "string") return [];
+  const lower = text.toLowerCase();
+  const matches: { id: string; index: number }[] = [];
+
+  Object.entries(DESTINATION_ALIASES_MAP).forEach(([alias, destId]) => {
+    const regex = new RegExp(`(^|[^a-z0-9])${alias}([^a-z0-9]|$)`, "i");
+    const m = lower.search(regex);
+    if (m !== -1) {
+      matches.push({ id: destId, index: m });
+    }
+  });
+
+  LOCATIONS.forEach((loc) => {
+    const regex = new RegExp(`(^|[^a-z0-9])${loc.name.toLowerCase()}([^a-z0-9]|$)`, "i");
+    const m = lower.search(regex);
+    if (m !== -1) {
+      matches.push({ id: loc.id, index: m });
+    }
+  });
+
+  matches.sort((a, b) => a.index - b.index);
+  const unique: string[] = [];
+  matches.forEach((item) => {
+    if (!unique.includes(item.id)) unique.push(item.id);
+  });
+  return unique;
+}
+
+const DESTINATION_VIBE_CHIPS: Record<string, string[]> = {
+  "Nuwara Eliya": [
+    "Gregory Lake Boating",
+    "Pedro Tea Estate",
+    "Horton Plains & World's End",
+    "High Tea at Grand Hotel",
+    "Strawberry Farms",
+    "Victoria Park",
+    "Ramboda Falls",
+    "Cool Highland Climate",
+  ],
+  "Kandy": [
+    "Temple of the Sacred Tooth",
+    "Peradeniya Botanical Gardens",
+    "Kandy Lake Promenade",
+    "Cultural Kandyan Dance",
+    "Bahirawakanda Buddha",
+    "Ceylon Tea Museum",
+  ],
+  "Ella": [
+    "Nine Arch Bridge Rail Trek",
+    "Little Adam's Peak Hike",
+    "Ravana Waterfall",
+    "Ella Rock Panoramic Trek",
+    "Flying Ravana Zip-line",
+  ],
+  "Sigiriya": [
+    "Lion Rock Ancient Citadel",
+    "Pidurangala Rock Sunrise",
+    "Royal Water Gardens",
+    "Minneriya Elephant Gathering",
+  ],
+  "Galle": [
+    "Historic Dutch Fort Ramparts",
+    "Unawatuna Golden Bay",
+    "Lighthouse Sunset Stroll",
+    "Boutique Colonial Cafes",
+  ],
+  "Bentota": [
+    "Madu River Boat Safari",
+    "Bentota Golden Beach",
+    "Jet-Ski & Water Sports",
+    "Turtle Conservation Center",
+  ],
+  "Yala": [
+    "Leopard Jeep Safari",
+    "Sithulpawwa Ancient Rock Temple",
+    "Bundala Bird Sanctuary",
+  ],
+  "Mirissa": [
+    "Blue Whale Watching Dawn Cruise",
+    "Coconut Tree Hill",
+    "Secret Beach Sunset",
+  ],
+  "Horton Plains": [
+    "World's End Sheer Cliff Drop",
+    "Baker's Falls Trek",
+    "Cloud Forest Plateau",
+  ],
+  "Trincomalee": [
+    "Pristine Nilaveli Beach",
+    "Pigeon Island Snorkeling",
+    "Koneswaram Temple Cliff",
+  ],
+  "Jaffna": [
+    "Nallur Kandaswamy Kovil",
+    "Jaffna Dutch Fort",
+    "Casuarina Beach & Crab Curry",
+  ],
+};
+
+export function getDestinationFallbackPlaces(city: string): DestinationPlaces {
+  const cityLower = city.toLowerCase();
+
+  if (cityLower.includes("nuwara") || cityLower.includes("little england")) {
+    return {
+      hotels: [
+        {
+          id: "heritance-tea-factory",
+          name: "Heritance Tea Factory Resort & Spa",
+          avg_nightly_usd: 145,
+          star_rating: 5,
+          rating: 4.9,
+          price_tier: "5-Star Luxury",
+          description: "5-star luxury heritage resort converted from an authentic 19th-century colonial tea factory perched at 2,000m altitude.",
+          primary_image: "/images/tea.png",
+        },
+        {
+          id: "grand-hotel-nuwara-eliya",
+          name: "The Grand Hotel Nuwara Eliya & Heritage Colonial Estate",
+          avg_nightly_usd: 85,
+          star_rating: 4,
+          rating: 4.8,
+          price_tier: "4-Star Heritage",
+          description: "Historic 4-star colonial heritage hotel set amidst award-winning manicured gardens, high tea terraces, and cool mountain air.",
+          primary_image: "/images/tea.png",
+        },
+        {
+          id: "araliya-green-hills",
+          name: "Araliya Green Hills Hotel",
+          avg_nightly_usd: 75,
+          star_rating: 4,
+          rating: 4.7,
+          price_tier: "4-Star Premium",
+          description: "Modern 4-star hotel in the heart of town with heated indoor pool, wellness spa, and panoramic highland views.",
+          primary_image: "/images/tea.png",
+        },
+        {
+          id: "alpine-hotel-gregory",
+          name: "Alpine Hotel & Lake Gregory Inn",
+          avg_nightly_usd: 35,
+          star_rating: 3,
+          rating: 4.5,
+          price_tier: "Budget / 3-Star",
+          description: "Charming budget lakeside hotel within walking distance of Lake Gregory, boat rentals, and strawberry cafes.",
+          primary_image: "/images/tea.png",
+        },
+        {
+          id: "little-england-budget-cottages",
+          name: "Little England Cottages & Backpacker Hostel",
+          avg_nightly_usd: 24,
+          star_rating: 3,
+          rating: 4.4,
+          price_tier: "Budget / 3-Star",
+          description: "Cozy budget guesthouse offering warm mountain hospitality, hot water, fireplace lounge, and backpacker rates.",
+          primary_image: "/images/tea.png",
+        },
+      ],
+      poi: [
+        {
+          id: "pedro-tea-estate",
+          name: "Pedro Tea Estate & Ceylon Tea Factory",
+          ticket_price_usd: 5,
+          rating: 4.8,
+          description: "Tour misty high-altitude tea plantations, observe authentic Ceylon black tea processing, and taste freshly plucked brews.",
+          primary_image: "/images/tea.png",
+        },
+        {
+          id: "lake-gregory-leisure-park",
+          name: "Lake Gregory Promenade & Leisure Park",
+          ticket_price_usd: 3,
+          rating: 4.7,
+          description: "Scenic mountain lake offering swan pedal boats, jet-skis, pony rides, and waterfront dining surrounded by mountain mist.",
+          primary_image: "/images/tea.png",
+        },
+        {
+          id: "horton-plains-worlds-end",
+          name: "Horton Plains National Park & World's End",
+          ticket_price_usd: 30,
+          rating: 4.9,
+          description: "UNESCO cloud forest plateau trek with the sheer 880-meter World's End drop and Baker's Falls.",
+          primary_image: "/images/nine_arch.png",
+        },
+      ],
+    };
+  }
+
+  if (cityLower.includes("kandy")) {
+    return {
+      hotels: [
+        {
+          id: "golden-crown-kandy",
+          name: "The Golden Crown Hotel Kandy",
+          avg_nightly_usd: 130,
+          star_rating: 5,
+          rating: 4.9,
+          price_tier: "5-Star Luxury",
+          description: "Lavish 5-star resort boasting infinity mountain pools, fine dining, and panoramic vistas across Ampitiya hills.",
+          primary_image: "/images/kandy.png",
+        },
+        {
+          id: "earls-regency-kandy",
+          name: "Earl's Regency Kandy Luxury Resort",
+          avg_nightly_usd: 110,
+          star_rating: 5,
+          rating: 4.8,
+          price_tier: "5-Star Luxury",
+          description: "Overlooking Mahaweli River with scenic mountain loops and traditional Kandyan hospitality.",
+          primary_image: "/images/kandy.png",
+        },
+        {
+          id: "grand-kandyan-hotel",
+          name: "The Grand Kandyan Hotel",
+          avg_nightly_usd: 70,
+          star_rating: 4,
+          rating: 4.7,
+          price_tier: "4-Star Premium",
+          description: "Elegant 4-star city stay with rooftop views of Kandy Lake and proximity to the Temple of the Tooth.",
+          primary_image: "/images/kandy.png",
+        },
+        {
+          id: "thilanka-hotel-kandy",
+          name: "Hotel Thilanka Kandy Lakeview",
+          avg_nightly_usd: 55,
+          star_rating: 4,
+          rating: 4.6,
+          price_tier: "4-Star Standard",
+          description: "Tranquil 4-star hotel overlooking Udawatta Kele nature sanctuary and Kandy Lake.",
+          primary_image: "/images/kandy.png",
+        },
+        {
+          id: "kandy-city-budget-inn",
+          name: "Kandy City Stay & Riverside Budget Inn",
+          avg_nightly_usd: 28,
+          star_rating: 3,
+          rating: 4.5,
+          price_tier: "Budget / 3-Star",
+          description: "Clean, highly rated budget hotel offering air conditioning, Ceylon breakfast, and easy city access.",
+          primary_image: "/images/kandy.png",
+        },
+      ],
+      poi: [
+        {
+          id: "temple-of-the-tooth-kandy",
+          name: "Temple of the Sacred Tooth Relic (Sri Dalada Maligawa)",
+          ticket_price_usd: 15,
+          rating: 4.9,
+          description: "World-renowned UNESCO Buddhist temple enshrining the sacred tooth relic of Lord Buddha.",
+          primary_image: "/images/kandy.png",
+        },
+        {
+          id: "peradeniya-botanical-gardens",
+          name: "Royal Botanical Gardens Peradeniya",
+          ticket_price_usd: 10,
+          rating: 4.8,
+          description: "Famous for orchids, palm-lined avenues, and giant bamboo groves along the Mahaweli River.",
+          primary_image: "/images/kandy.png",
+        },
+      ],
+    };
+  }
+
+  if (cityLower.includes("colombo")) {
+    return {
+      hotels: [
+        {
+          id: "the-kingsbury-colombo",
+          name: "The Kingsbury Colombo & Ocean Suites",
+          avg_nightly_usd: 150,
+          star_rating: 5,
+          rating: 4.9,
+          price_tier: "5-Star Luxury",
+          description: "Iconic 5-star luxury oceanfront hotel on Marine Drive with rooftop sky bar and harbour views.",
+          primary_image: "/images/colombo.png",
+        },
+        {
+          id: "cinnamon-grand-colombo",
+          name: "Cinnamon Grand Colombo",
+          avg_nightly_usd: 135,
+          star_rating: 5,
+          rating: 4.8,
+          price_tier: "5-Star Luxury",
+          description: "Grand 5-star city resort offering 14 specialized restaurants, 2 outdoor swimming pools, and shopping arcade.",
+          primary_image: "/images/colombo.png",
+        },
+        {
+          id: "fairway-colombo",
+          name: "Fairway Colombo Fort",
+          avg_nightly_usd: 65,
+          star_rating: 4,
+          rating: 4.7,
+          price_tier: "4-Star Premium",
+          description: "Trendy 4-star hotel in Colombo's historic Dutch Hospital precinct, surrounded by boutique cafes and nightlife.",
+          primary_image: "/images/colombo.png",
+        },
+        {
+          id: "cinnamon-red-colombo",
+          name: "Cinnamon Red Colombo Lean Luxury",
+          avg_nightly_usd: 48,
+          star_rating: 3,
+          rating: 4.6,
+          price_tier: "Budget / 3-Star",
+          description: "Modern 3-star design hotel featuring rooftop infinity pool, skyline lounge, and smart rooms.",
+          primary_image: "/images/colombo.png",
+        },
+        {
+          id: "city-rest-fort-colombo",
+          name: "City Rest Fort Backpacker Stay",
+          avg_nightly_usd: 22,
+          star_rating: 3,
+          rating: 4.4,
+          price_tier: "Budget / 3-Star",
+          description: "Convenient budget hotel in Central Colombo Fort near the railway station with fast Wi-Fi.",
+          primary_image: "/images/colombo.png",
+        },
+      ],
+      poi: [
+        {
+          id: "colombo-national-museum",
+          name: "National Museum of Colombo & Viharamahadevi Park",
+          ticket_price_usd: 8,
+          rating: 4.7,
+          description: "Sri Lanka's premier museum showcasing ancient royal regalia, bronze statues, and palm gardens.",
+          primary_image: "/images/colombo.png",
+        },
+      ],
+    };
+  }
+
+  if (cityLower.includes("galle")) {
+    return {
+      hotels: [
+        {
+          id: "amangalla-galle-fort",
+          name: "Amangalla Historic Luxury Resort",
+          avg_nightly_usd: 210,
+          star_rating: 5,
+          rating: 5.0,
+          price_tier: "5-Star Luxury",
+          description: "Ultra-exclusive 5-star colonial sanctuary inside the UNESCO Galle Fort ramparts dating back to 1684.",
+          primary_image: "/images/galle.png",
+        },
+        {
+          id: "le-grand-galle",
+          name: "Le Grand Galle by Asia Leisure",
+          avg_nightly_usd: 140,
+          star_rating: 5,
+          rating: 4.8,
+          price_tier: "5-Star Luxury",
+          description: "5-star luxury seaside resort with unobstructed views of the UNESCO World Heritage Galle Fort and ocean waves.",
+          primary_image: "/images/galle.png",
+        },
+        {
+          id: "the-fort-printers-galle",
+          name: "The Fort Printers Heritage Hotel",
+          avg_nightly_usd: 85,
+          star_rating: 4,
+          rating: 4.7,
+          price_tier: "4-Star Heritage",
+          description: "Restored 18th-century 4-star boutique mansion with private courtyard pool and acclaimed dining.",
+          primary_image: "/images/galle.png",
+        },
+        {
+          id: "closenberg-hotel-galle",
+          name: "Closenberg Hotel & Bay View",
+          avg_nightly_usd: 42,
+          star_rating: 3,
+          rating: 4.6,
+          price_tier: "Budget / 3-Star",
+          description: "Historic colonial peninsula stay with panoramic views of Galle Bay, harbor breezes, and vintage rooms.",
+          primary_image: "/images/galle.png",
+        },
+        {
+          id: "galle-fort-budget-haven",
+          name: "Galle Fort Budget Haven & Hostel",
+          avg_nightly_usd: 24,
+          star_rating: 3,
+          rating: 4.3,
+          price_tier: "Budget / 3-Star",
+          description: "Affordable budget guesthouse within walking distance of Galle Lighthouse, rampart sunsets, and cafes.",
+          primary_image: "/images/galle.png",
+        },
+      ],
+      poi: [
+        {
+          id: "galle-dutch-fort",
+          name: "Historic Galle Dutch Fort & Lighthouse",
+          ticket_price_usd: 0,
+          rating: 4.9,
+          description: "UNESCO World Heritage Site featuring 16th-century Portuguese and Dutch colonial ramparts.",
+          primary_image: "/images/galle.png",
+        },
+      ],
+    };
+  }
+
+  if (cityLower.includes("ella")) {
+    return {
+      hotels: [
+        {
+          id: "98-acres-resort-ella",
+          name: "98 Acres Resort & Spa Ella",
+          avg_nightly_usd: 160,
+          star_rating: 5,
+          rating: 4.9,
+          price_tier: "5-Star Luxury",
+          description: "World-famous 5-star eco-luxury resort built on a 98-acre scenic tea estate facing Ella Rock.",
+          primary_image: "/ella.png",
+        },
+        {
+          id: "ella-mountain-heaven",
+          name: "Ella Mountain Heaven Resort",
+          avg_nightly_usd: 75,
+          star_rating: 4,
+          rating: 4.7,
+          price_tier: "4-Star Premium",
+          description: "Spectacular 4-star mountain lodge featuring private cliffside balconies overlooking the famous Ella Gap.",
+          primary_image: "/ella.png",
+        },
+        {
+          id: "zion-view-ella",
+          name: "Zion View Mountain Experience",
+          avg_nightly_usd: 60,
+          star_rating: 4,
+          rating: 4.6,
+          price_tier: "4-Star Standard",
+          description: "Relaxing 4-star mountain retreat with yoga decks, infinity views, and hearty Sri Lankan breakfast curries.",
+          primary_image: "/ella.png",
+        },
+        {
+          id: "ella-ecolodge",
+          name: "Ella Ecolodge & Nature Stay",
+          avg_nightly_usd: 32,
+          star_rating: 3,
+          rating: 4.5,
+          price_tier: "Budget / 3-Star",
+          description: "Treehouse-style budget accommodation surrounded by birds and jungle flora near Ella train station.",
+          primary_image: "/ella.png",
+        },
+        {
+          id: "little-adams-hostel-ella",
+          name: "Little Adam's Backpacker Hostel & Cafe",
+          avg_nightly_usd: 18,
+          star_rating: 3,
+          rating: 4.4,
+          price_tier: "Budget / 3-Star",
+          description: "Fun, welcoming budget hostel popular with hikers, solo travelers, and backpackers exploring Nine Arch Bridge.",
+          primary_image: "/ella.png",
+        },
+      ],
+      poi: [
+        {
+          id: "demodara-nine-arch-bridge",
+          name: "Demodara Nine Arch Bridge & Little Adam's Peak",
+          ticket_price_usd: 0,
+          rating: 4.9,
+          description: "Colonial stone viaduct bridge surrounded by green tea plantations and cloud forests.",
+          primary_image: "/ella.png",
+        },
+      ],
+    };
+  }
+
+  const loc = LOCATIONS.find((l) => l.id.toLowerCase() === cityLower || l.name.toLowerCase() === cityLower);
+  const fallbackImg = loc?.img || "/images/colombo.png";
+  const cat = loc?.category || "Heritage";
+
+  return {
+    hotels: [
+      {
+        id: `${cityLower.replace(/\s+/g, "-")}-luxury-resort`,
+        name: `${city} Grand Luxury Resort & Spa`,
+        avg_nightly_usd: 135,
+        star_rating: 5,
+        rating: 4.9,
+        price_tier: "5-Star Luxury",
+        description: `Premier 5-star luxury and boutique accommodation in ${city} with pool and fine dining.`,
+        primary_image: fallbackImg,
+      },
+      {
+        id: `${cityLower.replace(/\s+/g, "-")}-heritage-hotel`,
+        name: `${city} Heritage Boutique Hotel`,
+        avg_nightly_usd: 70,
+        star_rating: 4,
+        rating: 4.8,
+        price_tier: "4-Star Premium",
+        description: `Charming 4-star boutique hotel celebrating the rich culture and hospitality of ${city}.`,
+        primary_image: fallbackImg,
+      },
+      {
+        id: `${cityLower.replace(/\s+/g, "-")}-city-inn`,
+        name: `${city} City Standard Hotel`,
+        avg_nightly_usd: 55,
+        star_rating: 4,
+        rating: 4.6,
+        price_tier: "4-Star Standard",
+        description: `Comfortable 4-star stay offering contemporary rooms and easy transportation access.`,
+        primary_image: fallbackImg,
+      },
+      {
+        id: `${cityLower.replace(/\s+/g, "-")}-budget-inn`,
+        name: `${city} Central Budget Inn`,
+        avg_nightly_usd: 30,
+        star_rating: 3,
+        rating: 4.5,
+        price_tier: "Budget / 3-Star",
+        description: `Cozy, well-kept budget inn offering air-conditioned rooms and authentic Ceylon breakfast.`,
+        primary_image: fallbackImg,
+      },
+      {
+        id: `${cityLower.replace(/\s+/g, "-")}-backpacker-lodge`,
+        name: `${city} Backpacker Lodge & Guest Inn`,
+        avg_nightly_usd: 20,
+        star_rating: 3,
+        rating: 4.3,
+        price_tier: "Budget / 3-Star",
+        description: `Affordable traveler lodge in ${city} ideal for budget explorers and backpackers.`,
+        primary_image: fallbackImg,
+      },
+    ],
+    poi: [
+      {
+        id: `${cityLower.replace(/\s+/g, "-")}-attraction`,
+        name: `Highlights of ${city} & Cultural Exploration`,
+        ticket_price_usd: 10,
+        rating: 4.9,
+        description: `Famous attraction and scenic destination in ${city} celebrating authentic Sri Lankan ${cat} wonders.`,
+        primary_image: fallbackImg,
+      },
+    ],
+  };
+}
 
 const SEASONS = [
   { id: "off-peak", name: "Off-Peak", window: "May – Jun · Oct – Nov", mult: SEASON_MULTIPLIERS["off-peak"] },
@@ -459,6 +1115,7 @@ export default function InteractiveTourCustomizer() {
   const [todayStr, setTodayStr] = useState<string>("");
   const [aiStartDate, setAiStartDate] = useState<string>("");
   const [aiEndDate, setAiEndDate] = useState<string>("");
+  const [aiStartLocation, setAiStartLocation] = useState<string>("Colombo");
 
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
@@ -469,6 +1126,41 @@ export default function InteractiveTourCustomizer() {
   }, []);
   const [aiDuration, setAiDuration] = useState<number>(5);
   const [aiKeywords, setAiKeywords] = useState<string>("ancient rock fort, quiet beaches, wildlife safari");
+  const [locationSearchQuery, setLocationSearchQuery] = useState<string>("");
+  const [activeSuggestionDest, setActiveSuggestionDest] = useState<string | null>(null);
+  const [hotelBudgetFilter, setHotelBudgetFilter] = useState<"all" | "5-star" | "4-star" | "budget">("all");
+
+  const detectedDestinations = useMemo(() => {
+    return detectLocationsInText(aiKeywords);
+  }, [aiKeywords]);
+
+  useEffect(() => {
+    if (detectedDestinations.length > 0) {
+      if (!activeSuggestionDest || !detectedDestinations.includes(activeSuggestionDest)) {
+        setActiveSuggestionDest(detectedDestinations[detectedDestinations.length - 1]);
+      }
+    }
+  }, [detectedDestinations, activeSuggestionDest]);
+
+  const activeSuggestionLocation = useMemo(() => {
+    if (!activeSuggestionDest) return null;
+    return LOCATIONS.find(
+      (loc) => loc.id.toLowerCase() === activeSuggestionDest.toLowerCase() || loc.name.toLowerCase() === activeSuggestionDest.toLowerCase()
+    ) || null;
+  }, [activeSuggestionDest]);
+
+  const filteredSearchLocations = useMemo(() => {
+    const q = locationSearchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return LOCATIONS.filter(
+      (loc) =>
+        loc.name.toLowerCase().includes(q) ||
+        loc.id.toLowerCase().includes(q) ||
+        loc.description.toLowerCase().includes(q) ||
+        (loc.category && loc.category.toLowerCase().includes(q))
+    ).slice(0, 6);
+  }, [locationSearchQuery]);
+
   const [isGeneratingAI, setIsGeneratingAI] = useState<boolean>(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiItinerary, setAiItinerary] = useState<string | null>(null);
@@ -503,8 +1195,10 @@ export default function InteractiveTourCustomizer() {
         if (parsed.specialRequests) setSpecialRequests(parsed.specialRequests);
         if (parsed.selectedTour) setSelectedTour(parsed.selectedTour);
         if (parsed.aiItinerary) setAiItinerary(parsed.aiItinerary);
+        if (parsed.aiStartLocation) setAiStartLocation(parsed.aiStartLocation);
         if (parsed.suggestedPlacesByDestination) setSuggestedPlacesByDestination(parsed.suggestedPlacesByDestination);
         if (parsed.selectedPlaceIds) setSelectedPlaceIds(parsed.selectedPlaceIds);
+        if (parsed.hotelBudgetFilter) setHotelBudgetFilter(parsed.hotelBudgetFilter);
         sessionStorage.removeItem("tour_customizer_draft");
         addToast("success", t("customizedTourSaved"));
       }
@@ -859,10 +1553,34 @@ export default function InteractiveTourCustomizer() {
   const handleGenerateAIPackage = async () => {
     setIsGeneratingAI(true);
     setAiError(null);
+    const cleanStart = aiStartLocation.trim();
+    const promptWithOrigin = cleanStart
+      ? `Trip begins in ${cleanStart}. ${aiKeywords}`
+      : aiKeywords;
+
+    const chosenBudgetTier =
+      hotelBudgetFilter === "5-star"
+        ? "Luxury"
+        : hotelBudgetFilter === "budget"
+        ? "Budget"
+        : hotelBudgetFilter === "4-star"
+        ? "Standard"
+        : inputs.hotelClass === "luxury" || inputs.hotelClass === "premium-boutique"
+        ? "Luxury"
+        : inputs.hotelClass === "budget"
+        ? "Budget"
+        : "Standard";
+
     const payload = {
-      prompt: aiKeywords,
+      prompt: promptWithOrigin,
+      starting_location: cleanStart || "Colombo",
+      budget_tier: chosenBudgetTier,
       duration_days: aiDuration,
-      preferred_attributes: aiKeywords.split(",").map((s) => s.trim()).filter(Boolean),
+      preferred_attributes: [
+        ...(cleanStart ? [`start_location: ${cleanStart}`] : []),
+        ...(hotelBudgetFilter !== "all" ? [`hotel_budget_filter: ${hotelBudgetFilter}`] : []),
+        ...aiKeywords.split(",").map((s) => s.trim()).filter(Boolean),
+      ],
       selected_place_ids: selectedPlaceIds,
       date_range: { start: aiStartDate, end: aiEndDate },
     };
@@ -876,21 +1594,62 @@ export default function InteractiveTourCustomizer() {
       if (data.status === "success" && data.itinerary_markdown) {
         setAiItinerary(data.itinerary_markdown);
         setSelectedTour("ai-suggested");
-        if (data.suggested_places_by_destination) setSuggestedPlacesByDestination(data.suggested_places_by_destination);
-
         const returnedCities: string[] = data.destinations || [];
         if (returnedCities.length === 0 && data.search_results_by_destination) {
           Object.keys(data.search_results_by_destination).forEach((c) => {
             if (!returnedCities.includes(c)) returnedCities.push(c);
           });
         }
-        const validMappedDests = returnedCities.filter((c) => LOCATIONS.some((loc) => loc.id === c));
+        let validMappedDests = returnedCities.filter((c) => LOCATIONS.some((loc) => loc.id === c));
+        
+        // Also ensure all destinations directly detected in the user prompt are included
+        const promptDests = detectLocationsInText(promptWithOrigin);
+        promptDests.forEach((pd) => {
+          if (!validMappedDests.includes(pd) && LOCATIONS.some((loc) => loc.id === pd)) {
+            validMappedDests.push(pd);
+          }
+        });
+
         if (returnedCities.length > validMappedDests.length) {
           addToast("info", "Some AI picks aren't on the interactive map yet, but are included in your itinerary text.");
         }
-        const finalDests = validMappedDests.length > 0 ? validMappedDests : ["Colombo", "Kandy"];
-        const budgetTier = data.intake_params?.budget_tier || "Standard";
-        const mappedHotelClass = budgetTier === "Luxury" ? "luxury" : budgetTier === "Budget" ? "budget" : "standard";
+        if (validMappedDests.length === 0) {
+          validMappedDests = ["Colombo", "Kandy"];
+        }
+
+        // Ensure selected trip starting location is the first destination if recognized
+        const startLocMatch = LOCATIONS.find(
+          (loc) =>
+            loc.id.toLowerCase() === cleanStart.toLowerCase() ||
+            loc.name.toLowerCase() === cleanStart.toLowerCase()
+        );
+        if (startLocMatch) {
+          validMappedDests = [startLocMatch.id, ...validMappedDests.filter((d) => d !== startLocMatch.id)];
+        }
+
+        const finalDests = validMappedDests;
+
+        // Ensure every destination in finalDests has rich hotels and POIs
+        const mergedPlaces: Record<string, DestinationPlaces> = {
+          ...(data.search_results_by_destination || {}),
+          ...(data.suggested_places_by_destination || {}),
+        };
+
+        finalDests.forEach((city) => {
+          if (!mergedPlaces[city] || (!mergedPlaces[city].hotels?.length && !mergedPlaces[city].poi?.length)) {
+            mergedPlaces[city] = getDestinationFallbackPlaces(city);
+          }
+        });
+
+        setSuggestedPlacesByDestination(mergedPlaces);
+
+        const budgetTier = data.intake_params?.budget_tier || chosenBudgetTier;
+        const mappedHotelClass =
+          hotelBudgetFilter === "5-star" || budgetTier === "Luxury"
+            ? "luxury"
+            : hotelBudgetFilter === "budget" || budgetTier === "Budget"
+            ? "budget"
+            : "standard";
 
         setInputs((prev) => ({ ...prev, duration: data.intake_params?.duration_days || aiDuration, destinations: finalDests, hotelClass: mappedHotelClass }));
         if (aiStartDate) setPreferredStartDate(aiStartDate);
@@ -922,7 +1681,7 @@ export default function InteractiveTourCustomizer() {
       return;
     }
     if (sessionStatus !== "authenticated") {
-      const draft = { inputs, preferredStartDate, specialRequests, selectedTour, aiItinerary, suggestedPlacesByDestination, selectedPlaceIds };
+      const draft = { inputs, preferredStartDate, specialRequests, selectedTour, aiItinerary, suggestedPlacesByDestination, selectedPlaceIds, aiStartLocation, hotelBudgetFilter };
       sessionStorage.setItem("tour_customizer_draft", JSON.stringify(draft));
       addToast("info", t("redirectLogin"));
       signIn(undefined, { callbackUrl: window.location.href });
@@ -939,9 +1698,11 @@ export default function InteractiveTourCustomizer() {
         pricingInputs: inputs,
         submittedTotal: pricing.totalPrice,
         aiItineraryMarkdown: aiItinerary,
-        aiVibeQuery: aiKeywords,
+        aiVibeQuery: `[Starting Point: ${aiStartLocation}] ${aiKeywords}`,
         source: selectedTour === "ai-suggested" ? "ai-suggested" : "manual",
-        specialRequests,
+        specialRequests: specialRequests
+          ? `Trip Starting / Pickup Location: ${aiStartLocation}\n${specialRequests}`
+          : `Trip Starting / Pickup Location: ${aiStartLocation}`,
       };
       const res = await fetch("/api/travel-request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!res.ok) {
@@ -1311,9 +2072,305 @@ export default function InteractiveTourCustomizer() {
                       </div>
                     </div>
 
+                    {/* Trip Starting Location */}
+                    <div className="relative mt-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <label className="itc-label flex items-center gap-1.5">
+                          <EnvironmentOutlined className="text-[#FF8B50]" />
+                          {t("startingLocationLabel")}
+                        </label>
+                        <span className="text-[10px] font-bold text-[#8A8577]">
+                          Arrival / Pickup City
+                        </span>
+                      </div>
+                      <div className="relative mt-1.5">
+                        <input
+                          type="text"
+                          value={aiStartLocation}
+                          onChange={(e) => setAiStartLocation(e.target.value)}
+                          placeholder={t("startingLocationPlaceholder")}
+                          list="sri-lanka-starting-locations"
+                          className="itc-input !pl-10 !pr-4"
+                        />
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-[#FF8B50] pointer-events-none">
+                          <CarOutlined />
+                        </span>
+                        <datalist id="sri-lanka-starting-locations">
+                          <option value="Colombo">Colombo (Commercial Capital / City Hotels)</option>
+                          <option value="Negombo">Negombo (Bandaranaike Int'l Airport - BIA / CMB)</option>
+                          <option value="Kandy">Kandy (Hill Capital & Temple City)</option>
+                          <option value="Galle">Galle (Southern Coast & Historic Fort)</option>
+                          <option value="Bentota">Bentota (South-West Coastal Beach)</option>
+                          <option value="Hambantota">Hambantota (Mattala Int'l Airport - HRI / South)</option>
+                          <option value="Sigiriya">Sigiriya (Cultural Triangle)</option>
+                          <option value="Ella">Ella (Hill Country)</option>
+                          <option value="Trincomalee">Trincomalee (East Coast)</option>
+                          <option value="Jaffna">Jaffna (Northern Peninsula)</option>
+                        </datalist>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+                        <span className="text-[9px] font-black text-[#B5AC9A] uppercase tracking-[0.18em]">
+                          {t("popularStartingPoints")}
+                        </span>
+                        {POPULAR_STARTING_LOCATIONS.map((loc) => {
+                          const isActive =
+                            aiStartLocation.trim().toLowerCase() === loc.name.toLowerCase() ||
+                            aiStartLocation.trim().toLowerCase() === loc.id.toLowerCase();
+                          return (
+                            <motion.button
+                              key={loc.id}
+                              whileHover={{ y: -1 }}
+                              whileTap={{ scale: 0.95 }}
+                              type="button"
+                              onClick={() => setAiStartLocation(loc.name)}
+                              className={`px-3 py-1 text-[10px] font-bold rounded-full transition border ${
+                                isActive
+                                  ? "bg-gradient-to-r from-[#FF8B50] to-[#FF6B2C] text-white border-transparent shadow-sm shadow-[#FF8B50]/30"
+                                  : "bg-white hover:bg-[#FFF1E9] border-[#F0E7D8] hover:border-[#FFD9C4] text-[#6E6759] hover:text-[#E05A1A]"
+                              }`}
+                            >
+                              📍 {loc.label}
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Sri Lanka Location Explorer & Search */}
+                    <div className="relative mt-4">
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <label className="itc-label flex items-center gap-1.5">
+                          <CompassOutlined className="text-[#25A5FE]" />
+                          Search Any Location in Sri Lanka
+                        </label>
+                        <span className="text-[9.5px] font-bold text-[#8A8577]">
+                          38+ Island Destinations & Sights
+                        </span>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={locationSearchQuery}
+                          onChange={(e) => setLocationSearchQuery(e.target.value)}
+                          placeholder={t("searchLocationPlaceholder")}
+                          className="itc-input !pl-10 !pr-8"
+                        />
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-[#25A5FE] pointer-events-none">
+                          <SearchOutlined />
+                        </span>
+                        {locationSearchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setLocationSearchQuery("")}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A8A29E] hover:text-[#44403C] text-xs"
+                          >
+                            <CloseCircleOutlined />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Search results dropdown/list */}
+                      <AnimatePresence>
+                        {filteredSearchLocations.length > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -6 }}
+                            className="mt-2 rounded-2xl bg-white border border-[#25A5FE]/30 p-2.5 shadow-xl shadow-slate-200/50 space-y-2 max-h-[260px] overflow-y-auto itc-scroll z-20 relative"
+                          >
+                            <div className="flex items-center justify-between px-1 text-[9px] font-black uppercase text-[#8A8577]">
+                              <span>{t("searchLocationsCount", { count: filteredSearchLocations.length })}</span>
+                              <span className="text-[#25A5FE]">Tap to add to vibes or route</span>
+                            </div>
+                            {filteredSearchLocations.map((loc) => (
+                              <div
+                                key={loc.id}
+                                className="flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-[#F0F8FF] border border-transparent hover:border-[#BDE3FE] transition"
+                              >
+                                <div
+                                  className="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0"
+                                  onClick={() => {
+                                    setActiveSuggestionDest(loc.id);
+                                    if (!aiKeywords.toLowerCase().includes(loc.name.toLowerCase())) {
+                                      setAiKeywords((prev) => (prev ? `${prev}, visit ${loc.name}` : `visit ${loc.name}`));
+                                    }
+                                  }}
+                                >
+                                  <img src={loc.img} alt={loc.name} className="w-9 h-9 rounded-lg object-cover shrink-0 border" />
+                                  <div className="min-w-0">
+                                    <span className="text-xs font-black text-[#44403C] truncate block">{loc.name}</span>
+                                    <span className="text-[10px] text-[#8A8577] line-clamp-1">{loc.description}</span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveSuggestionDest(loc.id);
+                                      if (!aiKeywords.toLowerCase().includes(loc.name.toLowerCase())) {
+                                        setAiKeywords((prev) => (prev ? `${prev}, visit ${loc.name}` : `visit ${loc.name}`));
+                                      }
+                                      setLocationSearchQuery("");
+                                    }}
+                                    className="px-2 py-1 bg-[#25A5FE]/10 hover:bg-[#25A5FE] text-[#25A5FE] hover:text-white rounded-lg text-[10px] font-bold transition"
+                                  >
+                                    + Vibe
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      handleToggleLocation(loc.id);
+                                      setActiveSuggestionDest(loc.id);
+                                      setLocationSearchQuery("");
+                                    }}
+                                    className={`px-2 py-1 rounded-lg text-[10px] font-bold transition ${
+                                      inputs.destinations.includes(loc.id)
+                                        ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                                        : "bg-[#FF8B50]/10 hover:bg-[#FF8B50] text-[#FF8B50] hover:text-white"
+                                    }`}
+                                  >
+                                    {inputs.destinations.includes(loc.id) ? "✓ Route" : "+ Route"}
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Vibe Keywords & Preferences Textarea with Real-time Location Suggestions */}
                     <div className="relative mt-4">
                       <label className="itc-label">{t("keywordsLabel")}</label>
-                      <textarea rows={2} value={aiKeywords} onChange={(e) => setAiKeywords(e.target.value)} placeholder={t("keywordsPlaceholder")} className="itc-input mt-1.5 resize-none !rounded-2xl !py-3" />
+                      <textarea
+                        rows={2}
+                        value={aiKeywords}
+                        onChange={(e) => setAiKeywords(e.target.value)}
+                        placeholder={t("keywordsPlaceholder")}
+                        className="itc-input mt-1.5 resize-none !rounded-2xl !py-3"
+                      />
+
+                      {/* Real-time detected Sri Lanka locations */}
+                      <AnimatePresence>
+                        {detectedDestinations.length > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -4 }}
+                            className="mt-2.5 p-3 rounded-2xl bg-gradient-to-r from-amber-500/10 via-[#FF8B50]/10 to-[#25A5FE]/10 border border-[#FF8B50]/25"
+                          >
+                            <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
+                              <span className="text-[10px] font-black uppercase tracking-wider text-[#44403C] flex items-center gap-1.5">
+                                <EnvironmentOutlined className="text-[#FF8B50]" />
+                                {t("detectedDestinationsLabel")}
+                              </span>
+                              <span className="text-[9px] font-bold text-[#8A8577]">Tap to inspect suggestions</span>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {detectedDestinations.map((destId, idx) => {
+                                const isSelected = activeSuggestionDest === destId;
+                                const isLast = idx === detectedDestinations.length - 1;
+                                return (
+                                  <motion.button
+                                    key={destId}
+                                    whileHover={{ y: -1 }}
+                                    whileTap={{ scale: 0.96 }}
+                                    type="button"
+                                    onClick={() => setActiveSuggestionDest(destId)}
+                                    className={`px-3 py-1 text-[10.5px] font-black rounded-xl transition flex items-center gap-1.5 border ${
+                                      isSelected
+                                        ? "bg-gradient-to-r from-[#FF8B50] to-[#FF6B2C] text-white border-transparent shadow-md shadow-[#FF8B50]/30"
+                                        : "bg-white text-[#5C5648] border-[#F0E7D8] hover:border-[#FFD9C4]"
+                                    }`}
+                                  >
+                                    <span>📍</span>
+                                    <span>{destId}</span>
+                                    {isLast && detectedDestinations.length > 1 && (
+                                      <span className={`text-[8px] uppercase tracking-wider px-1.5 py-0.2 rounded-full ${isSelected ? "bg-white/30 text-white" : "bg-[#FF8B50]/15 text-[#E05A1A]"}`}>
+                                        Latest
+                                      </span>
+                                    )}
+                                  </motion.button>
+                                );
+                              })}
+                            </div>
+
+                            {/* Selected location suggestions detail card */}
+                            {activeSuggestionLocation && (
+                              <div className="mt-3 pt-3 border-t border-[#FF8B50]/20 bg-white/75 backdrop-blur-sm rounded-xl p-3">
+                                <div className="flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+                                  <div className="flex items-center gap-2.5">
+                                    <img
+                                      src={activeSuggestionLocation.img}
+                                      alt={activeSuggestionLocation.name}
+                                      className="w-11 h-11 rounded-xl object-cover border border-white shadow-sm shrink-0"
+                                    />
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <h5 className="text-xs font-black text-[#44403C] leading-none m-0">
+                                          {activeSuggestionLocation.name}
+                                        </h5>
+                                        <span className="text-[9px] font-black uppercase tracking-wider text-[#E05A1A] bg-[#FF8B50]/15 px-2 py-0.5 rounded-full">
+                                          {activeSuggestionLocation.category || "Highlight"}
+                                        </span>
+                                      </div>
+                                      <p className="text-[10.5px] text-[#7A7263] font-medium mt-1 leading-snug">
+                                        {activeSuggestionLocation.description}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (!inputs.destinations.includes(activeSuggestionLocation.id)) {
+                                        setInputs((prev) => ({ ...prev, destinations: [...prev.destinations, activeSuggestionLocation.id] }));
+                                        addToast("success", `Added ${activeSuggestionLocation.name} to route stops!`);
+                                      }
+                                    }}
+                                    className={`shrink-0 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition ${
+                                      inputs.destinations.includes(activeSuggestionLocation.id)
+                                        ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                                        : "bg-gradient-to-r from-[#FF8B50] to-[#FF6B2C] text-white shadow-sm hover:shadow-md"
+                                    }`}
+                                  >
+                                    {inputs.destinations.includes(activeSuggestionLocation.id) ? "✓ In Route" : "+ Add to Route"}
+                                  </button>
+                                </div>
+
+                                {/* Vibe Chips for this location */}
+                                <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center gap-1.5">
+                                  <span className="text-[9px] font-black text-[#8A8577] uppercase tracking-[0.16em]">
+                                    {t("topVibes")}
+                                  </span>
+                                  {(DESTINATION_VIBE_CHIPS[activeSuggestionLocation.id] || [
+                                    `${activeSuggestionLocation.name} Sightseeing`,
+                                    `${activeSuggestionLocation.name} Resort Stay`,
+                                    `Explore ${activeSuggestionLocation.name}`,
+                                  ]).map((vibe) => (
+                                    <motion.button
+                                      key={vibe}
+                                      whileHover={{ y: -1 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      type="button"
+                                      onClick={() => {
+                                        if (!aiKeywords.toLowerCase().includes(vibe.toLowerCase())) {
+                                          setAiKeywords((prev) => (prev ? `${prev}, ${vibe}` : vibe));
+                                        }
+                                      }}
+                                      className="px-2.5 py-1 bg-white hover:bg-[#FFF1E9] border border-[#EBE4D5] hover:border-[#FFD9C4] text-[#6E6759] hover:text-[#E05A1A] text-[9.5px] font-bold rounded-full transition shadow-xs"
+                                    >
+                                      + {vibe}
+                                    </motion.button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
                       <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
                         <span className="text-[9px] font-black text-[#B5AC9A] uppercase tracking-[0.18em]">Quick vibes:</span>
                         {QUICK_CHIPS.map((chip) => (
@@ -1330,6 +2387,69 @@ export default function InteractiveTourCustomizer() {
                             + {chip}
                           </motion.button>
                         ))}
+                      </div>
+                    </div>
+
+                    {/* Hotel Star & Budget Recommendation Filter Section */}
+                    <div className="relative mt-5 pt-4 border-t border-[#F3EBDE] space-y-2.5">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <label className="itc-label flex items-center gap-1.5 !mb-0">
+                          <CrownOutlined className="text-amber-500" />
+                          {t("hotelBudgetFilterLabel")}
+                        </label>
+                        <span className="text-[10px] font-bold text-[#8A8577]">
+                          Filters recommended hotels & nightly rates
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {[
+                          { id: "all", label: t("filterAllHotels"), icon: "🌐" },
+                          { id: "5-star", label: t("filter5Star"), icon: "⭐⭐⭐⭐⭐" },
+                          { id: "4-star", label: t("filter4Star"), icon: "⭐⭐⭐⭐" },
+                          { id: "budget", label: t("filterBudget"), icon: "⭐⭐⭐" },
+                        ].map((tier) => {
+                          const isSelected = hotelBudgetFilter === tier.id;
+                          return (
+                            <motion.button
+                              key={tier.id}
+                              whileHover={{ y: -2 }}
+                              whileTap={{ scale: 0.97 }}
+                              type="button"
+                              onClick={() => setHotelBudgetFilter(tier.id as any)}
+                              className={`p-3 rounded-2xl text-left border transition-all duration-300 relative ${
+                                isSelected
+                                  ? "bg-[#0F172A] text-white border-slate-800 shadow-md shadow-slate-900/20"
+                                  : "bg-white text-[#5C5648] border-[#F0E7D8] hover:border-[#FFD9C4]"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-1 mb-1">
+                                <span className="text-[10px]">{tier.icon}</span>
+                                {isSelected && (
+                                  <span className="w-4 h-4 rounded-full bg-[#FF8B50] text-white text-[8px] font-black flex items-center justify-center">
+                                    ✓
+                                  </span>
+                                )}
+                              </div>
+                              <span className="block text-[11px] font-extrabold leading-tight">
+                                {tier.label}
+                              </span>
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-200/80 text-[10.5px] font-medium text-amber-900 flex items-center gap-2">
+                        <InfoCircleOutlined className="text-amber-600 shrink-0 text-xs" />
+                        <span>
+                          {hotelBudgetFilter === "5-star"
+                            ? t("filter5StarDesc")
+                            : hotelBudgetFilter === "budget"
+                            ? t("filterBudgetDesc")
+                            : hotelBudgetFilter === "4-star"
+                            ? "Filters recommendations to 4-star premium resorts and comfortable heritage hotels."
+                            : "Recommends 3-5 verified hotels per destination across star classifications with real nightly prices."}
+                        </span>
                       </div>
                     </div>
 
@@ -1519,28 +2639,128 @@ export default function InteractiveTourCustomizer() {
                 </header>
 
                 <div className="space-y-5">
+                  {/* Global Hotel Budget & Star Filter Toolbar */}
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#FFF6EF] via-white to-[#F0F8FF] border border-[#FFD9C4] flex items-center justify-between flex-wrap gap-3 shadow-xs">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#FF8B50] to-[#FF6B2C] text-white flex items-center justify-center text-xs shadow-sm">
+                        <CrownOutlined />
+                      </span>
+                      <div>
+                        <span className="text-xs font-black text-[#44403C] uppercase tracking-wide block">{t("hotelBudgetFilterLabel")}</span>
+                        <span className="text-[10px] text-[#8A8577] font-medium">
+                          {hotelBudgetFilter === "5-star"
+                            ? t("filter5StarDesc")
+                            : hotelBudgetFilter === "budget"
+                            ? t("filterBudgetDesc")
+                            : "Click any budget level to instantly re-filter recommended stays across destinations."}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {[
+                        { id: "all", label: t("filterAllHotels"), icon: "🌐" },
+                        { id: "5-star", label: t("filter5Star"), icon: "⭐⭐⭐⭐⭐" },
+                        { id: "4-star", label: t("filter4Star"), icon: "⭐⭐⭐⭐" },
+                        { id: "budget", label: t("filterBudget"), icon: "⭐⭐⭐" },
+                      ].map((tab) => (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setHotelBudgetFilter(tab.id as any)}
+                          className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition flex items-center gap-1.5 border ${
+                            hotelBudgetFilter === tab.id
+                              ? "bg-[#0F172A] text-white border-slate-800 shadow-sm"
+                              : "bg-white text-[#5C5648] border-[#F0E7D8] hover:border-[#FF8B50]"
+                          }`}
+                        >
+                          <span className="text-[9px]">{tab.icon}</span>
+                          <span>{tab.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {Object.entries(suggestedPlacesByDestination).map(([city, data]) => {
-                    const cityHotels = data.hotels || [];
+                    const rawHotels = data.hotels || [];
                     const cityPois = data.poi || [];
-                    if (cityHotels.length === 0 && cityPois.length === 0) return null;
+
+                    // Apply Budget / Star-Rating filtering logic with 5-star to 4-star fallback and strict budget rules
+                    let displayHotels: MapPlaceHotel[] = [];
+                    let fallbackNotice: string | null = null;
+
+                    if (hotelBudgetFilter === "5-star") {
+                      const fiveStars = rawHotels.filter((h) => getHotelStars(h) === 5);
+                      if (fiveStars.length > 0) {
+                        displayHotels = fiveStars;
+                      } else {
+                        // If 5-star hotels not available, show 4-star hotels!
+                        const fourStars = rawHotels.filter((h) => getHotelStars(h) === 4);
+                        displayHotels = fourStars.length > 0 ? fourStars : rawHotels.filter((h) => getHotelStars(h) <= 4);
+                        fallbackNotice = t("fallbackNotice5To4", { city });
+                      }
+                    } else if (hotelBudgetFilter === "4-star") {
+                      const fourStars = rawHotels.filter((h) => getHotelStars(h) === 4);
+                      if (fourStars.length > 0) {
+                        displayHotels = fourStars;
+                      } else {
+                        displayHotels = rawHotels.filter((h) => getHotelStars(h) === 5 || getHotelStars(h) === 3);
+                        fallbackNotice = `No 4-Star hotels available in ${city} — showing verified alternative stays`;
+                      }
+                    } else if (hotelBudgetFilter === "budget") {
+                      // STRICT RULE: if user suggests budget hotel, don't show 5 star hotels! Just show budget hotels.
+                      displayHotels = rawHotels.filter((h) => getHotelStars(h) <= 3);
+                    } else {
+                      // "all" - if prompt or hotelClass is budget, exclude 5-star hotels
+                      const promptLower = aiKeywords.toLowerCase();
+                      if (promptLower.includes("budget") || inputs.hotelClass === "budget") {
+                        displayHotels = rawHotels.filter((h) => getHotelStars(h) <= 4);
+                      } else {
+                        displayHotels = rawHotels;
+                      }
+                    }
+
+                    if (displayHotels.length === 0 && cityPois.length === 0) return null;
                     return (
                       <div key={city} className="rounded-[24px] bg-gradient-to-br from-[#FDFBF7] to-[#F5FAFF] border border-[#F0E7D8] p-5">
                         <div className="flex items-center justify-between mb-4">
                           <span className="text-xs font-black text-[#44403C] uppercase tracking-wide flex items-center gap-2">
                             <EnvironmentOutlined className="text-[#FF8B50]" /> {city} Recommendations
                           </span>
-                          <span className="text-[10px] font-bold text-[#8A8577] bg-white px-2.5 py-1 rounded-lg border border-[#F0E7D8]">{cityHotels.length} Hotels · {cityPois.length} Attractions</span>
+                          <span className="text-[10px] font-bold text-[#8A8577] bg-white px-2.5 py-1 rounded-lg border border-[#F0E7D8]">
+                            {displayHotels.length} Hotels · {cityPois.length} Attractions
+                          </span>
                         </div>
 
-                        {cityHotels.length > 0 && (
+                        {fallbackNotice && (
+                          <div className="mb-3 px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-800 text-[11px] font-bold flex items-center gap-2">
+                            <InfoCircleOutlined className="text-amber-600 shrink-0 text-xs" />
+                            <span>{fallbackNotice}</span>
+                          </div>
+                        )}
+
+                        {displayHotels.length > 0 && (
                           <div className="mb-4">
-                            <span className="block text-[9px] font-black text-[#B5AC9A] uppercase tracking-[0.2em] mb-2.5">🏨 AI-Selected Hotels</span>
+                            <div className="flex items-center justify-between mb-2.5">
+                              <span className="text-[9px] font-black text-[#B5AC9A] uppercase tracking-[0.2em]">
+                                🏨 AI-Selected Hotels ({displayHotels.length} Stays)
+                              </span>
+                              {hotelBudgetFilter !== "all" && (
+                                <span className="text-[9px] font-black uppercase text-[#E05A1A] bg-[#FF8B50]/10 px-2 py-0.5 rounded">
+                                  Filter: {hotelBudgetFilter.toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              {cityHotels.map((hotel: MapPlaceHotel) => {
+                              {displayHotels.map((hotel: MapPlaceHotel) => {
                                 const isSelected = selectedPlaceIds.includes(String(hotel.id));
                                 const defaultCityImg = LOCATIONS.find((l) => l.id === city)?.img || "/images/colombo.png";
                                 const displayImg = hotel.primary_image && !hotel.primary_image.includes("photos.app.goo.gl") ? hotel.primary_image : defaultCityImg;
                                 const distFromCenter = Math.round((((String(hotel.id).charCodeAt(0) || 4) % 35) / 10 + 1.2) * 10) / 10;
+                                const starLevel = getHotelStars(hotel);
+                                const starTierName = starLevel === 5 ? "5-Star Luxury" : starLevel === 4 ? "4-Star Premium" : "Budget / 3-Star";
+
                                 return (
                                   <motion.div key={hotel.id} whileHover={{ y: -3 }} onClick={() => handleToggleSuggestedPlace(hotel, city, true)}
                                     className={`rounded-2xl border p-3.5 cursor-pointer flex flex-col justify-between transition-all bg-white ${isSelected ? "border-[#FF8B50] shadow-[0_14px_34px_-14px_rgba(255,139,80,0.5)]" : "border-[#F0E7D8] hover:border-[#FFD9C4]"}`}>
@@ -1555,8 +2775,26 @@ export default function InteractiveTourCustomizer() {
                                         <h5 className="text-xs font-extrabold text-[#44403C] leading-tight">{hotel.name}</h5>
                                         <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded shrink-0">${hotel.avg_nightly_usd}/night</span>
                                       </div>
-                                      <span className="text-[10px] text-amber-500 font-bold block mt-1"><StarFilled className="mr-1" />{hotel.rating}/5.0 · {hotel.price_tier}</span>
-                                      {hotel.description && <p className="text-[10px] text-[#8A8577] line-clamp-2 mt-1 font-medium">{hotel.description}</p>}
+                                      
+                                      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                        <span className="flex text-amber-400 gap-0.5">
+                                          {Array.from({ length: starLevel }).map((_, s) => (
+                                            <StarFilled key={s} className="text-[10px]" />
+                                          ))}
+                                        </span>
+                                        <span className={`text-[9.5px] font-black px-2 py-0.5 rounded-full border ${
+                                          starLevel === 5
+                                            ? "bg-amber-50 text-amber-800 border-amber-200"
+                                            : starLevel === 4
+                                            ? "bg-sky-50 text-sky-700 border-sky-200"
+                                            : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                        }`}>
+                                          {starTierName}
+                                        </span>
+                                        <span className="text-[10px] text-[#8A8577] font-semibold">{hotel.rating}/5.0</span>
+                                      </div>
+
+                                      {hotel.description && <p className="text-[10px] text-[#8A8577] line-clamp-2 mt-1.5 font-medium">{hotel.description}</p>}
                                     </div>
                                     <div className="mt-3 flex items-center justify-between border-t border-[#F3EBDE] pt-2.5">
                                       <span className="text-[9px] font-black text-[#B5AC9A] uppercase tracking-wider">Real Scraped Rate</span>

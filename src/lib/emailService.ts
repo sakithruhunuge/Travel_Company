@@ -56,12 +56,12 @@ export async function sendEmail({ to, subject, html, attachments }: SendEmailPar
     });
 
     console.log(`[EmailService] Email sent successfully! MessageID: ${info.messageId}`);
-    
+
     // If it's a JSON transport, print a visual preview in the logs
     if ((info as any).message) {
       console.log("[EmailService] Local Mail JSON output:", JSON.stringify(info, null, 2));
     }
-    
+
     return info;
   } catch (error) {
     console.error("[EmailService] Error occurred during email dispatch:", error);
@@ -80,7 +80,7 @@ export async function sendInvoiceEmail(
   paymentLink: string
 ) {
   const subject = `Your Booking Invoice #${invoiceId} is Approved & Ready`;
-  
+
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
       <h2 style="color: #0B7C8A;">Booking Approved! ✈️</h2>

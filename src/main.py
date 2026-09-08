@@ -202,10 +202,11 @@ def seed_default_packages():
 # 5. PYDANTIC REQUEST & RESPONSE SCHEMAS
 # --------------------------------------------------------------------------
 class GenerateItineraryRequest(BaseModel):
-    user_id: str = Field(..., example="usr_12345")
+    user_id: Optional[str] = Field("guest_user", example="usr_12345")
     package_id: Optional[str] = Field(None, example="pkg_southern_escape")
     selected_place_ids: Optional[List[str]] = Field(default_factory=list)
     prompt: str = Field(..., example="I want a 4-day budget trip to Galle with beach and fort")
+    starting_location: Optional[str] = Field(None, example="Colombo")
     budget_tier: str = Field("Standard", example="Standard")
     duration_days: int = Field(3, ge=1, le=14, example=3)
 
@@ -250,8 +251,12 @@ def generate_itinerary(request: GenerateItineraryRequest):
 
     try:
         # Step 1: Execute AGENT 1 (Intake & Security Router)
+        prompt_text = request.prompt
+        if request.starting_location and request.starting_location.lower() not in prompt_text.lower():
+            prompt_text = f"Trip starts in {request.starting_location}. {prompt_text}"
+
         submission_payload = {
-            "user_prompt": request.prompt,
+            "user_prompt": prompt_text,
             "destination": None,
             "package_template": request.package_id,
             "selected_place_ids": request.selected_place_ids or [],

@@ -68,8 +68,54 @@ KNOWN_DESTINATIONS = [
     "Colombo", "Galle", "Bentota", "Dambulla", "Kandy", "Ella", "Sigiriya", 
     "Mirissa", "Trincomalee", "Nuwara Eliya", "Jaffna", "Yala", "Arugam Bay",
     "Negombo", "Hikkaduwa", "Anuradhapura", "Polonnaruwa", "Tangalle",
-    "Udawalawe", "Pasikuda", "Wilpattu", "Weligama", "Unawatuna", "Matara"
+    "Udawalawe", "Pasikuda", "Wilpattu", "Weligama", "Unawatuna", "Matara",
+    "Badulla", "Haputale", "Horton Plains", "Knuckles Range", "Kitulgala",
+    "Ratnapura", "Batticaloa", "Mannar", "Kalpitiya", "Sinharaja",
+    "Minneriya", "Kaudulla", "Tissamaharama", "Beruwala", "Pinnawala"
 ]
+
+# Destination aliases and flexible patterns (e.g. nuwaraeliya, arugambay, etc.)
+DESTINATION_SYNONYMS: Dict[str, List[str]] = {
+    "Nuwara Eliya": [r"nuwara\s*eliya", r"nuwaraeliya", r"little\s+england", r"nanu\s*oya"],
+    "Kandy": [r"kandy", r"maha\s*nuwara"],
+    "Sigiriya": [r"sigiriya", r"lion\s*rock"],
+    "Dambulla": [r"dambulla"],
+    "Ella": [r"ella"],
+    "Galle": [r"galle", r"galle\s*fort"],
+    "Bentota": [r"bentota"],
+    "Colombo": [r"colombo"],
+    "Negombo": [r"negombo", r"katunayake", r"bandaranaike"],
+    "Mirissa": [r"mirissa"],
+    "Yala": [r"yala"],
+    "Trincomalee": [r"trincomalee", r"trinco"],
+    "Jaffna": [r"jaffna"],
+    "Arugam Bay": [r"arugam\s*bay", r"arugambay"],
+    "Horton Plains": [r"horton\s*plains", r"hortonplains", r"world'?s\s*end"],
+    "Knuckles Range": [r"knuckles(\s*range)?"],
+    "Pinnawala": [r"pinnawala", r"pinnawela"],
+    "Anuradhapura": [r"anuradhapura"],
+    "Polonnaruwa": [r"polonnaruwa"],
+    "Hikkaduwa": [r"hikkaduwa"],
+    "Weligama": [r"weligama"],
+    "Unawatuna": [r"unawatuna"],
+    "Tangalle": [r"tangalle", r"tangalla"],
+    "Matara": [r"matara"],
+    "Udawalawe": [r"udawalawe", r"uda\s*walawe"],
+    "Wilpattu": [r"wilpattu"],
+    "Sinharaja": [r"sinharaja"],
+    "Minneriya": [r"minneriya"],
+    "Kaudulla": [r"kaudulla"],
+    "Pasikuda": [r"pasikuda", r"passekudah", r"pasikudah"],
+    "Tissamaharama": [r"tissamaharama", r"tissa"],
+    "Badulla": [r"badulla"],
+    "Haputale": [r"haputale"],
+    "Kitulgala": [r"kitulgala"],
+    "Ratnapura": [r"ratnapura"],
+    "Batticaloa": [r"batticaloa"],
+    "Mannar": [r"mannar"],
+    "Kalpitiya": [r"kalpitiya"],
+    "Beruwala": [r"beruwala"],
+}
 
 # Security patterns to flag prompt injections, instruction overrides, or jailbreaks
 PROMPT_INJECTION_PATTERNS = [
@@ -106,8 +152,10 @@ TRAVEL_KEYWORDS = [
     "travel", "trip", "tour", "hotel", "resort", "beach", "temple", "visit", 
     "stay", "vacation", "holiday", "itinerary", "flight", "place", "sightseeing",
     "galle", "colombo", "bentota", "kandy", "dambulla", "ella", "sigiriya",
-    "mirissa", "trincomalee", "nuwara eliya", "jaffna", "yala", "budget",
-    "luxury", "standard", "pool", "view", "nature", "safari", "fort", "food",
+    "mirissa", "trincomalee", "nuwara eliya", "nuwaraeliya", "jaffna", "yala", "budget",
+    "luxury", "standard", "5-star", "4-star", "3-star", "5 star", "4 star", "3 star",
+    "star", "stars", "hotel", "hotels", "guesthouse", "hostel", "pool", "view", "nature",
+    "safari", "fort", "food",
     "package", "day", "days", "night", "nights", "recommend", "suggestion",
     "suggest", "plan", "planning", "want", "need", "looking", "find", "best",
     "good", "great", "sri lanka", "lanka", "island", "tourist", "traveler",
@@ -146,7 +194,8 @@ def is_security_threat_or_off_topic(text: str) -> bool:
 def extract_destinations(text: str, fallback: Optional[Union[str, List[str]]] = None) -> List[str]:
     """
     Extracts an ordered list of target Sri Lankan destinations mentioned in input text or fallback.
-    Uses character start index sorting to preserve exact prompt order (e.g. 'Galle' before 'Kandy').
+    Uses character start index sorting to preserve exact prompt order (e.g. 'Kandy' before 'Nuwara Eliya').
+    Handles variations like 'nuwaraeliya', 'nuwara eliya', 'arugambay', etc.
     """
     # Rule A: Honor explicit fallback if provided
     if fallback:
@@ -161,15 +210,25 @@ def extract_destinations(text: str, fallback: Optional[Union[str, List[str]]] = 
         elif isinstance(fallback, str) and fallback.strip():
             return [fallback.strip().title()]
 
-    # Rule B: Index-sorted regex match extraction over text
+    # Rule B: Index-sorted regex match extraction over text with synonym support
     matches: List[tuple[int, str]] = []
 
     if text and isinstance(text, str):
+        # 1. Match against synonym patterns
+        for canon_dest, patterns in DESTINATION_SYNONYMS.items():
+            for pat in patterns:
+                m = re.search(r"\b" + pat + r"\b", text, re.I)
+                if m:
+                    matches.append((m.start(), canon_dest))
+                    break
+
+        # 2. Match against any remaining known destinations
+        matched_canon = {d for _, d in matches}
         for dest in KNOWN_DESTINATIONS:
-            m = re.search(r"\b" + re.escape(dest) + r"\b", text, re.I)
-            if m:
-                # Store (character start position, canonical destination name)
-                matches.append((m.start(), dest))
+            if dest not in matched_canon:
+                m = re.search(r"\b" + re.escape(dest) + r"\b", text, re.I)
+                if m:
+                    matches.append((m.start(), dest))
 
     if matches:
         # Sort by character start position in sentence (first mentioned = first in list)
@@ -190,12 +249,26 @@ def extract_destinations(text: str, fallback: Optional[Union[str, List[str]]] = 
 def extract_budget_tier(text: str, fallback: Optional[str] = None) -> str:
     """
     Extracts and normalizes budget_tier ('Budget', 'Standard', 'Luxury').
+    Recognizes star classifications (5-star, 4-star, 3-star) and budget terms.
     """
-    candidate = (fallback or text or "").lower()
-    if "luxury" in candidate or "premium" in candidate or "expensive" in candidate:
+    candidate = (text or fallback or "").lower()
+    
+    # Check 5-star or luxury
+    if any(k in candidate for k in ["5 star", "5-star", "five star", "luxury", "expensive", "boutique villa"]):
         return "Luxury"
-    elif "budget" in candidate or "cheap" in candidate or "affordable" in candidate or "backpack" in candidate:
+    # Check budget / 3-star
+    elif any(k in candidate for k in ["budget", "cheap", "affordable", "backpack", "hostel", "guesthouse", "3 star", "3-star", "three star"]):
         return "Budget"
+    # Check 4-star or standard
+    elif any(k in candidate for k in ["4 star", "4-star", "four star", "standard", "mid-range"]):
+        return "Standard"
+    elif fallback:
+        fb_lower = fallback.lower()
+        if "lux" in fb_lower:
+            return "Luxury"
+        elif "bud" in fb_lower:
+            return "Budget"
+        return "Standard"
     else:
         return "Standard"
 
