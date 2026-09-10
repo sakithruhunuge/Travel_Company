@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import User from "@/models/User";
 import TravelRequest from "@/models/TravelRequest";
 import Package from "@/models/Package";
+import DriverGuide from "@/models/DriverGuide";
 import { resolveTenant } from "@/lib/tenantResolver";
 
 export interface TenantContext {
@@ -155,6 +156,39 @@ export function tenantScope(tenantId: string | mongoose.Types.ObjectId) {
         return Package.create({ ...docs, tenantId: tId });
       },
       raw: Package,
+    },
+    DriverGuide: {
+      find: (filter: any = {}) => {
+        return DriverGuide.find({ ...filter, tenantId: tId });
+      },
+      findOne: (filter: any = {}) => {
+        return DriverGuide.findOne({ ...filter, tenantId: tId });
+      },
+      findOneAndUpdate: (filter: any = {}, update: any, options?: any) => {
+        return DriverGuide.findOneAndUpdate({ ...filter, tenantId: tId }, update, options);
+      },
+      updateOne: (filter: any = {}, update: any, options?: any) => {
+        return DriverGuide.updateOne({ ...filter, tenantId: tId }, update, options);
+      },
+      updateMany: (filter: any = {}, update: any, options?: any) => {
+        return DriverGuide.updateMany({ ...filter, tenantId: tId }, update, options);
+      },
+      deleteOne: (filter: any = {}) => {
+        return DriverGuide.deleteOne({ ...filter, tenantId: tId });
+      },
+      deleteMany: (filter: any = {}) => {
+        return DriverGuide.deleteMany({ ...filter, tenantId: tId });
+      },
+      countDocuments: (filter: any = {}) => {
+        return DriverGuide.countDocuments({ ...filter, tenantId: tId });
+      },
+      create: (docs: any) => {
+        if (Array.isArray(docs)) {
+          return DriverGuide.create(docs.map((doc) => ({ ...doc, tenantId: tId })));
+        }
+        return DriverGuide.create({ ...docs, tenantId: tId });
+      },
+      raw: DriverGuide,
     },
   };
 }
