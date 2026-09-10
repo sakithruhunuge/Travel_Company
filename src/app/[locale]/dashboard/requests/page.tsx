@@ -22,7 +22,15 @@ import {
   ArrowRightOutlined,
   CopyOutlined,
   LinkOutlined,
+  PlusOutlined,
+  ThunderboltOutlined,
+  AuditOutlined,
+  UnorderedListOutlined,
 } from "@ant-design/icons";
+import QuotationBuilderModal from "@/components/dashboard/QuotationBuilderModal";
+import AgentQuickEstimatorModal from "@/components/dashboard/AgentQuickEstimatorModal";
+import TourLifecycleModal from "@/components/dashboard/TourLifecycleModal";
+import CrewScheduleTimeline from "@/components/dashboard/CrewScheduleTimeline";
 
 interface AssignedPerson {
   name?: string;
@@ -32,6 +40,7 @@ interface AssignedPerson {
 
 interface RequestData {
   _id: string;
+  tourId?: string;
   packageName: string;
   numberOfTravelers: number;
   preferredStartDate: string;
@@ -43,8 +52,13 @@ interface RequestData {
   userEmail: string;
   tourGuide?: AssignedPerson;
   driver?: AssignedPerson;
+  assignedVehicle?: any;
   agencyNotes?: string;
   pricingInputs?: any;
+  quotation?: any;
+  proforma?: any;
+  actualInvoice?: any;
+  inTourExpenses?: any[];
 }
 
 const DESTINATION_IMAGES: Record<string, string> = {
@@ -101,6 +115,13 @@ export default function TenantRequestsPage() {
   const [selectedRequest, setSelectedRequest] = useState<RequestData | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  // Modals for Marketing Officer, Agent, and Tour Lifecycle
+  const [isQuotationOpen, setIsQuotationOpen] = useState(false);
+  const [isAgentEstimatorOpen, setIsAgentEstimatorOpen] = useState(false);
+  const [isLifecycleOpen, setIsLifecycleOpen] = useState(false);
+  const [lifecycleBooking, setLifecycleBooking] = useState<RequestData | null>(null);
+  const [viewMode, setViewMode] = useState<"table" | "timeline">("table");
 
   // Custom adjustments and Link Copy state
   const [customCharges, setCustomCharges] = useState<number>(0);
@@ -279,7 +300,12 @@ export default function TenantRequestsPage() {
   };
 
   // Guard Access
-  const isAuthorizedAdmin = userRole === "tenant_admin" || userRole === "super_admin" || userRole === "admin";
+  const isAuthorizedAdmin =
+    userRole === "tenant_admin" ||
+    userRole === "super_admin" ||
+    userRole === "admin" ||
+    userRole === "marketing_officer" ||
+    userRole === "travel_agent";
   if (!isAuthorizedAdmin) {
     return (
       <div className="py-20 text-center text-slate-800">
@@ -347,12 +373,45 @@ export default function TenantRequestsPage() {
           <h2 className="text-2xl font-black text-slate-900 leading-tight">Booking Approvals Inbox</h2>
           <p className="text-slate-500 text-xs mt-1">Review customized travel quote specifications and update coordination status.</p>
         </div>
-        <button
-          onClick={loadRequests}
-          className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl transition"
-        >
-          Refresh Inbox
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={() => setIsQuotationOpen(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#0B7C8A] hover:bg-[#0B7C8A]/90 text-white font-bold text-xs rounded-xl shadow-sm transition"
+          >
+            <PlusOutlined /> + New Inquiry / Quotation
+          </button>
+          <button
+            onClick={() => setIsAgentEstimatorOpen(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-sm transition"
+          >
+            <ThunderboltOutlined /> Rapid Agent Estimator
+          </button>
+          <button
+            onClick={loadRequests}
+            className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl transition"
+          >
+            Refresh Inbox
+          </button>
+          {/* View Toggle */}
+          <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+            <button
+              onClick={() => setViewMode("table")}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                viewMode === "table" ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <UnorderedListOutlined /> Table View
+            </button>
+            <button
+              onClick={() => setViewMode("timeline")}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                viewMode === "timeline" ? "bg-[#0B7C8A] text-white shadow-xs" : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <CalendarOutlined /> Schedule Timeline (Gantt)
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Stats Counter Cards */}
@@ -447,6 +506,17 @@ export default function TenantRequestsPage() {
       </div>
 
       {/* Main Inbox Table / List */}
+      {/* Schedule Timeline (Gantt) View */}
+      {viewMode === "timeline" && (
+        <CrewScheduleTimeline
+          tours={requests}
+          onSelectTour={(t) => {
+            setLifecycleBooking(t as any);
+            setIsLifecycleOpen(true);
+          }}
+        />
+      )}
+
       {loading ? (
         <div className="py-24 text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-slate-900 mx-auto" />
@@ -486,7 +556,18 @@ export default function TenantRequestsPage() {
                       className="hover:bg-slate-50/50 cursor-pointer transition"
                     >
                       <td className="px-5 py-4 font-mono font-bold text-slate-800">
-                        #{req._id.substring(req._id.length - 8).toUpperCase()}
+                        {req.tourId ? (
+                          <div>
+                            <span className="inline-block px-2.5 py-1 rounded-lg bg-[#0B7C8A]/10 text-[#0B7C8A] font-mono font-bold text-xs border border-[#0B7C8A]/20">
+                              {req.tourId}
+                            </span>
+                            <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                              #{req._id.substring(req._id.length - 6).toUpperCase()}
+                            </div>
+                          </div>
+                        ) : (
+                          <span>#{req._id.substring(req._id.length - 8).toUpperCase()}</span>
+                        )}
                       </td>
                       <td className="px-5 py-4">
                         <div className="font-extrabold text-slate-800">{req.userName || "Traveler"}</div>
@@ -575,10 +656,22 @@ export default function TenantRequestsPage() {
                         </span>
                       </td>
                       <td className="px-5 py-4 text-right">
-                        <button className="px-3.5 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-lg transition flex items-center gap-1.5 ml-auto">
-                          <span>Open Details</span>
-                          <ArrowRightOutlined />
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setLifecycleBooking(req);
+                              setIsLifecycleOpen(true);
+                            }}
+                            className="px-3 py-1.5 bg-[#0B7C8A] hover:bg-[#0B7C8A]/90 text-white font-bold text-xs rounded-xl transition shadow-sm flex items-center gap-1.5"
+                          >
+                            <AuditOutlined /> Tour Lifecycle
+                          </button>
+                          <button className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl transition flex items-center gap-1">
+                            <span>Details</span>
+                            <ArrowRightOutlined />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1280,6 +1373,38 @@ export default function TenantRequestsPage() {
           </>
         )}
       </AnimatePresence>
+
+      {/* Marketing Officer Quotation Builder Modal */}
+      <QuotationBuilderModal
+        isOpen={isQuotationOpen}
+        onClose={() => setIsQuotationOpen(false)}
+        onQuotationCreated={() => loadRequests()}
+      />
+
+      {/* Travel Agent Quick Estimator Modal */}
+      <AgentQuickEstimatorModal
+        isOpen={isAgentEstimatorOpen}
+        onClose={() => setIsAgentEstimatorOpen(false)}
+        onConvertToQuotation={() => {
+          setIsAgentEstimatorOpen(false);
+          setIsQuotationOpen(true);
+        }}
+      />
+
+      {/* Tour Lifecycle Management Modal */}
+      {lifecycleBooking && (
+        <TourLifecycleModal
+          isOpen={isLifecycleOpen}
+          onClose={() => {
+            setIsLifecycleOpen(false);
+            setLifecycleBooking(null);
+          }}
+          booking={lifecycleBooking}
+          onBookingUpdated={() => {
+            loadRequests();
+          }}
+        />
+      )}
 
     </div>
   );
