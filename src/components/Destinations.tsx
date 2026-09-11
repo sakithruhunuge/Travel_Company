@@ -1,101 +1,65 @@
 "use client";
 
-import Image from "next/image";
-import { sriLankaImages } from "@/constants/sriLankaImages";
-import { useTranslations } from "next-intl";
+import React, { useState } from "react";
+
+const DESTINATIONS_DATA = [
+  { name: "Nuwara Eliya", bg: "/images/tea.png" },
+  { name: "Mirissa Beach", bg: "/images/mirissa.png" },
+  { name: "Temple of the Tooth, Kandy", bg: "/images/kandy.png" },
+  { name: "Ella Nine Arch Bridge", bg: "/images/nine_arch.png" },
+];
 
 export default function Destinations() {
-  const t = useTranslations("Destinations");
+  const [activeSlide2, setActiveSlide2] = useState(0);
 
   return (
-    <section id="destinations" className="py-24 bg-brand-light scroll-mt-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4 animate-fade-in-up">
-          <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">
-            {t("tagline")}
+    <section id="destinations" className="relative bg-slate-900 pt-12 md:pt-16 pb-20 min-h-[60vh] md:min-h-[70vh] scroll-mt-16 flex flex-col justify-start overflow-hidden">
+      {/* Clean Background Image */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={DESTINATIONS_DATA[activeSlide2].bg}
+        alt={DESTINATIONS_DATA[activeSlide2].name}
+        className="absolute inset-0 h-full w-full object-cover transition-opacity duration-700"
+      />
+
+      {/* Main Content Box */}
+      <div className="max-w-6xl mx-auto px-6 sm:px-8 w-full relative z-10">
+        <div data-aos="fade-up" data-aos-duration="1000" className="max-w-xl text-left pointer-events-auto">
+          <span className="inline-block text-xs font-bold uppercase tracking-widest text-amber-400 bg-slate-900/60 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-amber-400/30 mb-3 shadow-md">
+            Island Wonders
           </span>
-          <h2 className="text-3xl sm:text-5xl font-black text-brand-dark tracking-tight">
-            {t("title")}
+          <h2 className="text-white text-2xl sm:text-3xl lg:text-4xl font-extrabold leading-tight tracking-tight drop-shadow-2xl">
+            Top Sri Lanka Destinations
           </h2>
-          <p className="text-base text-brand-muted">
-            {t("description")}
+          <p className="text-xs sm:text-sm text-slate-200 mt-3 leading-relaxed drop-shadow-md max-w-md">
+            Explore handpicked tropical beaches, ancient kingdoms, tea estates, and wild nature reserves across the island.
           </p>
         </div>
+      </div>
 
-        {/* Responsive Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {sriLankaImages.destinations.map((dest, idx) => {
-            // Helper to get category tag translation key
-            const getTagKey = (title: string) => {
-              if (title.includes("Beach") || title.includes("Mirissa") || title.includes("Bentota")) return "coastline";
-              if (title.includes("Temple") || title.includes("Tooth") || title.includes("Fort") || title.includes("Sigiriya")) return "heritage";
-              if (title.includes("Tea") || title.includes("Bridge") || title.includes("Ella")) return "highlands";
-              if (title.includes("Safari") || title.includes("Park")) return "wildlife";
-              return "urban";
-            };
+      {/* Active Location Badge - Bottom Right Corner */}
+      <div className="absolute bottom-6 right-6 md:bottom-8 md:right-16 z-20 flex items-center gap-2 bg-slate-900/80 backdrop-blur-md px-4 py-2 rounded-full border border-amber-400/40 shadow-xl">
+        <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+        <span className="text-white text-xs sm:text-sm font-bold tracking-wide">
+          {DESTINATIONS_DATA[activeSlide2].name}
+        </span>
+      </div>
 
-            // Helper to get destination item translation key
-            const getItemKey = (title: string) => {
-              if (title.includes("Sigiriya")) return "sigiriya";
-              if (title.includes("Dambulla")) return "dambulla";
-              if (title.includes("Tooth") || title.includes("Kandy")) return "kandy";
-              if (title.includes("Tea") || title.includes("Nuwara Eliya")) return "tea";
-              if (title.includes("Bridge") || title.includes("Nine Arches")) return "bridge";
-              if (title.includes("Safari") || title.includes("Yala")) return "safari";
-              if (title.includes("Mirissa")) return "mirissa";
-              if (title.includes("Galle")) return "galle";
-              if (title.includes("Bentota")) return "bentota";
-              if (title.includes("Colombo")) return "colombo";
-              return "";
-            };
+      {/* Vertical Slider Indicator */}
+      <div className="absolute right-6 md:right-12 top-1/2 -translate-y-1/2 flex flex-col items-center gap-5 z-20">
+        <div className="absolute top-2 bottom-2 w-[2.5px] bg-white/30 -z-10" />
 
-            const tagKey = getTagKey(dest.title);
-            const tag = t(`tags.${tagKey}`);
-
-            const itemKey = getItemKey(dest.title);
-            const title = itemKey ? t(`items.${itemKey}`) : dest.title;
-
-            const isLarge = idx === 0 || idx === 5; // Sigiriya and Safari span 2 columns
-
-            return (
-              <div
-                key={idx}
-                className={`group relative rounded-3xl overflow-hidden aspect-[4/5] sm:aspect-[3/4] md:aspect-auto md:h-[340px] shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 ease-in-out border border-white/60 animate-fade-in-up ${
-                  isLarge ? "md:col-span-2" : "md:col-span-1"
-                }`}
-                style={{ animationDelay: `${100 + idx * 80}ms`, animationFillMode: "both" }}
-              >
-                {/* Category Tag */}
-                <span className="absolute top-4 left-4 z-20 text-[10px] font-bold tracking-widest text-brand-primary bg-white/80 backdrop-blur-lg px-3 py-1.5 rounded-full uppercase border border-white/40 shadow-sm">
-                  {tag}
-                </span>
-
-                {/* Destination Image */}
-                <Image
-                  src={dest.imageUrl}
-                  alt={title}
-                  fill
-                  loading="lazy"
-                  className="object-cover group-hover:scale-105 transition-all duration-300 ease-in-out"
-                  sizes={isLarge ? "(max-width: 768px) 100vw, 50vw" : "(max-width: 768px) 50vw, 25vw"}
-                />
-                {/* Dark Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/90 via-brand-dark/30 to-transparent z-10" />
-
-                {/* Text / Attribution Card Content */}
-                <div className="absolute inset-0 p-6 flex flex-col justify-end text-left z-20">
-                  <h3 className="text-lg sm:text-xl font-black text-white leading-tight tracking-tight">
-                    {title}
-                  </h3>
-                  <span className="text-[10px] text-white/70 font-semibold mt-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 ease-in-out">
-                    {dest.imageCredit} &bull; {dest.source}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        {DESTINATIONS_DATA.map((_, index) => (
+          <div
+            key={index}
+            onClick={() => setActiveSlide2(index)}
+            className={
+              index === activeSlide2
+                ? "w-3.5 h-3.5 rounded-full bg-amber-400 ring-4 ring-white/30 cursor-pointer transition-transform duration-300 scale-110"
+                : "w-2.5 h-2.5 rounded-full bg-white/80 cursor-pointer hover:bg-white transition-colors"
+            }
+          />
+        ))}
       </div>
     </section>
   );

@@ -36,7 +36,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    const { packageId, packageName, numberOfTravelers, preferredStartDate, specialRequests, pricingInputs, submittedTotal } = body;
+    const {
+      packageId,
+      packageName,
+      numberOfTravelers,
+      preferredStartDate,
+      specialRequests,
+      pricingInputs,
+      submittedTotal,
+      aiItineraryMarkdown,
+      aiVibeQuery,
+      source,
+    } = body;
 
     // Input Validations
     if (!packageName || typeof packageName !== "string" || packageName.trim() === "") {
@@ -167,6 +178,11 @@ ${jsonBlock}`;
       numberOfTravelers,
       preferredStartDate: new Date(preferredStartDate),
       specialRequests: finalSpecialRequests,
+      pricingInputs: pricingInputs || undefined,
+      submittedTotal: submittedTotal || undefined,
+      aiItineraryMarkdown: aiItineraryMarkdown || undefined,
+      aiVibeQuery: aiVibeQuery || undefined,
+      source: source === "ai-suggested" ? "ai-suggested" : "manual",
       status: "pending",
     });
 

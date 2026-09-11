@@ -1,124 +1,93 @@
 "use client";
 
-import Image from "next/image";
-import { useTranslations } from "next-intl";
-
-const guestReviews = [
-  {
-    name: "Charlotte Mercier",
-    country: "France",
-    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=120&h=120&q=80",
-    review: "The Hill Country Adventure was spectacular! The scenic train journey to Ella is something we will cherish forever. Highly recommend Horizon Travel for their flawless planning.",
-    rating: 5,
-    package: "Hill Country Adventure",
-  },
-  {
-    name: "Liam Kaelen",
-    country: "Germany",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&h=120&q=80",
-    review: "The Cultural Triangle Explorer exceeded all expectations. Sigiriya Rock Fortress is mind-blowing. Our private vehicle was clean, and the English-speaking guide made history come alive.",
-    rating: 5,
-    package: "Cultural Triangle Explorer",
-  },
-  {
-    name: "Sarah Lawson",
-    country: "Australia",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&h=120&q=80",
-    review: "We booked the Southern Beach Escape. Golden beaches, whale watching in Mirissa, and the historic Galle Fort were incredible. Smooth airport pickup and excellent beach resort selections.",
-    rating: 5,
-    package: "Southern Beach Escape",
-  },
-  {
-    name: "David Ross",
-    country: "United Kingdom",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&h=120&q=80",
-    review: "The Wildlife Safari Experience was absolute magic! We saw leopards, sloth bears, and herds of wild elephants in Yala. Highly professional drivers and beautiful national park resorts.",
-    rating: 5,
-    package: "Wildlife Safari Experience",
-  },
-];
+import { useState } from "react";
+import { Star, ChevronLeft, ChevronRight } from "lucide-react";
+import { useTenant } from "@/context/TenantBrandingContext";
 
 export default function Testimonials() {
-  const t = useTranslations("Testimonials");
+  const [activeTab, setActiveTab] = useState(0);
+  const tenant = useTenant();
+  const brandName = tenant.name || "Ceylon Travel";
 
-  const getReviewKey = (index: number) => {
-    if (index === 0) return "charlotte";
-    if (index === 1) return "liam";
-    if (index === 2) return "sarah";
-    if (index === 3) return "david";
-    return "";
+  const testimonials = [
+    {
+      name: "Charlotte Mercier",
+      quote:
+        `This country adventure was spectacular. The train journey to Ella is something we will never forget, highly recommend ${brandName} for their flawless planning.`,
+    },
+    {
+      name: "David & Sarah Jenkins",
+      quote:
+        "From safari in Yala to the historic streets of Galle, every detail was perfectly arranged. Truly a 5-star experience in Sri Lanka!",
+    },
+    {
+      name: "Elena Rostova",
+      quote:
+        "Exploring Sigiriya and Nuwara Eliya with our local guide made us feel completely safe and pampered. Will definitely come back!",
+    },
+  ];
+
+  const prevTestimonial = () => {
+    setActiveTab((prev) => (prev === 0 ? testimonials.length - 1 : prev - 1));
+  };
+
+  const nextTestimonial = () => {
+    setActiveTab((prev) => (prev === testimonials.length - 1 ? 0 : prev + 1));
   };
 
   return (
-    <section id="reviews" className="py-24 bg-white scroll-mt-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4 animate-fade-in-up">
-          <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">
-            {t("tagline")}
-          </span>
-          <h2 className="text-3xl sm:text-5xl font-black text-brand-dark tracking-tight">
-            {t("title")}
-          </h2>
-          <p className="text-base text-brand-muted">
-            {t("description")}
-          </p>
+    <section className="bg-white px-6 py-12 md:py-16">
+      <div className="max-w-6xl mx-auto text-center mb-10">
+        <p data-aos="fade-up" className="text-amber-500 font-bold text-xs tracking-wider uppercase mb-1">Guest Testimonials</p>
+        <h2 data-aos="fade-up" data-aos-delay="100" className="text-slate-900 text-2xl sm:text-4xl font-extrabold mb-3 leading-tight tracking-tight">
+          Loved by Travelers Worldwide
+        </h2>
+        <p data-aos="fade-up" data-aos-delay="200" className="text-slate-500 max-w-lg mx-auto text-xs sm:text-sm leading-relaxed">
+          Read stories from international tourists who explored the rich culture, scenic
+          highlands, and gold coastlines of Sri Lanka with us.
+        </p>
+      </div>
+
+      <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {testimonials.map((t, idx) => (
+          <div key={idx} data-aos="fade-up" data-aos-delay={idx * 120} className="rounded-xl bg-slate-900 p-5 flex flex-col gap-3 shadow-md">
+            <div className="flex gap-1 text-amber-400">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star key={i} size={14} fill="currentColor" strokeWidth={0} />
+              ))}
+            </div>
+            <p className="text-white/80 text-xs sm:text-sm leading-relaxed">&ldquo;{t.quote}&rdquo;</p>
+            <p className="text-white font-semibold text-xs mt-auto pt-3 border-t border-white/10">{t.name}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-center gap-3 mt-8">
+        <button
+          onClick={prevTestimonial}
+          className="h-8 w-8 rounded-full border border-slate-300 flex items-center justify-center hover:bg-slate-100 transition-colors"
+          aria-label="Previous testimonial"
+        >
+          <ChevronLeft size={14} />
+        </button>
+        <div className="flex gap-1.5">
+          {testimonials.map((_, i) => (
+            <span
+              key={i}
+              onClick={() => setActiveTab(i)}
+              className={`h-1.5 rounded-full cursor-pointer transition-all duration-300 ${
+                activeTab === i ? "w-5 bg-amber-400" : "w-1.5 bg-slate-300"
+              }`}
+            />
+          ))}
         </div>
-
-        {/* Reviews Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {guestReviews.map((item, index) => {
-            const reviewKey = getReviewKey(index);
-            const review = reviewKey ? t(`reviews.${reviewKey}.review`) : item.review;
-            const country = reviewKey ? t(`reviews.${reviewKey}.country`) : item.country;
-            const pkgName = reviewKey ? t(`reviews.${reviewKey}.package`) : item.package;
-
-            return (
-              <div
-                key={index}
-                className="bg-white/80 backdrop-blur-lg p-8 rounded-3xl border border-white/60 flex flex-col justify-between h-full shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 ease-in-out animate-fade-in-up"
-                style={{ animationDelay: `${100 + index * 100}ms`, animationFillMode: "both" }}
-              >
-                <div className="space-y-6">
-                  {/* Rating */}
-                  <div className="flex gap-1">
-                    {Array.from({ length: item.rating }).map((_, i) => (
-                      <svg
-                        key={i}
-                        className="w-4 h-4 text-brand-primary fill-brand-primary"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    ))}
-                  </div>
-                  <p className="text-sm font-medium text-brand-muted leading-relaxed italic text-left">
-                    &ldquo;{review}&rdquo;
-                  </p>
-                </div>
-
-                {/* Guest Profile */}
-                <div className="flex items-center gap-3 pt-6 mt-6 border-t border-brand-light">
-                  <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-brand-primary/20">
-                    <Image
-                      src={item.avatar}
-                      alt={item.name}
-                      fill
-                      className="object-cover"
-                      sizes="40px"
-                    />
-                  </div>
-                  <div className="text-left">
-                    <span className="block text-sm font-bold text-brand-dark leading-tight">{item.name}</span>
-                    <span className="block text-xxs font-bold text-brand-muted uppercase tracking-wider mt-0.5">
-                      {country} &bull; {pkgName}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <button
+          onClick={nextTestimonial}
+          className="h-8 w-8 rounded-full border border-slate-300 flex items-center justify-center hover:bg-slate-100 transition-colors"
+          aria-label="Next testimonial"
+        >
+          <ChevronRight size={14} />
+        </button>
       </div>
     </section>
   );

@@ -11,7 +11,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   const tenant = useTenant();
   const pathname = usePathname();
   const pathWithoutLocale = pathname.replace(/^\/[a-z]{2}(?=\/|$)/, '') || '/';
-  const showHeaderFooter = !tenant.isAdmin && pathWithoutLocale !== "/login" && pathWithoutLocale !== "/signup" && !pathWithoutLocale.startsWith("/dashboard") && !pathWithoutLocale.startsWith("/admin");
+  const showHeaderFooter = !["/login", "/signup", "/forgot-password"].includes(pathWithoutLocale) && !pathWithoutLocale.startsWith("/dashboard");
 
   return (
     <>

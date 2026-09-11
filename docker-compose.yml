@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   web:
     build:
@@ -27,10 +25,26 @@ services:
       - SMTP_PORT=${SMTP_PORT}
       - SMTP_SECURE=${SMTP_SECURE}
       - SMTP_FROM=${SMTP_FROM}
+      - AGENT_API_URL=http://backend:8000
     depends_on:
       - mongodb
+      - backend
     stdin_open: true
     tty: true
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/srilanka_travel
+      - OLLAMA_HOST=${OLLAMA_HOST:-http://host.docker.internal:11434}
+    depends_on:
+      - mongodb
 
   mongodb:
     image: mongo:latest

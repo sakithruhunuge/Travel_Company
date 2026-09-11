@@ -10,6 +10,11 @@ export interface ITravelRequest extends Document {
   numberOfTravelers: number;
   preferredStartDate: Date;
   specialRequests?: string;
+  pricingInputs?: Record<string, any>;
+  submittedTotal?: number;
+  aiItineraryMarkdown?: string;
+  aiVibeQuery?: string;
+  source?: "manual" | "ai-suggested";
   status: "pending" | "approved" | "rejected";
   createdAt: Date;
   updatedAt: Date;
@@ -26,6 +31,15 @@ const TravelRequestSchema: Schema = new Schema(
     numberOfTravelers: { type: Number, required: true, min: 1 },
     preferredStartDate: { type: Date, required: true },
     specialRequests: { type: String, default: "" },
+    pricingInputs: { type: Schema.Types.Mixed },
+    submittedTotal: { type: Number },
+    aiItineraryMarkdown: { type: String },
+    aiVibeQuery: { type: String },
+    source: {
+      type: String,
+      enum: ["manual", "ai-suggested"],
+      default: "manual",
+    },
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],

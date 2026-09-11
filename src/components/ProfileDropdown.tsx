@@ -36,8 +36,10 @@ export default function ProfileDropdown() {
 
     if (!session) return null;
 
+    const userName = session.user?.name || "User";
+
     return (
-        <div ref={ref} className="relative">
+        <div ref={ref} className="relative shrink-0">
             <button
                 aria-haspopup="menu"
                 aria-expanded={open}
@@ -45,30 +47,35 @@ export default function ProfileDropdown() {
                 onKeyDown={(e) => {
                     if (e.key === "Escape") setOpen(false);
                 }}
-                className="flex items-center gap-3 px-3 py-2 rounded-2xl hover:bg-white/60 transition-all duration-300 ease-in-out"
+                className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-full hover:bg-white/40 transition-all duration-300 ease-in-out cursor-pointer border border-transparent hover:border-slate-200"
+                title={userName}
             >
                 {session.user?.image ? (
-                    <div className="relative w-9 h-9 rounded-full overflow-hidden border border-slate-200">
-                        <Image src={session.user.image} alt={session.user.name || "Avatar"} fill className="object-cover" sizes="36px" referrerPolicy="no-referrer" />
+                    <div className="relative w-8 h-8 rounded-full overflow-hidden border border-slate-300 shrink-0">
+                        <Image src={session.user.image} alt={userName} fill className="object-cover" sizes="32px" referrerPolicy="no-referrer" />
                     </div>
                 ) : (
-                    <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-700 font-bold">{(session.user?.name || "").slice(0, 1)}</div>
+                    <div className="w-8 h-8 rounded-full bg-slate-900 text-amber-400 flex items-center justify-center text-xs font-bold shrink-0">
+                        {userName.slice(0, 1).toUpperCase()}
+                    </div>
                 )}
-                <div className="text-left hidden sm:block">
-                    <div className="text-base font-bold text-slate-900 leading-none">{session.user?.name}</div>
+                <div className="text-left hidden sm:block overflow-hidden">
+                    <div className="text-xs sm:text-sm font-bold text-slate-900 leading-none truncate max-w-[100px] md:max-w-[130px] lg:max-w-[150px]">
+                        {userName}
+                    </div>
                 </div>
             </button>
 
             {open && (
-                <div role="menu" aria-label="Profile options" className="absolute right-0 mt-2 w-56 bg-white/80 backdrop-blur-lg border border-white/40 rounded-2xl shadow-xl overflow-hidden animate-fade-in-up z-50">
-                    <div className="p-3 border-b border-slate-100">
-                        <div className="text-sm font-bold text-slate-800">{session.user?.name}</div>
-                        <div className="text-xxs text-slate-500 truncate">{session.user?.email}</div>
+                <div role="menu" aria-label="Profile options" className="absolute right-0 mt-2 w-56 bg-white/95 backdrop-blur-lg border border-slate-200 rounded-2xl shadow-xl overflow-hidden animate-fade-in-up z-50">
+                    <div className="p-3 border-b border-slate-100 bg-slate-50/50">
+                        <div className="text-sm font-bold text-slate-900 break-words">{userName}</div>
+                        <div className="text-xs text-slate-500 truncate mt-0.5">{session.user?.email}</div>
                     </div>
-                    <div className="flex flex-col py-2">
-                        <Link href={`/${locale}/dashboard`} className="px-4 py-2 text-sm hover:bg-slate-50">Dashboard</Link>
-                        <Link href={`/${locale}/dashboard/profile`} className="px-4 py-2 text-sm hover:bg-slate-50">Profile</Link>
-                        <button onClick={handleSignOut} className="text-left px-4 py-2 text-sm hover:bg-slate-50">Sign Out</button>
+                    <div className="flex flex-col py-1.5 text-xs font-semibold text-slate-700">
+                        <Link href={`/${locale}/dashboard`} onClick={() => setOpen(false)} className="px-4 py-2 hover:bg-amber-50 hover:text-slate-900 transition-colors">Dashboard</Link>
+                        <Link href={`/${locale}/dashboard/profile`} onClick={() => setOpen(false)} className="px-4 py-2 hover:bg-amber-50 hover:text-slate-900 transition-colors">Profile</Link>
+                        <button onClick={handleSignOut} className="text-left px-4 py-2 hover:bg-red-50 hover:text-red-600 transition-colors border-t border-slate-100 mt-1 pt-2">Sign Out</button>
                     </div>
                 </div>
             )}

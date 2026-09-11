@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import type { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
@@ -210,7 +211,7 @@ export const authOptions: NextAuthOptions = {
             // Check if user already exists by email under any tenant
             const existingByEmail = await User.findOne({ email: user.email });
             if (existingByEmail && !existingByEmail.tenantId) {
-              existingByEmail.tenantId = tenant.id!;
+              existingByEmail.tenantId = new mongoose.Types.ObjectId(tenant.id!);
               await existingByEmail.save();
               existingUser = existingByEmail;
             } else if (!existingByEmail) {
@@ -265,7 +266,7 @@ export const authOptions: NextAuthOptions = {
             if (!dbUser && token.email) {
               dbUser = await User.findOne({ email: token.email });
               if (dbUser && !dbUser.tenantId) {
-                dbUser.tenantId = tenant.id!;
+                dbUser.tenantId = new mongoose.Types.ObjectId(tenant.id!);
                 await dbUser.save();
               }
             }
@@ -313,7 +314,7 @@ export const authOptions: NextAuthOptions = {
             if (!dbUser) {
               dbUser = await User.findOne({ email: token.email });
               if (dbUser && !dbUser.tenantId) {
-                dbUser.tenantId = tenant.id!;
+                dbUser.tenantId = new mongoose.Types.ObjectId(tenant.id!);
                 await dbUser.save();
               }
             }
@@ -341,7 +342,7 @@ export const authOptions: NextAuthOptions = {
                 token.role = "customer";
                 token.tenantId = tenant.id;
                 token.slug = tenant.slug;
-              } catch (e) {
+              } catch (_err) {
                 token.tenantId = tenant.id;
                 token.slug = tenant.slug;
                 if (!token.role) token.role = "customer";
