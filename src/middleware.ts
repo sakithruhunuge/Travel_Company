@@ -309,6 +309,9 @@ export async function middleware(request: NextRequest) {
         <div class="card">
           <h1>Internal Server Error</h1>
           <p>An unexpected error occurred while setting up your portal workspace. Please try reloading or contact support if the issue persists.</p>
+          <p style="color: #ef4444; font-size: 0.8rem; background: rgba(0,0,0,0.5); padding: 1rem; border-radius: 0.5rem; text-align: left; overflow: auto; max-width: 100%;">
+            <code>Error: ${error instanceof Error ? error.message : String(error)}<br/><br/>Hostname: ${hostname}<br/>Origin: ${url.origin}</code>
+          </p>
         </div>
       </body>
       </html>`,

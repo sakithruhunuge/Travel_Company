@@ -48,28 +48,8 @@ function LoginContent() {
   return (
     <main className="min-h-screen flex items-stretch bg-white">
       <div className="w-full grid grid-cols-1 lg:grid-cols-2">
-        {/* Left side - Mountain/Landscape Image */}
-        <section className="hidden lg:flex relative overflow-hidden">
-          <div className="absolute inset-0">
-            <Image
-              src="/images/sigiriya.png"
-              alt="Mountain landscape"
-              fill
-              className="object-cover"
-              priority
-            />
-            <div className="absolute inset-0 bg-black/50" />
-          </div>
-          <div className="relative z-10 flex flex-col justify-end p-12 text-white h-full w-full">
-            <h1 className="text-4xl font-bold mb-4">Explore Sri Lanka</h1>
-            <p className="text-lg opacity-90 max-w-md">
-              Discover ancient wonders, misty mountains, and pristine beaches. Your adventure begins here.
-            </p>
-          </div>
-        </section>
-
-        {/* Right side - Login Form */}
-        <section className="flex items-center justify-center p-8 lg:p-16">
+        {/* Left side - Login Form */}
+        <section className="flex items-center justify-center p-8 lg:p-16 bg-[#F5F2EB]">
           <div className="w-full max-w-md space-y-8">
             {status === "authenticated" ? (
               <div className="text-center space-y-6">
@@ -116,8 +96,8 @@ function LoginContent() {
             ) : (
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <h1 className="text-3xl font-bold text-slate-900">Welcome Back</h1>
-                  <p className="text-slate-500">Sign in to continue your journey</p>
+                  <h1 className="font-serif text-4xl text-slate-900">Welcome back!</h1>
+                  <p className="text-sm text-slate-500">Where the adventure greets your return.</p>
                 </div>
 
                 {authError && (
@@ -151,6 +131,20 @@ function LoginContent() {
                 </div>
               </div>
             )}
+          </div>
+        </section>
+
+        {/* Right side - Mountain/Landscape Image */}
+        <section className="hidden lg:flex relative overflow-hidden">
+          <div className="absolute inset-y-0 left-0 w-32 md:w-64 bg-gradient-to-r from-[#F5F2EB] to-transparent z-10 pointer-events-none"></div>
+          <div className="absolute inset-0">
+            <Image
+              src="/images/sigiriya.png"
+              alt="Mountain landscape"
+              fill
+              className="object-cover"
+              priority
+            />
           </div>
         </section>
       </div>
