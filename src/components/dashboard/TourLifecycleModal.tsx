@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CloseOutlined,
@@ -63,6 +64,11 @@ export default function TourLifecycleModal({
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Load crew and existing booking state
   useEffect(() => {
@@ -95,7 +101,7 @@ export default function TourLifecycleModal({
     }
   }, [isOpen]);
 
-  if (!isOpen || !booking) return null;
+  if (!mounted || !isOpen || !booking) return null;
 
   // 1. Confirm Tour
   const handleConfirmTour = async () => {
@@ -314,9 +320,10 @@ export default function TourLifecycleModal({
   const balanceDue = Math.max(0, netActualTotal - advancePaidSoFar);
   const refundDue = Math.max(0, advancePaidSoFar - netActualTotal);
 
-  return (
+  return createPortal(
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+      <div className="fixed inset-0 z-[9999] bg-slate-900/15 backdrop-blur-md overflow-y-auto">
+        <div className="flex min-h-full items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -896,7 +903,9 @@ export default function TourLifecycleModal({
             </button>
           </div>
         </motion.div>
+        </div>
       </div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

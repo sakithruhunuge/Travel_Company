@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CloseOutlined,
@@ -15,11 +16,13 @@ import {
   CarOutlined,
   CheckCircleOutlined,
 } from "@ant-design/icons";
+import { useTenant } from "@/context/TenantBrandingContext";
 
 interface QuotationBuilderModalProps {
   isOpen: boolean;
   onClose: () => void;
   onQuotationCreated?: (quotationData: any) => void;
+  initialData?: any;
 }
 
 interface LineItem {
@@ -33,7 +36,27 @@ export default function QuotationBuilderModal({
   isOpen,
   onClose,
   onQuotationCreated,
+  initialData,
 }: QuotationBuilderModalProps) {
+  const tenant = useTenant();
+  const primaryColor = tenant?.branding?.primaryColor || "#FF8B50";
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
+
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -73,6 +96,31 @@ export default function QuotationBuilderModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+
+  React.useEffect(() => {
+    if (initialData) {
+      if (initialData.customerName) setCustomerName(initialData.customerName);
+      if (initialData.customerEmail) setCustomerEmail(initialData.customerEmail);
+      if (initialData.customerPhone) setCustomerPhone(initialData.customerPhone);
+      if (initialData.numberOfTravelers) setNumberOfTravelers(initialData.numberOfTravelers);
+      if (initialData.packageName) setPackageName(initialData.packageName);
+      if (initialData.preferredStartDate) {
+        try {
+          const d = new Date(initialData.preferredStartDate).toISOString().split("T")[0];
+          setPreferredStartDate(d);
+        } catch {}
+      }
+      if (initialData.duration) setDuration(initialData.duration);
+      if (initialData.destinations) setDestinations(initialData.destinations);
+      if (initialData.hotelTier) setHotelTier(initialData.hotelTier);
+      if (initialData.transportMode) setTransportMode(initialData.transportMode);
+      if (initialData.lineItems && Array.isArray(initialData.lineItems) && initialData.lineItems.length > 0) {
+        setLineItems(initialData.lineItems);
+      }
+      if (initialData.notes) setNotes(initialData.notes);
+      if (initialData.markupPercent !== undefined) setMarkupPercent(initialData.markupPercent);
+    }
+  }, [initialData, isOpen]);
 
   const handleAddLineItem = () => {
     setLineItems([
@@ -190,31 +238,56 @@ export default function QuotationBuilderModal({
     }
   };
 
-  if (!isOpen) return null;
+  if (!mounted) return null;
 
-  return (
+  return createPortal(
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+      {isOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden my-8 border border-slate-200"
+          className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden my-8 border border-slate-200"
         >
-          {/* Modal Header */}
-          <div className="bg-gradient-to-r from-[#0B7C8A] to-[#041A16] px-6 py-5 text-white flex justify-between items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-white/20 text-xs font-semibold uppercase tracking-wider mb-1">
-                Marketing Officer Tool
+          {/* Modal Header - Glass Shaded with Tenant Primary Color */}
+          <div
+            className="relative overflow-hidden px-7 py-5 flex justify-between items-center border-b border-white/60 backdrop-blur-2xl"
+            style={{
+              background: `linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.6) 50%, ${primaryColor}18 100%)`,
+            }}
+          >
+            {/* Ambient Radial Glow with primaryColor */}
+            <div
+              className="absolute -top-16 -right-16 h-48 w-48 rounded-full blur-2xl pointer-events-none opacity-30"
+              style={{ backgroundColor: primaryColor }}
+            />
+            <div
+              className="absolute -bottom-16 -left-16 h-40 w-40 rounded-full blur-2xl pointer-events-none opacity-20"
+              style={{ backgroundColor: primaryColor }}
+            />
+
+            <div className="flex items-center gap-3.5 relative z-10">
+              <div
+                className="h-10 w-10 rounded-xl border flex items-center justify-center text-lg font-bold shadow-sm"
+                style={{
+                  backgroundColor: `${primaryColor}18`,
+                  borderColor: `${primaryColor}35`,
+                  color: primaryColor,
+                }}
+              >
+                <FilePdfOutlined />
               </div>
-              <h2 className="text-xl font-bold">Prepare Formal Tour Quotation</h2>
-              <p className="text-xs text-white/80">
-                Capture inbound telephone/email lead, customize day-by-day services, and generate a branded proposal document.
-              </p>
+              <div>
+                <h2 className="text-lg font-black text-slate-900 leading-tight">Quotation Generator Terminal</h2>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Prepare formal travel proposals with itemized breakdown, margins & branded PDF export
+                </p>
+              </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-full hover:bg-white/20 transition-colors text-white text-lg"
+              className="h-8 w-8 rounded-full hover:bg-white/80 text-slate-400 hover:text-slate-800 flex items-center justify-center transition relative z-10 shadow-sm border border-slate-200/50"
             >
               <CloseOutlined />
             </button>
@@ -507,6 +580,8 @@ export default function QuotationBuilderModal({
           </div>
         </motion.div>
       </div>
-    </AnimatePresence>
+    )}
+  </AnimatePresence>,
+  document.body
   );
 }
