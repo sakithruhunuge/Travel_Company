@@ -31,6 +31,7 @@ import QuotationBuilderModal from "@/components/dashboard/QuotationBuilderModal"
 import AgentQuickEstimatorModal from "@/components/dashboard/AgentQuickEstimatorModal";
 import TourLifecycleModal from "@/components/dashboard/TourLifecycleModal";
 import CrewScheduleTimeline from "@/components/dashboard/CrewScheduleTimeline";
+import GuestNotesCard from "@/components/dashboard/GuestNotesCard";
 
 interface AssignedPerson {
   name?: string;
@@ -1002,24 +1003,14 @@ export default function TenantRequestsPage() {
                           </div>
                         </div>
 
-                        {selectedRequest.specialRequests && !selectedRequest.specialRequests.includes("### 📝 Traveler Special Requests") && (
-                          <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                            <span className="text-[9px] uppercase font-bold text-slate-400 block mb-1">Customer Notes</span>
-                            <p className="text-xs text-slate-700 font-medium leading-relaxed">
-                              {selectedRequest.specialRequests}
-                            </p>
+                        {selectedRequest.specialRequests && (
+                          <div className="mt-3">
+                            <GuestNotesCard
+                              rawNotes={selectedRequest.specialRequests}
+                              title="Special Requests / Guest Notes"
+                            />
                           </div>
                         )}
-                      </div>
-                    )}
-
-                    {/* Standard Notes showing up if they calculator details exist */}
-                    {selectedRequest.specialRequests?.includes("### 📝 Traveler Special Requests") && (
-                      <div className="flex flex-col gap-1 border-t border-slate-150 pt-4">
-                        <span className="text-slate-450 uppercase text-[10px] font-bold">Traveler Notes</span>
-                        <p className="text-slate-800 mt-1 leading-relaxed bg-slate-50 border border-slate-150 p-3.5 rounded-xl font-medium">
-                          {selectedRequest.specialRequests.split("### 📝 Traveler Special Requests")[1].trim() || "None"}
-                        </p>
                       </div>
                     )}
 
