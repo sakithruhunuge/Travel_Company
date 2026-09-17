@@ -42,12 +42,18 @@ export default function TenantPackagesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const userRole = (session?.user as any)?.role;
+  const isAuthorized =
+    userRole === "tenant_admin" ||
+    userRole === "super_admin" ||
+    userRole === "admin" ||
+    userRole === "marketing_officer" ||
+    userRole === "travel_agent";
 
   useEffect(() => {
-    if (userRole === "tenant_admin" || userRole === "super_admin" || userRole === "admin") {
+    if (isAuthorized) {
       loadPackages();
     }
-  }, [userRole]);
+  }, [isAuthorized]);
 
   const loadPackages = async () => {
     setLoading(true);
@@ -154,8 +160,7 @@ export default function TenantPackagesPage() {
   };
 
   // Guard Access
-  const isAuthorizedAdmin = userRole === "tenant_admin" || userRole === "super_admin" || userRole === "admin";
-  if (!isAuthorizedAdmin) {
+  if (!isAuthorized) {
     return (
       <div className="py-20 text-center text-slate-800">
         <EmptyState title="Access Denied" description="Only organization administrators can configure travel packages." />

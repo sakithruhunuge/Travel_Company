@@ -19,6 +19,8 @@ import {
     BgColorsOutlined,
     TeamOutlined,
     LineChartOutlined,
+    CarOutlined,
+    CompassOutlined,
 } from "@ant-design/icons";
 import { useLocale, useTranslations } from "next-intl";
 
@@ -41,19 +43,41 @@ export default function Sidebar({ onNavigate, onLogout, isCollapsed = false, onT
     const tenantSlug = rawSlug.endsWith("TRAVEL") ? rawSlug.slice(0, -6) : rawSlug;
     const initial = tenantSlug.charAt(0) || "C";
 
+    const isAuthorizedAdmin = userRole === "tenant_admin" || userRole === "super_admin" || userRole === "admin";
+    const isMarketingOfficer = userRole === "marketing_officer" || userRole === "travel_agent";
+    const isCrew = userRole === "driver" || userRole === "tour_guide";
+
     const menuItems = [
         { href: `/${locale}`, label: t("home"), icon: HomeOutlined },
-        { href: `/${locale}/dashboard`, label: t("dashboard"), icon: AppstoreOutlined },
+        { 
+            href: `/${locale}/dashboard`, 
+            label: isCrew ? "Dispatch Portal" : t("dashboard"), 
+            icon: isCrew ? CarOutlined : AppstoreOutlined 
+        },
     ];
 
-    const isAuthorizedAdmin = userRole === "tenant_admin" || userRole === "super_admin" || userRole === "admin";
     if (isAuthorizedAdmin) {
         menuItems.push(
             { href: `/${locale}/dashboard/packages`, label: "Manage Packages", icon: GiftOutlined },
             { href: `/${locale}/dashboard/requests`, label: "Approve Bookings", icon: CheckCircleOutlined },
+            { href: `/${locale}/dashboard/crew`, label: "Crew & Drivers", icon: CarOutlined },
+            { href: `/${locale}/driver`, label: "Dispatch View", icon: CompassOutlined },
             { href: `/${locale}/dashboard/branding`, label: "Customizer", icon: BgColorsOutlined },
             { href: `/${locale}/dashboard/users`, label: "Manage Users", icon: TeamOutlined },
             { href: `/${locale}/dashboard/analytics`, label: "Analytics", icon: LineChartOutlined }
+        );
+    } else if (isMarketingOfficer) {
+        menuItems.push(
+            { href: `/${locale}/dashboard/requests`, label: "Inquiries & Leads", icon: CheckCircleOutlined },
+            { href: `/${locale}/dashboard/packages`, label: "Packages & Tours", icon: GiftOutlined },
+            { href: `/${locale}/dashboard/crew`, label: "Crew & Drivers", icon: CarOutlined },
+            { href: `/${locale}/driver`, label: "Dispatch View", icon: CompassOutlined },
+            { href: `/${locale}/dashboard/analytics`, label: "Performance", icon: LineChartOutlined }
+        );
+    } else if (isCrew) {
+        menuItems.push(
+            { href: `/${locale}/driver`, label: "Tours & Manifests", icon: CompassOutlined },
+            { href: `/${locale}/dashboard/my-requests`, label: t("myRequests"), icon: SendOutlined }
         );
     } else {
         menuItems.push(
