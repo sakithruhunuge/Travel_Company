@@ -17,6 +17,7 @@ export interface TenantContextData {
   plan: string;
   status: string;
   isolation: string;
+  partnerRegistrationMode?: "public" | "invite_only" | "disabled";
   isAdmin?: boolean;
 }
 
