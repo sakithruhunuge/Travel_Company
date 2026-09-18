@@ -9,6 +9,8 @@ import SettingsCard from "@/components/dashboard/SettingsCard";
 import { useTenant } from "@/context/TenantBrandingContext";
 import { useLocale, useTranslations } from "next-intl";
 import { detectRequestedServices } from "@/lib/requestedServices";
+import MarketingOfficerDashboard from "@/components/dashboard/MarketingOfficerDashboard";
+import DriverDispatchDashboard from "@/components/dashboard/DriverDispatchDashboard";
 
 export default function DashboardHomePage() {
   const { data: session } = useSession();
@@ -291,6 +293,20 @@ export default function DashboardHomePage() {
         </section>
       </div>
     );
+  }
+
+  // -------------------------------------------------------------
+  // MARKETING OFFICER & TRAVEL AGENT VIEW
+  // -------------------------------------------------------------
+  if (userRole === "marketing_officer" || userRole === "travel_agent") {
+    return <MarketingOfficerDashboard />;
+  }
+
+  // -------------------------------------------------------------
+  // DRIVER & TOUR GUIDE VIEW (DISPATCH PORTAL)
+  // -------------------------------------------------------------
+  if (userRole === "driver" || userRole === "tour_guide") {
+    return <DriverDispatchDashboard />;
   }
 
   // -------------------------------------------------------------

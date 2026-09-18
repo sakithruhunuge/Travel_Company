@@ -10,21 +10,37 @@ export const runtime = "nodejs";
 // GET /api/driver/tours?identifier=...
 export async function GET(request: Request) {
   try {
+    const session = await getServerSession(authOptions);
+    const sessionUser = session?.user as any;
+    const userRole = sessionUser?.role;
+
+    const isManagement = ["tenant_admin", "marketing_officer", "travel_agent", "super_admin", "admin"].includes(userRole);
+    const isCrew = userRole === "driver" || userRole === "tour_guide";
+
     const { searchParams } = new URL(request.url);
     let identifier = searchParams.get("identifier")?.trim() || "";
 
     await dbConnect();
 
-    // Dynamically retrieve all registered crew members for selection
-    const allCrew = await DriverGuide.find({}).sort({ name: 1 }).lean();
+    // If driver or tour guide, FORCE identifier to their own identity
+    if (isCrew && sessionUser) {
+      identifier = sessionUser.email || sessionUser.name;
+    } else if (!isManagement && !sessionUser) {
+      // In development or if explicitly allowed, fallback to requested identifier or first available
+      if (!identifier) {
+        return NextResponse.json({ error: "Authentication required to access driver tours" }, { status: 401 });
+      }
+    }
 
-    // Check user session if identifier not explicitly provided
-    if (!identifier) {
-      const session = await getServerSession(authOptions);
-      const sessionUser = session?.user as any;
-      if (sessionUser?.name || sessionUser?.email) {
-        identifier = sessionUser.name || sessionUser.email;
-      } else if (allCrew.length > 0) {
+    // Only allow management to see allCrew dropdown
+    let allCrew: any[] = [];
+    if (isManagement) {
+      allCrew = await DriverGuide.find({ approvalStatus: "approved" }).sort({ name: 1 }).lean();
+    }
+
+    // Check user session if identifier not explicitly provided for management
+    if (!identifier && isManagement) {
+      if (allCrew.length > 0) {
         identifier = allCrew[0].name;
       }
     }
@@ -40,6 +56,14 @@ export async function GET(request: Request) {
           { name: new RegExp(identifier, "i") },
         ],
       }).lean();
+    }
+
+    // If still no crewMember found but user is logged in, try user ID link
+    if (!crewMember && sessionUser?.id) {
+      crewMember = await DriverGuide.findOne({ userId: sessionUser.id }).lean();
+      if (crewMember) {
+        identifier = crewMember.name || crewMember.email;
+      }
     }
 
     // Query tours where this driver or guide is assigned
@@ -67,8 +91,9 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       crewMember,
-      allCrew,
+      allCrew: isManagement ? allCrew : [],
       selectedIdentifier: identifier,
+      isManagement,
       tours,
       stats: {
         total: tours.length,

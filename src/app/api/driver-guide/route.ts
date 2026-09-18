@@ -135,3 +135,53 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error?.message || "Failed to create crew member" }, { status: 500 });
   }
 }
+
+// PATCH /api/driver-guide - Update crew member status (available, on_tour, off_duty)
+export async function PATCH(request: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    const sessionUser = session?.user as any;
+    const tenantId = await resolveTenantId(sessionUser);
+
+    if (!tenantId) {
+      return NextResponse.json({ error: "Tenant context missing" }, { status: 400 });
+    }
+
+    await dbConnect();
+    const db = tenantScope(tenantId);
+
+    const body = await request.json();
+    const { id, status, phone, notes } = body;
+
+    let targetFilter: any = {};
+    if (id) {
+      targetFilter._id = id;
+    } else if (sessionUser?.id) {
+      targetFilter.$or = [{ userId: sessionUser.id }, { email: sessionUser.email }];
+    } else {
+      return NextResponse.json({ error: "Identification required" }, { status: 400 });
+    }
+
+    const updateFields: any = {};
+    if (status && ["available", "on_tour", "off_duty"].includes(status)) {
+      updateFields.status = status;
+    }
+    if (phone) updateFields.phone = phone.trim();
+    if (notes !== undefined) updateFields.notes = notes;
+
+    const updated = await db.DriverGuide.findOneAndUpdate(
+      targetFilter,
+      { $set: updateFields },
+      { new: true }
+    );
+
+    return NextResponse.json({
+      success: true,
+      member: updated,
+    });
+  } catch (error: any) {
+    console.error("DriverGuide PATCH error:", error);
+    return NextResponse.json({ error: error?.message || "Failed to update crew status" }, { status: 500 });
+  }
+}
+
