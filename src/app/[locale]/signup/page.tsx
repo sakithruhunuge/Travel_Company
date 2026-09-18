@@ -42,28 +42,8 @@ function SignupContent() {
   return (
     <main className="min-h-screen flex items-stretch bg-white">
       <div className="w-full grid grid-cols-1 lg:grid-cols-2">
-        {/* Left side - Mountain/Landscape Image */}
-        <section className="hidden lg:flex relative overflow-hidden">
-          <div className="absolute inset-0">
-            <Image
-              src="/images/sigiriya.png"
-              alt="Mountain landscape"
-              fill
-              className="object-cover"
-              priority
-            />
-            <div className="absolute inset-0 bg-black/50" />
-          </div>
-          <div className="relative z-10 flex flex-col justify-end p-12 text-white h-full w-full">
-            <h1 className="text-4xl font-bold mb-4">Explore Sri Lanka</h1>
-            <p className="text-lg opacity-90 max-w-md">
-              Discover ancient wonders, misty mountains, and pristine beaches. Your adventure begins here.
-            </p>
-          </div>
-        </section>
-
-        {/* Right side - Signup Form */}
-        <section className="flex items-center justify-center p-8 lg:p-16">
+        {/* Left side - Signup Form */}
+        <section className="flex items-center justify-center p-8 lg:p-16 bg-[#F5F2EB]">
           <div className="w-full max-w-md space-y-8">
             {status === "authenticated" ? (
               <div className="text-center space-y-6">
@@ -110,8 +90,8 @@ function SignupContent() {
             ) : (
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <h1 className="text-3xl font-bold text-slate-900">Create Account</h1>
-                  <p className="text-slate-500">Join us to plan your next adventure</p>
+                  <h1 className="font-serif text-4xl text-slate-900">Create Account</h1>
+                  <p className="text-sm text-slate-500">Join us to plan your next adventure.</p>
                 </div>
 
                 <SignupForm />
@@ -127,7 +107,7 @@ function SignupContent() {
                 <div className="text-center pt-2">
                   <Link
                     href="/"
-                    className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-brand-primary transition-colors"
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -141,7 +121,7 @@ function SignupContent() {
                     Already have an account?{" "}
                     <Link
                       href={`/login?callbackUrl=${encodeURIComponent(callbackUrl)}${restoreForm ? "&restoreForm=true" : ""}`}
-                      className="font-semibold text-brand-primary hover:text-brand-primary/90"
+                      className="font-semibold text-slate-900 hover:text-slate-700 hover:underline"
                     >
                       Sign in
                     </Link>
@@ -149,6 +129,20 @@ function SignupContent() {
                 </div>
               </div>
             )}
+          </div>
+        </section>
+
+        {/* Right side - Mountain/Landscape Image */}
+        <section className="hidden lg:flex relative overflow-hidden">
+          <div className="absolute inset-y-0 left-0 w-32 md:w-64 bg-gradient-to-r from-[#F5F2EB] to-transparent z-10 pointer-events-none"></div>
+          <div className="absolute inset-0">
+            <Image
+              src="/images/sigiriya.png"
+              alt="Mountain landscape"
+              fill
+              className="object-cover"
+              priority
+            />
           </div>
         </section>
       </div>

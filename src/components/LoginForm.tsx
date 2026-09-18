@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signIn, SignInResponse } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/context/ToastContext";
+import Link from "next/link";
 
 /**
  * LoginForm
@@ -141,7 +142,7 @@ export default function LoginForm(): JSX.Element {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
-          className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all"
+          className="w-full bg-transparent border border-slate-300 rounded px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 transition-all placeholder:text-slate-400"
         />
       </div>
 
@@ -156,14 +157,24 @@ export default function LoginForm(): JSX.Element {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="••••••••"
-          className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all"
+          className="w-full bg-transparent border border-slate-300 rounded px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 transition-all placeholder:text-slate-400"
         />
+      </div>
+
+      <div className="flex items-center justify-between text-sm">
+        <label className="flex items-center gap-2 text-slate-600 cursor-pointer">
+          <input type="checkbox" className="rounded border-slate-300 text-slate-900 focus:ring-slate-900" />
+          Remember me
+        </label>
+        <Link href="/forgot-password" className="text-slate-600 hover:text-slate-900 hover:underline">
+          Forgot password?
+        </Link>
       </div>
 
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full py-2.5 bg-brand-primary hover:bg-brand-primary/90 text-white font-medium rounded-lg transition-colors disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded transition-colors disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {isLoading ? (
           <>
@@ -179,7 +190,7 @@ export default function LoginForm(): JSX.Element {
       </button>
 
       <div className="text-center">
-        <a href={signupHref} className="text-sm text-brand-primary hover:text-brand-primary/80 font-medium">
+        <a href={signupHref} className="text-sm text-slate-600 hover:text-slate-900 font-medium">
           Don&apos;t have an account? Sign up
         </a>
       </div>

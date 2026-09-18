@@ -49,13 +49,21 @@ export async function middleware(request: NextRequest) {
   // Run locale routing middleware for page requests
   const response = intlMiddleware(request);
 
+  // If next-intl redirects (e.g. to add the locale prefix), return the redirect immediately
+  if (response && response.status >= 300 && response.status < 400) {
+    return response;
+  }
+
   try {
     const origin = url.origin;
     const tenant = await resolveTenant({ hostname, origin });
 
     if (tenant.isAdmin) {
       if (!url.pathname.startsWith("/api")) {
-        url.pathname = "/admin";
+        const segments = url.pathname.split("/");
+        const locales = ['en', 'fr', 'de', 'si'];
+        const locale = locales.includes(segments[1]) ? segments[1] : 'en';
+        url.pathname = `/${locale}/admin`;
         return NextResponse.rewrite(url);
       }
     }
@@ -309,6 +317,9 @@ export async function middleware(request: NextRequest) {
         <div class="card">
           <h1>Internal Server Error</h1>
           <p>An unexpected error occurred while setting up your portal workspace. Please try reloading or contact support if the issue persists.</p>
+          <p style="color: #ef4444; font-size: 0.8rem; background: rgba(0,0,0,0.5); padding: 1rem; border-radius: 0.5rem; text-align: left; overflow: auto; max-width: 100%;">
+            <code>Error: ${error instanceof Error ? error.message : String(error)}<br/><br/>Hostname: ${hostname}<br/>Origin: ${url.origin}</code>
+          </p>
         </div>
       </body>
       </html>`,
