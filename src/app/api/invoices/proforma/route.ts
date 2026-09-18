@@ -9,6 +9,11 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import Tenant from "@/models/Tenant";
 import { sendEmail } from "@/lib/emailService";
 import { sendGuestProformaSMS } from "@/lib/smsService";
+import Stripe from "stripe";
+import path from "path";
+import { sriLankaImages } from "@/constants/sriLankaImages";
+import { parseSpecifications } from "@/lib/pricingParser";
+import Package from "@/models/Package";
 
 export const runtime = "nodejs";
 
@@ -96,6 +101,94 @@ export async function POST(request: Request) {
     const tenantName = tenantDoc?.name || "Travel Company";
     const primaryColor = tenantDoc?.branding?.primaryColor || "#0B7C8A";
 
+    // 1. Stripe Checkout Integration
+    let checkoutUrl = "";
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error("[Stripe API] Missing STRIPE_SECRET_KEY in environment variables. Cannot generate checkoutUrl.");
+    } else if (advanceDepositDue <= 0) {
+      console.warn("[Stripe API] Advance deposit is 0 or negative. Skipping session creation.");
+    } else {
+      try {
+        console.log(`[Stripe API] Attempting to create checkout session for deposit: $${advanceDepositDue.toFixed(2)}`);
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2024-06-20" as any });
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ["card"],
+          line_items: [
+            {
+              price_data: {
+                currency: "usd",
+                product_data: {
+                  name: "Advance Deposit for Tour Booking",
+                  description: `Tour ID: ${booking.tourId || booking._id}`,
+                },
+                unit_amount: Math.round(advanceDepositDue * 100),
+              },
+              quantity: 1,
+            },
+          ],
+          mode: "payment",
+          success_url: "http://localhost:3000/success",
+          cancel_url: "http://localhost:3000/cancel",
+        });
+        checkoutUrl = session.url || "";
+        console.log(`[Stripe API] Successfully created checkout session: ${checkoutUrl}`);
+      } catch (err) {
+        console.error("[Stripe API] Stripe session creation failed! Error:", err);
+      }
+
+    }
+
+    // 2. Destination Images fetching
+    const specs = parseSpecifications(booking.specialRequests || "");
+    let rawDestinations: string[] | string = specs.destinations || "";
+
+    if (!rawDestinations && booking.pricingInputs?.destinations) {
+      rawDestinations = booking.pricingInputs.destinations;
+    }
+
+    if ((!rawDestinations || (Array.isArray(rawDestinations) && rawDestinations.length === 0)) && booking.packageId) {
+      try {
+        let pkg = await Package.findById(booking.packageId).lean() as any;
+        if (!pkg) {
+          pkg = await Package.findOne({ slug: booking.packageId }).lean() as any;
+        }
+        if (pkg?.destinations && pkg.destinations.length > 0) {
+          rawDestinations = pkg.destinations;
+        }
+      } catch (err) {
+        console.warn("Could not fetch package destinations:", err);
+      }
+    }
+
+    let destinationImages: { title: string; imagePath: string }[] = [];
+    if (rawDestinations) {
+      let destArray = Array.isArray(rawDestinations) ? rawDestinations : rawDestinations.split(",").map(d => d.trim());
+
+      // Match with sriLankaImages
+      for (const dest of destArray) {
+        const found = sriLankaImages.destinations.find((d) =>
+          d.title.toLowerCase().includes(dest.toLowerCase()) ||
+          dest.toLowerCase().includes(d.title.toLowerCase())
+        );
+        if (found && !destinationImages.some(img => img.title === found.title)) {
+          destinationImages.push({
+            title: found.title,
+            imagePath: path.join(process.cwd(), "public", found.imageUrl),
+          });
+        }
+      }
+    }
+
+    // Fallback if no images found
+    if (destinationImages.length === 0) {
+      destinationImages = sriLankaImages.destinations.slice(0, 3).map(img => ({
+        title: img.title,
+        imagePath: path.join(process.cwd(), "public", img.imageUrl),
+      }));
+    }
+    // Limit to max 3 images to fit nicely on the PDF
+    destinationImages = destinationImages.slice(0, 3);
+
     const pdfProps = {
       invoiceNumber,
       tourId: booking.tourId || booking._id.toString(),
@@ -122,6 +215,8 @@ export async function POST(request: Request) {
       advancePaid: proformaData.advancePaid,
       currency: "USD",
       paymentStatus: proformaData.advancePaid >= advanceDepositDue ? "PAID" : "DEPOSIT_PENDING",
+      checkoutUrl,
+      destinationImages,
     };
 
     if (downloadPdf) {
@@ -180,6 +275,8 @@ export async function POST(request: Request) {
       proforma: proformaData,
       tourId: booking.tourId,
       status: booking.status,
+      checkoutUrl,
+      destinationImages,
       message: "Proforma Invoice successfully generated",
     });
   } catch (error: any) {

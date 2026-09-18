@@ -15,6 +15,8 @@ import {
   DollarCircleOutlined,
   ClockCircleOutlined,
 } from "@ant-design/icons";
+import { pdf } from "@react-pdf/renderer";
+import ProformaInvoiceDocument from "../pdf/ProformaInvoiceDocument";
 
 interface TourLifecycleModalProps {
   isOpen: boolean;
@@ -157,26 +159,68 @@ export default function TourLifecycleModal({
   // 3. Issue Proforma Invoice
   const handleIssueProforma = async (downloadPdf = false, sendToCustomer = false) => {
     setLoading(true);
-    setErrorMsg("");
-    setMsg("");
     try {
+      // Always call the backend to issue proforma data and get checkoutUrl + images
+      const res = await fetch("/api/invoices/proforma", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookingId: booking._id,
+          hotelCharges,
+          vehicleCharges,
+          driverGuideCharges,
+          excursionCharges,
+          forexBufferPercent,
+          depositPercent,
+          downloadPdf: false,
+          sendToCustomer,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to issue proforma");
+
       if (downloadPdf) {
-        const res = await fetch("/api/invoices/proforma", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            bookingId: booking._id,
-            hotelCharges,
-            vehicleCharges,
-            driverGuideCharges,
-            excursionCharges,
-            forexBufferPercent,
-            depositPercent,
-            downloadPdf: true,
-          }),
-        });
-        if (!res.ok) throw new Error("Failed to download proforma PDF");
-        const blob = await res.blob();
+        const pData = data.proforma;
+        
+        // Convert server absolute paths to browser absolute URLs for images
+        const destinationImages = data.destinationImages?.map((img: any) => {
+           // img.imagePath is a local server path like /usr/.../public/images/sigiriya.png
+           // We can reconstruct it to /images/sigiriya.png which the browser can fetch
+           const urlPath = img.imagePath.split("public")[1] || "/images/sigiriya.png";
+           return { ...img, imagePath: window.location.origin + urlPath.replace(/\\/g, '/') };
+        }) || [];
+        
+        console.log('Passing to PDF:', data.checkoutUrl);
+        const blob = await pdf(<ProformaInvoiceDocument 
+           invoiceNumber={pData.invoiceNumber}
+           tourId={booking.tourId || booking._id}
+           issueDate={new Date(pData.issueDate).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+           dueDate={new Date(pData.dueDate).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+           tenantName="Travel Company"
+           customerName={booking.userName}
+           customerEmail={booking.userEmail}
+           numberOfTravelers={booking.numberOfTravelers}
+           packageName={booking.packageName}
+           preferredStartDate={new Date(booking.preferredStartDate).toLocaleDateString()}
+           assignedDriverName={selectedDriver?.name}
+           assignedGuideName={selectedGuide?.name}
+           assignedVehiclePlate={vehiclePlate}
+           hotelCharges={hotelCharges}
+           vehicleCharges={vehicleCharges}
+           driverGuideCharges={driverGuideCharges}
+           excursionCharges={excursionCharges}
+           forexBufferPercent={forexBufferPercent}
+           subtotal={pData.subtotal}
+           totalAmount={pData.totalAmount}
+           advanceDepositDue={pData.advanceDepositDue}
+           advancePaid={pData.advancePaid}
+           currency="USD"
+           paymentStatus={pData.advancePaid >= pData.advanceDepositDue ? "PAID" : "DEPOSIT_PENDING"}
+           checkoutUrl={data.checkoutUrl}
+           destinationImages={destinationImages}
+        />).toBlob();
+        
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -184,25 +228,8 @@ export default function TourLifecycleModal({
         document.body.appendChild(a);
         a.click();
         a.remove();
-        setMsg("Proforma Invoice PDF downloaded!");
+        setMsg("Proforma Invoice PDF generated and downloaded!");
       } else {
-        const res = await fetch("/api/invoices/proforma", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            bookingId: booking._id,
-            hotelCharges,
-            vehicleCharges,
-            driverGuideCharges,
-            excursionCharges,
-            forexBufferPercent,
-            depositPercent,
-            downloadPdf: false,
-            sendToCustomer,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Failed to generate proforma");
         setMsg(`Proforma Invoice #${data.proforma.invoiceNumber} issued!`);
         if (onBookingUpdated) onBookingUpdated();
         setActiveTab("intour");

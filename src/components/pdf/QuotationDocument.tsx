@@ -1,5 +1,5 @@
 import React from "react";
-import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
 
 export interface QuotationLineItemProps {
   title: string;
@@ -34,6 +34,7 @@ export interface QuotationDocumentProps {
   currency?: string;
   notes?: string;
   marketingOfficerName?: string;
+  destinationImages?: { title: string; imagePath: string }[];
 }
 
 export default function QuotationDocument({
@@ -60,6 +61,7 @@ export default function QuotationDocument({
   currency = "USD",
   notes,
   marketingOfficerName,
+  destinationImages = [],
 }: QuotationDocumentProps) {
   const styles = StyleSheet.create({
     page: {
@@ -241,6 +243,39 @@ export default function QuotationDocument({
       fontSize: 7.5,
       color: "#94a3b8",
     },
+    destinationsSection: {
+      marginTop: 10,
+      borderTopWidth: 1,
+      borderTopColor: "#e2e8f0",
+      paddingTop: 12,
+    },
+    destinationsTitle: {
+      fontSize: 10,
+      fontFamily: "Helvetica-Bold",
+      color: primaryColor,
+      marginBottom: 8,
+    },
+    imageGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 10,
+    },
+    imageWrapper: {
+      width: "30%", // 3 per row approx
+      marginBottom: 8,
+    },
+    destinationImage: {
+      width: "100%",
+      height: 60,
+      borderRadius: 4,
+      objectFit: "cover",
+    },
+    imageTitle: {
+      fontSize: 7,
+      color: "#64748b",
+      textAlign: "center",
+      marginTop: 3,
+    },
   });
 
   return (
@@ -251,7 +286,7 @@ export default function QuotationDocument({
           <View>
             <Text style={styles.companyName}>{tenantName}</Text>
             <Text style={{ fontSize: 8.5, color: "#64748b" }}>Tour Quotation & Package Proposal</Text>
-            {marketingOfficerName && (
+            {Boolean(marketingOfficerName) && (
               <Text style={{ fontSize: 8, color: "#64748b", marginTop: 2 }}>
                 Prepared by: {marketingOfficerName} (Marketing Officer)
               </Text>
@@ -260,7 +295,7 @@ export default function QuotationDocument({
           <View style={{ alignItems: "flex-end" }}>
             <Text style={styles.docBadge}>FORMAL QUOTATION</Text>
             <Text style={styles.quoteMeta}>Ref: {quotationNumber}</Text>
-            {tourId && <Text style={styles.quoteMeta}>Tour ID: {tourId}</Text>}
+            {Boolean(tourId) && <Text style={styles.quoteMeta}>Tour ID: {tourId}</Text>}
             <Text style={styles.quoteMeta}>Date: {generatedDate}</Text>
             <Text style={[styles.quoteMeta, { color: "#b45309", fontFamily: "Helvetica-Bold" }]}>
               Valid Until: {validUntilDate}
@@ -280,7 +315,7 @@ export default function QuotationDocument({
               <Text style={styles.infoLabel}>Email:</Text>
               <Text style={styles.infoVal}>{customerEmail}</Text>
             </View>
-            {customerPhone && (
+            {Boolean(customerPhone) && (
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Phone:</Text>
                 <Text style={styles.infoVal}>{customerPhone}</Text>
@@ -302,19 +337,19 @@ export default function QuotationDocument({
               <Text style={styles.infoLabel}>Start Date:</Text>
               <Text style={styles.infoVal}>{preferredStartDate}</Text>
             </View>
-            {duration && (
+            {Boolean(duration) && (
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Duration:</Text>
                 <Text style={styles.infoVal}>{duration}</Text>
               </View>
             )}
-            {hotelTier && (
+            {Boolean(hotelTier) && (
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Accommodation:</Text>
                 <Text style={styles.infoVal}>{hotelTier}</Text>
               </View>
             )}
-            {transportMode && (
+            {Boolean(transportMode) && (
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Transport:</Text>
                 <Text style={styles.infoVal}>{transportMode}</Text>
@@ -323,7 +358,7 @@ export default function QuotationDocument({
           </View>
         </View>
 
-        {destinations && (
+        {Boolean(destinations) && (
           <View style={[styles.card, { marginBottom: 12 }]}>
             <Text style={styles.cardTitle}>Planned Destinations & Route</Text>
             <Text style={{ fontSize: 8.5, color: "#1e293b" }}>{destinations}</Text>
@@ -349,7 +384,7 @@ export default function QuotationDocument({
               >
                 <View style={styles.colDesc}>
                   <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 8.5 }}>{item.title}</Text>
-                  {item.description && (
+                  {Boolean(item.description) && (
                     <Text style={{ fontSize: 7.5, color: "#64748b", marginTop: 1 }}>
                       {item.description}
                     </Text>
@@ -403,10 +438,25 @@ export default function QuotationDocument({
           </Text>
         </View>
 
-        {notes && (
+        {Boolean(notes) && (
           <View style={[styles.card, { marginBottom: 12 }]}>
             <Text style={styles.cardTitle}>Special Agency Notes</Text>
             <Text style={{ fontSize: 8, color: "#475569" }}>{notes}</Text>
+          </View>
+        )}
+
+        {/* Destination Images */}
+        {destinationImages && destinationImages.length > 0 && (
+          <View style={styles.destinationsSection}>
+            <Text style={styles.destinationsTitle}>Your Custom Tailor-Made Tour Destinations</Text>
+            <View style={styles.imageGrid}>
+              {destinationImages.map((dest, idx) => (
+                <View key={idx} style={styles.imageWrapper}>
+                  <Image src={dest.imagePath} style={styles.destinationImage} />
+                  <Text style={styles.imageTitle}>{dest.title}</Text>
+                </View>
+              ))}
+            </View>
           </View>
         )}
 

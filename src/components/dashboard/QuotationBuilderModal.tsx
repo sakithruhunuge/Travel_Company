@@ -15,6 +15,9 @@ import {
   CarOutlined,
   CheckCircleOutlined,
 } from "@ant-design/icons";
+import { pdf } from "@react-pdf/renderer";
+import QuotationDocument from "../pdf/QuotationDocument";
+import { sriLankaImages } from "@/constants/sriLankaImages";
 
 interface QuotationBuilderModalProps {
   isOpen: boolean;
@@ -113,72 +116,98 @@ export default function QuotationBuilderModal({
 
     setIsSubmitting(true);
     try {
+      // 1. Save and fetch data from backend first
+      const response = await fetch("/api/quotations/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerName,
+          customerEmail,
+          customerPhone,
+          numberOfTravelers,
+          packageName,
+          preferredStartDate,
+          duration,
+          destinations,
+          hotelTier,
+          transportMode,
+          lineItems,
+          markupPercent,
+          notes,
+          saveAsLead: true,
+          downloadPdf: false,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to save quotation");
+
       if (downloadPdf) {
-        // Direct download via window/form
-        const response = await fetch("/api/quotations/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            customerName,
-            customerEmail,
-            customerPhone,
-            numberOfTravelers,
-            packageName,
-            preferredStartDate,
-            duration,
-            destinations,
-            hotelTier,
-            transportMode,
-            lineItems,
-            markupPercent,
-            notes,
-            saveAsLead: true,
-            downloadPdf: true,
-          }),
-        });
-
-        if (!response.ok) {
-          const errData = await response.json();
-          throw new Error(errData.error || "Failed to generate quotation PDF");
+        // 2. Generate local blob using client-side renderer so it waits for images
+        let destinationImages: any[] = [];
+        if (destinations) {
+           const destArray = destinations.split(",").map(d => d.trim());
+           for (const dest of destArray) {
+             const found = sriLankaImages.destinations.find((d) => 
+               d.title.toLowerCase().includes(dest.toLowerCase()) || 
+               dest.toLowerCase().includes(d.title.toLowerCase())
+             );
+             if (found && !destinationImages.some(img => img.title === found.title)) {
+               destinationImages.push({
+                 title: found.title,
+                 imagePath: window.location.origin + found.imageUrl
+               });
+             }
+           }
         }
-
-        const blob = await response.blob();
+        if (destinationImages.length === 0) {
+           destinationImages = sriLankaImages.destinations.slice(0, 3).map(img => ({
+              title: img.title,
+              imagePath: window.location.origin + img.imageUrl
+           }));
+        }
+        destinationImages = destinationImages.slice(0, 3);
+        
+        const qData = data.quotation;
+        const blob = await pdf(<QuotationDocument 
+           quotationNumber={qData.quotationNumber}
+           tourId={data.bookingId}
+           generatedDate={new Date(qData.issueDate).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+           validUntilDate={new Date(qData.validUntil).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+           tenantName="Travel Company" 
+           customerName={customerName}
+           customerEmail={customerEmail}
+           customerPhone={customerPhone}
+           numberOfTravelers={numberOfTravelers}
+           packageName={packageName}
+           preferredStartDate={new Date(preferredStartDate).toLocaleDateString()}
+           duration={duration}
+           destinations={destinations}
+           hotelTier={hotelTier}
+           transportMode={transportMode}
+           lineItems={qData.lineItems}
+           subtotal={qData.subtotal}
+           totalPrice={qData.totalAmount}
+           currency="USD"
+           notes={notes}
+           destinationImages={destinationImages}
+        />).toBlob();
+        
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `Quotation-${customerName.replace(/\s+/g, "_")}.pdf`;
+        a.download = `Quotation-${qData.quotationNumber}.pdf`;
         document.body.appendChild(a);
         a.click();
         a.remove();
+        
         setSuccessMsg("Quotation PDF generated and downloaded successfully!");
       } else {
-        const response = await fetch("/api/quotations/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            customerName,
-            customerEmail,
-            customerPhone,
-            numberOfTravelers,
-            packageName,
-            preferredStartDate,
-            duration,
-            destinations,
-            hotelTier,
-            transportMode,
-            lineItems,
-            markupPercent,
-            notes,
-            saveAsLead: true,
-            downloadPdf: false,
-          }),
-        });
-
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Failed to save quotation");
-
         setSuccessMsg("Quotation saved as a live booking lead!");
-        if (onQuotationCreated) onQuotationCreated(data);
+      }
+
+      if (onQuotationCreated) onQuotationCreated(data);
+      if (!downloadPdf) {
         setTimeout(() => {
           onClose();
         }, 1500);
