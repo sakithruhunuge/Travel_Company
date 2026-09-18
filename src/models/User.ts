@@ -7,7 +7,7 @@ export interface IUser extends Document {
   password?: string;
   image?: string;
   provider: "google" | "credentials";
-  role: "customer" | "tenant_admin";
+  role: "customer" | "tenant_admin" | "marketing_officer" | "travel_agent" | "driver" | "tour_guide" | "super_admin";
   status: "active" | "suspended" | "pending";
   createdAt: Date;
   updatedAt: Date;
@@ -28,7 +28,15 @@ const UserSchema: Schema = new Schema(
     },
     role: {
       type: String,
-      enum: ["customer", "tenant_admin"],
+      enum: [
+        "customer",
+        "tenant_admin",
+        "marketing_officer",
+        "travel_agent",
+        "driver",
+        "tour_guide",
+        "super_admin",
+      ],
       default: "customer",
       required: true,
       index: true,

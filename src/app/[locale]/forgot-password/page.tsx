@@ -13,7 +13,7 @@ export default function ForgotPasswordPage() {
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     try {
       // Simulate API call for presentation
       await new Promise((resolve) => setTimeout(resolve, 1500));

@@ -2,6 +2,11 @@ import React from "react";
 import { Document, Page, Text, View, StyleSheet, Link } from "@react-pdf/renderer";
 import { PricingMetrics } from "@/lib/pricingParser";
 
+interface AssignedPersonInfo {
+  name: string;
+  email?: string;
+}
+
 interface InvoiceDocumentProps {
   invoiceId: string;
   date: string;
@@ -25,6 +30,8 @@ interface InvoiceDocumentProps {
     excursions?: string;
     addOns?: string;
   };
+  tourGuide?: AssignedPersonInfo;
+  driver?: AssignedPersonInfo;
 }
 
 export default function InvoiceDocument({
@@ -41,6 +48,8 @@ export default function InvoiceDocument({
   secondaryColor = "#041A16",
   paymentLink,
   specs,
+  tourGuide,
+  driver,
 }: InvoiceDocumentProps) {
   // Styles for PDF document
   const styles = StyleSheet.create({
@@ -437,6 +446,33 @@ export default function InvoiceDocument({
             </View>
           </View>
         </View>
+
+        {/* Assigned Services Section */}
+        {(tourGuide || driver) && (
+          <View style={[styles.tableContainer, { marginTop: 8 }]}>
+            <View style={styles.tableHeader}>
+              <Text style={[styles.tableHeaderCell, { fontSize: 9 }]}>Assigned Services</Text>
+            </View>
+            {tourGuide && (
+              <View style={styles.tableRow}>
+                <View style={styles.colDesc}>
+                  <Text style={styles.cellDescTitle}>Tour Guide</Text>
+                  <Text style={styles.cellDescSub}>{tourGuide.name}{tourGuide.email ? ` — ${tourGuide.email}` : ""}</Text>
+                </View>
+                <Text style={[styles.colAmount, styles.cellAmountVal]}>Included</Text>
+              </View>
+            )}
+            {driver && (
+              <View style={styles.tableRowAlternate}>
+                <View style={styles.colDesc}>
+                  <Text style={styles.cellDescTitle}>Car Driver</Text>
+                  <Text style={styles.cellDescSub}>{driver.name}{driver.email ? ` — ${driver.email}` : ""}</Text>
+                </View>
+                <Text style={[styles.colAmount, styles.cellAmountVal]}>Included</Text>
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Call to Action */}
         <View style={styles.ctaContainer}>
