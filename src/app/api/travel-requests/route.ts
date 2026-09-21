@@ -21,7 +21,12 @@ export async function GET() {
     const tenantId = await resolveTenantId(sessionUser);
     const userRole = sessionUser.role;
 
-    const isAdmin = userRole === "tenant_admin" || userRole === "super_admin" || userRole === "admin";
+    const isStaff =
+      userRole === "tenant_admin" ||
+      userRole === "super_admin" ||
+      userRole === "admin" ||
+      userRole === "marketing_officer" ||
+      userRole === "travel_agent";
 
     if (!userId && userEmail) {
       const dbUser = await User.findOne({ email: userEmail });
@@ -30,7 +35,7 @@ export async function GET() {
       }
     }
 
-    if (!tenantId && !isAdmin) {
+    if (!tenantId && !isStaff) {
       return NextResponse.json({ error: "Tenant context is required" }, { status: 400 });
     }
 
@@ -39,8 +44,8 @@ export async function GET() {
     if (userRole === "super_admin") {
       // Super admin views all travel requests across the entire platform
       query = {};
-    } else if (isAdmin) {
-      // Tenant Admin views all bookings for their tenant (including default-tenant for ceylon)
+    } else if (isStaff) {
+      // Tenant Staff view all bookings for their tenant (including default-tenant for ceylon)
       if (tenantId) {
         const tenantObjIds = [new mongoose.Types.ObjectId(tenantId)];
         if (tenantId === "6a505fc356877edee50d3f6c" || tenantId === "6a4f8835986947243fe29df7") {
