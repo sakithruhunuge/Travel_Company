@@ -99,8 +99,16 @@ const getPackageImage = (packageName: string): string => {
 };
 
 export default function TenantRequestsPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const userRole = (session?.user as any)?.role;
+
+  const isAuthorized = [
+    "tenant_admin",
+    "super_admin",
+    "admin",
+    "marketing_officer",
+    "travel_agent",
+  ].includes(userRole);
 
   const [requests, setRequests] = useState<RequestData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -175,10 +183,13 @@ export default function TenantRequestsPage() {
   const travelerNotes = parsedData?.notes;
 
   useEffect(() => {
-    if (userRole === "tenant_admin" || userRole === "super_admin" || userRole === "admin") {
+    if (status === "loading") return;
+    if (isAuthorized) {
       loadRequests();
+    } else {
+      setLoading(false);
     }
-  }, [userRole]);
+  }, [isAuthorized, status]);
 
   const loadRequests = async () => {
     setLoading(true);
@@ -522,6 +533,13 @@ export default function TenantRequestsPage() {
         <div className="py-24 text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-slate-900 mx-auto" />
           <p className="text-slate-450 text-xs font-bold mt-4">Loading active requests...</p>
+        </div>
+      ) : !isAuthorized ? (
+        <div className="py-12 bg-white/30 rounded-3xl border border-slate-200">
+          <EmptyState
+            title="Access Restricted"
+            description="You do not have permission to access the booking approvals inbox."
+          />
         </div>
       ) : error ? (
         <EmptyState title="Inbox Load Error" description={error} />
