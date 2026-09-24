@@ -39,7 +39,12 @@ export async function GET(request: Request) {
     // Only allow management to see allCrew dropdown
     let allCrew: any[] = [];
     if (isManagement) {
-      allCrew = await DriverGuide.find({ approvalStatus: "approved" }).sort({ name: 1 }).lean();
+      allCrew = await DriverGuide.find({
+        $or: [
+          { approvalStatus: "approved" },
+          { approvalStatus: { $exists: false } },
+        ],
+      }).sort({ name: 1 }).lean();
     }
 
     // Check user session if identifier not explicitly provided for management
@@ -70,16 +75,32 @@ export async function GET(request: Request) {
       }
     }
 
+    // Collect all match terms for the crew member (name, email, phone)
+    const matchTerms = new Set<string>();
+    if (identifier) matchTerms.add(identifier);
+    if (sessionUser?.email) matchTerms.add(sessionUser.email);
+    if (sessionUser?.name) matchTerms.add(sessionUser.name);
+    if (crewMember?.email) matchTerms.add(crewMember.email);
+    if (crewMember?.name) matchTerms.add(crewMember.name);
+    if (crewMember?.phone) matchTerms.add(crewMember.phone);
+
     // Query tours where this driver or guide is assigned
     const query: any = {};
-    if (identifier) {
-      query.$or = [
-        { "driver.name": new RegExp(identifier, "i") },
-        { "driver.email": identifier },
-        { "driver.phone": identifier },
-        { "tourGuide.name": new RegExp(identifier, "i") },
-        { "tourGuide.email": identifier },
-      ];
+    if (matchTerms.size > 0) {
+      const orClauses: any[] = [];
+      matchTerms.forEach((term) => {
+        if (!term) return;
+        const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        orClauses.push(
+          { "driver.name": new RegExp(escaped, "i") },
+          { "driver.email": term },
+          { "driver.phone": term },
+          { "tourGuide.name": new RegExp(escaped, "i") },
+          { "tourGuide.email": term },
+          { "tourGuide.phone": term }
+        );
+      });
+      query.$or = orClauses;
     } else {
       query.$or = [{ driver: { $ne: null } }, { tourGuide: { $ne: null } }];
     }
