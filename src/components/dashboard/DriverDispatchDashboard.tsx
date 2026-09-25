@@ -259,6 +259,54 @@ export default function DriverDispatchDashboard() {
     }
   };
 
+  const handleEndJourney = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTourForEndJourney) return;
+
+    setIsEndingJourney(true);
+    setEndJourneyErrorMsg("");
+    setEndJourneySuccessMsg("");
+    try {
+      const res = await fetch("/api/driver/journey/end", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookingId: selectedTourForEndJourney._id,
+          endJourneyNotes,
+          endJourneyOdometer: endJourneyOdometer !== "" ? Number(endJourneyOdometer) : undefined,
+          endJourneyDropOffLocation: endJourneyDropOff,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to end journey");
+
+      setEndJourneySuccessMsg(`🏁 Journey completed! Moving to Completed History...`);
+      setFlashMessage({
+        text: `🏁 Journey for "${selectedTourForEndJourney.packageName}" successfully ended and saved to your history!`,
+        type: "success",
+      });
+
+      setTimeout(() => {
+        setSelectedTourForEndJourney(null);
+        setEndJourneyNotes("");
+        setEndJourneyOdometer("");
+        setEndJourneyDropOff("");
+        setEndJourneySuccessMsg("");
+        setActiveTab("history");
+        loadDriverTours();
+      }, 1200);
+
+      setTimeout(() => {
+        setFlashMessage(null);
+      }, 6000);
+    } catch (err: any) {
+      setEndJourneyErrorMsg(err?.message || "Failed to end journey");
+    } finally {
+      setIsEndingJourney(false);
+    }
+  };
+
   return (
     <div className="space-y-8 text-left pb-16">
       {/* Header Banner - Matching Dashboard Theme */}
@@ -856,6 +904,134 @@ export default function DriverDispatchDashboard() {
         </div>
       )}
 
-</div>
+      {/* End Journey Confirmation & Debrief Modal */}
+      {selectedTourForEndJourney && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl border border-slate-100 space-y-4"
+          >
+            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <span className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-lg shadow-xs">
+                  <FlagOutlined />
+                </span>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900">End Tour Journey</h3>
+                  <p className="text-xs text-slate-500 truncate max-w-xs">{selectedTourForEndJourney.packageName}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedTourForEndJourney(null)}
+                className="text-slate-400 hover:text-slate-700 text-sm font-bold p-1 rounded-lg hover:bg-slate-100 transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            {endJourneySuccessMsg && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-xl font-semibold flex items-center gap-1.5">
+                <CheckCircleOutlined />
+                <span>{endJourneySuccessMsg}</span>
+              </div>
+            )}
+
+            {endJourneyErrorMsg && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl font-semibold">
+                {endJourneyErrorMsg}
+              </div>
+            )}
+
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Primary Traveler:</span>
+                <span className="font-bold text-slate-800">
+                  {selectedTourForEndJourney.userName} ({selectedTourForEndJourney.numberOfTravelers} Guests)
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Logged Field Expenses:</span>
+                <span className="font-bold text-emerald-700">
+                  {(selectedTourForEndJourney.inTourExpenses || []).length} items ($
+                  {(selectedTourForEndJourney.inTourExpenses || []).reduce(
+                    (s, e) => s + (Number(e.amount) || 0),
+                    0
+                  ).toFixed(2)})
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 italic pt-1.5 border-t border-slate-200/80 leading-relaxed">
+                Ending this journey will mark the tour as <strong>Completed</strong>, update your duty status, and archive the record under <strong>Completed History</strong>.
+              </p>
+            </div>
+
+            <form onSubmit={handleEndJourney} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Drop-Off Location / Handover Place
+                </label>
+                <div className="relative">
+                  <EnvironmentOutlined className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+                  <input
+                    type="text"
+                    value={endJourneyDropOff}
+                    onChange={(e) => setEndJourneyDropOff(e.target.value)}
+                    placeholder="e.g. Bandaranaike International Airport (BIA) or Hotel"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-teal-500 font-medium"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Ending Vehicle Odometer (km) <span className="text-slate-400 font-normal">(optional)</span>
+                </label>
+                <div className="relative">
+                  <DashboardOutlined className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+                  <input
+                    type="number"
+                    value={endJourneyOdometer}
+                    onChange={(e) => setEndJourneyOdometer(e.target.value)}
+                    placeholder="e.g. 78420"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-teal-500 font-bold"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Driver Debrief / Final Handover Notes <span className="text-slate-400 font-normal">(optional)</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={endJourneyNotes}
+                  onChange={(e) => setEndJourneyNotes(e.target.value)}
+                  placeholder="e.g. Guests arrived on time for their flight. Luggage handed over safely. All destinations completed."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-teal-500 font-medium resize-none"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedTourForEndJourney(null)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isEndingJourney}
+                  className="px-5 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow transition disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  <FlagOutlined />
+                  <span>{isEndingJourney ? "Ending Journey..." : "Confirm & End Journey"}</span>
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+    </div>
   );
 }
