@@ -1,10 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import Link from "next/link";
-import { useTenant } from "@/context/TenantBrandingContext";
-import { useLocale } from "next-intl";
 import {
   CarOutlined,
   CompassOutlined,
@@ -12,22 +10,24 @@ import {
   MailOutlined,
   CalendarOutlined,
   TeamOutlined,
-  PlusCircleOutlined,
   CheckCircleOutlined,
-  ClockCircleOutlined,
   DollarOutlined,
   CameraOutlined,
-  UploadOutlined,
-  SafetyCertificateOutlined,
   ReloadOutlined,
   FileTextOutlined,
+  FlagOutlined,
+  PlayCircleOutlined,
+  DashboardOutlined,
   EnvironmentOutlined,
-  UserOutlined,
-  WarningOutlined,
+  CloseOutlined,
 } from "@ant-design/icons";
 import { motion, AnimatePresence } from "framer-motion";
 import EmptyState from "./EmptyState";
 import GuestNotesCard from "./GuestNotesCard";
+import DriverTripMap from "./DriverTripMap";
+import TourGuidePlacesList from "./TourGuidePlacesList";
+import { RoutePlan } from "@/lib/distanceMatrix";
+import { useTenant } from "@/context/TenantBrandingContext";
 
 interface TourItem {
   _id: string;
@@ -44,12 +44,19 @@ interface TourItem {
   tourGuide?: { name: string; phone?: string; email?: string };
   assignedVehicle?: { category: string; plateNumber: string; model: string };
   inTourExpenses?: any[];
+  destinations?: string[];
+  routePlan?: RoutePlan;
+  pricingInputs?: any;
+  completedAt?: string;
+  endJourneyNotes?: string;
+  endJourneyOdometer?: number;
+  endJourneyDropOffLocation?: string;
+  updatedAt?: string;
 }
 
 export default function DriverDispatchDashboard() {
   const { data: session } = useSession();
   const tenant = useTenant();
-  const locale = useLocale();
   const primaryColor = tenant?.branding?.primaryColor || "#0B7C8A";
 
   const [identifier, setIdentifier] = useState("");
@@ -76,7 +83,21 @@ export default function DriverDispatchDashboard() {
   const [expSuccessMsg, setExpSuccessMsg] = useState("");
   const [expErrorMsg, setExpErrorMsg] = useState("");
 
-  const loadDriverTours = async () => {
+  // End Journey Modal State
+  const [selectedTourForEndJourney, setSelectedTourForEndJourney] = useState<TourItem | null>(null);
+  const [endJourneyNotes, setEndJourneyNotes] = useState("");
+  const [endJourneyOdometer, setEndJourneyOdometer] = useState<string | number>("");
+  const [endJourneyDropOff, setEndJourneyDropOff] = useState("");
+  const [isEndingJourney, setIsEndingJourney] = useState(false);
+  const [endJourneySuccessMsg, setEndJourneySuccessMsg] = useState("");
+  const [endJourneyErrorMsg, setEndJourneyErrorMsg] = useState("");
+
+  // Starting journey state
+
+  // Global flash toast
+  const [flashMessage, setFlashMessage] = useState<{ text: string; type: "success" | "info" } | null>(null);
+
+  const loadDriverTours = useCallback(async () => {
     setLoading(true);
     try {
       const url = identifier
@@ -104,11 +125,11 @@ export default function DriverDispatchDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [identifier]);
 
   useEffect(() => {
     loadDriverTours();
-  }, [identifier]);
+  }, [loadDriverTours]);
 
   const handleUpdateAvailability = async (newStatus: "available" | "on_tour" | "off_duty") => {
     setIsUpdatingStatus(true);
@@ -135,9 +156,9 @@ export default function DriverDispatchDashboard() {
   };
 
   const activeTourList = tours.filter((t) =>
-    ["allocated", "proforma_issued", "active_tour", "confirmed"].includes(t.status)
+    ["allocated", "proforma_issued", "active_tour", "confirmed", "approved"].includes(t.status)
   );
-  const upcomingTourList = tours.filter((t) => ["allocated", "confirmed"].includes(t.status));
+  const upcomingTourList = tours.filter((t) => ["allocated", "confirmed", "approved"].includes(t.status));
   const historyTourList = tours.filter((t) => ["completed", "reconciling"].includes(t.status));
 
   const displayedTours =
@@ -233,7 +254,12 @@ export default function DriverDispatchDashboard() {
             </span>
           </h2>
           <p className="text-slate-600 text-sm mt-1 font-medium">
-            Vehicle: <strong className="text-slate-800">{crewProfile?.vehicleDetails?.model || "Standard Fleet"}</strong> ({crewProfile?.vehicleDetails?.plateNumber || "Plate Assigned"}) • Rating: ★ {crewProfile?.rating ? crewProfile.rating.toFixed(1) : "5.0"}
+            {crewProfile?.role === "tour_guide" ? (
+              <>Languages: <strong className="text-slate-800">{crewProfile?.languages?.join(", ") || "English"}</strong></>
+            ) : (
+              <>Vehicle: <strong className="text-slate-800">{crewProfile?.vehicleDetails?.model || "Standard Fleet"}</strong> ({crewProfile?.vehicleDetails?.plateNumber || "Plate Assigned"})</>
+            )}
+            {" • "}Rating: ★ {crewProfile?.rating ? crewProfile.rating.toFixed(1) : "5.0"}
           </p>
         </div>
 
@@ -311,6 +337,31 @@ export default function DriverDispatchDashboard() {
         </div>
       </div>
 
+      {/* Flash Action Banner */}
+      <AnimatePresence>
+        {flashMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="p-4 rounded-2xl bg-emerald-600 text-white font-semibold text-xs md:text-sm shadow-md flex items-center justify-between gap-3"
+          >
+            <div className="flex items-center gap-2">
+              <CheckCircleOutlined className="text-lg text-emerald-200" />
+              <span>{flashMessage.text}</span>
+            </div>
+            {activeTab !== "history" && (
+              <button
+                onClick={() => setActiveTab("history")}
+                className="bg-white text-emerald-800 px-3 py-1.5 rounded-xl text-xs font-bold hover:bg-emerald-50 transition shrink-0 shadow-xs"
+              >
+                View Completed History &rarr;
+              </button>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Metrics Row - Matching Dashboard Style */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
         <div className="rounded-2xl bg-white/50 backdrop-blur-md border border-white/40 p-4 shadow-sm">
@@ -387,6 +438,19 @@ export default function DriverDispatchDashboard() {
         </button>
       </div>
 
+      {/* Completed History Top Banner */}
+      {activeTab === "history" && historyTourList.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-4 rounded-2xl bg-emerald-50/90 border border-emerald-200/80 text-xs shadow-xs">
+          <div className="flex items-center gap-2 text-emerald-900 font-bold">
+            <HistoryOutlined className="text-base text-emerald-600" />
+            <span>Delivered & Completed Journeys ({historyTourList.length})</span>
+          </div>
+          <span className="text-slate-500 font-medium">
+            Permanent archive of all concluded trips, mileage records, and handover logs.
+          </span>
+        </div>
+      )}
+
       {/* Manifest Content */}
       {loading ? (
         <div className="py-20 text-center text-slate-500 text-xs">Loading tour schedule and manifest...</div>
@@ -424,22 +488,72 @@ export default function DriverDispatchDashboard() {
                     <h3 className="text-lg font-black text-slate-900 mt-0.5">{tour.packageName}</h3>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full capitalize bg-teal-50 text-teal-700 border border-teal-200">
-                      <CheckCircleOutlined />
-                      {tour.status.replace("_", " ")}
-                    </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Status badge */}
+                    {tour.status === "completed" ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-black px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-xs">
+                        <CheckCircleOutlined className="text-emerald-600" />
+                        Journey Completed
+                      </span>
+                    ) : tour.status === "active_tour" ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-black px-3.5 py-1.5 rounded-full bg-teal-50 text-teal-800 border border-teal-300 shadow-xs">
+                        <span className="w-2 h-2 rounded-full bg-teal-500 animate-ping" />
+                        In-Progress Tour
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full capitalize bg-amber-50 text-amber-800 border border-amber-200">
+                        <CheckCircleOutlined />
+                        {tour.status.replace("_", " ")}
+                      </span>
+                    )}
 
+                    {/* Start Journey button for assigned/upcoming tour */}
+                    {tour.status !== "completed" && tour.status !== "active_tour" && (
+                      <button
+                        onClick={() => handleStartJourney(tour)}
+                        disabled={isStartingJourneyId === tour._id}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-xs transition disabled:opacity-50"
+                        title="Begin this tour journey"
+                      >
+                        <PlayCircleOutlined />
+                        <span>{isStartingJourneyId === tour._id ? "Starting..." : "Start Journey"}</span>
+                      </button>
+                    )}
+
+                    {/* End Journey button (for any active tour) */}
+                    {tour.status !== "completed" && (
+                      <button
+                        onClick={() => {
+                          setSelectedTourForEndJourney(tour);
+                          setEndJourneyNotes("");
+                          setEndJourneyOdometer("");
+                          setEndJourneyDropOff(
+                            tour.destinations && tour.destinations.length > 0
+                              ? tour.destinations[tour.destinations.length - 1]
+                              : ""
+                          );
+                          setEndJourneySuccessMsg("");
+                          setEndJourneyErrorMsg("");
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-xs hover:shadow transition"
+                        title="Conclude and end this journey"
+                      >
+                        <FlagOutlined />
+                        <span>End Journey</span>
+                      </button>
+                    )}
+
+                    {/* Expense Logger / Review */}
                     <button
                       onClick={() => {
                         setSelectedTourForExpense(tour);
                         setExpSuccessMsg("");
                         setExpErrorMsg("");
                       }}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-sm transition"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-xs transition"
                     >
                       <DollarOutlined />
-                      <span>Log Field Expense</span>
+                      <span>{tour.status === "completed" ? "Review / Add Expense" : "Log Field Expense"}</span>
                     </button>
                   </div>
                 </div>
@@ -478,9 +592,11 @@ export default function DriverDispatchDashboard() {
                     </p>
                   </div>
 
-                  {/* Vehicle */}
+                  {/* Vehicle & Assigned Crew */}
                   <div className="bg-slate-50/70 p-3 rounded-2xl space-y-1">
-                    <span className="text-slate-400 block text-[11px] font-semibold">Assigned Fleet</span>
+                    <span className="text-slate-400 block text-[11px] font-semibold">
+                      {crewProfile?.role === "tour_guide" ? "Assigned Chauffeur & Vehicle" : "Assigned Fleet & Guide"}
+                    </span>
                     <p className="font-bold text-slate-800 flex items-center gap-1.5">
                       <CarOutlined className="text-teal-600" />
                       {tour.assignedVehicle?.model || crewProfile?.vehicleDetails?.model || "Toyota KDH Executive"}
@@ -488,13 +604,39 @@ export default function DriverDispatchDashboard() {
                     <p className="text-slate-600 font-mono font-bold uppercase">
                       Plate: {tour.assignedVehicle?.plateNumber || crewProfile?.vehicleDetails?.plateNumber || "WP-CAB-4421"}
                     </p>
+                    {tour.driver?.name && crewProfile?.role === "tour_guide" && (
+                      <p className="text-slate-600 font-medium text-[11px]">
+                        Driver: <strong>{tour.driver.name}</strong> {tour.driver.phone && `(${tour.driver.phone})`}
+                      </p>
+                    )}
+                    {tour.tourGuide?.name && crewProfile?.role !== "tour_guide" && (
+                      <p className="text-slate-600 font-medium text-[11px]">
+                        Guide: <strong>{tour.tourGuide.name}</strong> {tour.tourGuide.phone && `(${tour.tourGuide.phone})`}
+                      </p>
+                    )}
                   </div>
                 </div>
 
-                {/* Special Requests / Guest Notes */}
+{/* Special Requests / Guest Notes */}
                 <GuestNotesCard
                   rawNotes={tour.specialRequests}
                   title="Special Requests / Guest Notes"
+                />
+
+                {/* Tour Guide Itinerary: Places to Visit & Cultural Briefings */}
+                <TourGuidePlacesList
+                  destinations={tour.destinations || []}
+                  primaryColor={primaryColor}
+                  isGuideRole={crewProfile?.role === "tour_guide" || (session?.user as any)?.role === "tour_guide"}
+                />
+
+                {/* Allocated Travel Itinerary, Route Map & Google Maps Navigation */}
+                <DriverTripMap
+                  tourId={tour._id}
+                  tourName={tour.packageName}
+                  destinations={tour.destinations || []}
+                  routePlan={tour.routePlan}
+                  primaryColor={primaryColor}
                 />
 
                 {/* In-Tour Expenses List */}
@@ -687,6 +829,7 @@ export default function DriverDispatchDashboard() {
           </motion.div>
         </div>
       )}
-    </div>
+
+</div>
   );
 }
