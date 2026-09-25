@@ -17,6 +17,7 @@ import {
   FileTextOutlined,
   FlagOutlined,
   PlayCircleOutlined,
+  HistoryOutlined,
   DashboardOutlined,
   EnvironmentOutlined,
   CloseOutlined,
@@ -160,7 +161,13 @@ export default function DriverDispatchDashboard() {
     ["allocated", "proforma_issued", "active_tour", "confirmed", "approved"].includes(t.status)
   );
   const upcomingTourList = tours.filter((t) => ["allocated", "confirmed", "approved"].includes(t.status));
-  const historyTourList = tours.filter((t) => ["completed", "reconciling"].includes(t.status));
+  const historyTourList = tours
+    .filter((t) => ["completed", "reconciling"].includes(t.status))
+    .sort((a, b) => {
+      const timeA = new Date(a.completedAt || a.updatedAt || a.preferredStartDate).getTime();
+      const timeB = new Date(b.completedAt || b.updatedAt || b.preferredStartDate).getTime();
+      return timeB - timeA;
+    });
 
   const displayedTours =
     activeTab === "active"
@@ -691,7 +698,79 @@ export default function DriverDispatchDashboard() {
                   </div>
                 </div>
 
-{/* Special Requests / Guest Notes */}
+                {/* Completed Journey Summary Card (for tours in Completed History) */}
+                {tour.status === "completed" && (
+                  <div className="bg-gradient-to-r from-emerald-50/90 via-teal-50/60 to-slate-50 border border-emerald-200/80 rounded-2xl p-4 text-xs space-y-2.5 shadow-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-100/80 pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-black text-xs">
+                          ✓
+                        </span>
+                        <span className="font-extrabold text-slate-800 text-sm">Journey Safely Concluded</span>
+                      </div>
+                      {tour.completedAt && (
+                        <span className="text-slate-600 font-medium text-[11px] bg-white/90 px-3 py-1 rounded-lg border border-emerald-200 shadow-xs">
+                          Completed:{" "}
+                          <strong className="text-emerald-800">
+                            {new Date(tour.completedAt).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </strong>
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-0.5">
+                      {tour.endJourneyDropOffLocation && (
+                        <div className="bg-white/85 p-2.5 rounded-xl border border-emerald-100/70 shadow-xs">
+                          <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">
+                            Drop-Off Location
+                          </span>
+                          <p className="font-bold text-slate-800 mt-0.5 flex items-center gap-1">
+                            <EnvironmentOutlined className="text-emerald-600" />
+                            <span>{tour.endJourneyDropOffLocation}</span>
+                          </p>
+                        </div>
+                      )}
+                      {tour.endJourneyOdometer && (
+                        <div className="bg-white/85 p-2.5 rounded-xl border border-emerald-100/70 shadow-xs">
+                          <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">
+                            Ending Odometer
+                          </span>
+                          <p className="font-bold text-slate-800 mt-0.5 flex items-center gap-1">
+                            <DashboardOutlined className="text-teal-600" />
+                            <span>{Number(tour.endJourneyOdometer).toLocaleString()} km</span>
+                          </p>
+                        </div>
+                      )}
+                      <div className="bg-white/85 p-2.5 rounded-xl border border-emerald-100/70 shadow-xs">
+                        <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">
+                          In-Tour Expenses Settled
+                        </span>
+                        <p className="font-bold text-emerald-700 mt-0.5">
+                          ${totalExp.toFixed(2)} ({expenses.length} claims logged)
+                        </p>
+                      </div>
+                    </div>
+
+                    {tour.endJourneyNotes && (
+                      <div className="bg-white/90 p-3 rounded-xl border border-emerald-100/80 text-slate-700 shadow-xs">
+                        <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider mb-1">
+                          Driver Handover / Debrief Notes
+                        </span>
+                        <p className="font-medium text-slate-800 italic leading-relaxed">
+                          &ldquo;{tour.endJourneyNotes}&rdquo;
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Special Requests / Guest Notes */}
                 <GuestNotesCard
                   rawNotes={tour.specialRequests}
                   title="Special Requests / Guest Notes"
