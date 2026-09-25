@@ -93,6 +93,7 @@ export default function DriverDispatchDashboard() {
   const [endJourneyErrorMsg, setEndJourneyErrorMsg] = useState("");
 
   // Starting journey state
+  const [isStartingJourneyId, setIsStartingJourneyId] = useState<string | null>(null);
 
   // Global flash toast
   const [flashMessage, setFlashMessage] = useState<{ text: string; type: "success" | "info" } | null>(null);
@@ -230,6 +231,31 @@ export default function DriverDispatchDashboard() {
       setExpErrorMsg(err?.message || "Failed to record expense");
     } finally {
       setIsSubmittingExp(false);
+    }
+  };
+
+  const handleStartJourney = async (tour: TourItem) => {
+    setIsStartingJourneyId(tour._id);
+    try {
+      const res = await fetch("/api/driver/journey/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId: tour._id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to start journey");
+
+      setFlashMessage({
+        text: `🚗 Journey underway for "${tour.packageName}"! Tour is now active.`,
+        type: "success",
+      });
+      setCurrentStatus("on_tour");
+      await loadDriverTours();
+      setTimeout(() => setFlashMessage(null), 5000);
+    } catch (err: any) {
+      alert("Error starting journey: " + (err?.message || "Unknown error"));
+    } finally {
+      setIsStartingJourneyId(null);
     }
   };
 
