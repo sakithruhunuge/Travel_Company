@@ -344,5 +344,3 @@ seedMasterData().catch((err) => {
   console.error("Seeding failed:", err);
   process.exit(1);
 });
-
-// Seed script populated with fleet categories and driver bata rates
