@@ -345,4 +345,4 @@ seedMasterData().catch((err) => {
   process.exit(1);
 });
 
-// Seed script initialized with core cultural and wildlife attractions
+// Seed script populated with fleet categories and driver bata rates
