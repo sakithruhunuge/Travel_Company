@@ -35,6 +35,17 @@ export interface PricingBreakdown {
   hasRealPoiCosts?: boolean;
 }
 
+export const SAARC_AND_BILATERAL_COUNTRIES = [
+  "India",
+  "Thailand",
+  "Nepal",
+  "Bangladesh",
+  "Bhutan",
+  "Maldives",
+  "Pakistan",
+  "Afghanistan",
+];
+
 export const HOTEL_RATES = {
   budget: 30, // $30 per night per traveler
   standard: 60, // $60 per night per traveler
