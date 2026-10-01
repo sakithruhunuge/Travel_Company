@@ -17,6 +17,11 @@ export interface PricingInputs {
   pricingMode?: "per-day" | "per-trip";
   selectedRealPrices?: SelectedRealPrices;
   touristCountry?: string;
+  customAttractions?: Array<{
+    name: string;
+    priceLKR?: number;
+    priceUSD?: number;
+  }>;
 }
 
 export interface PricingBreakdown {
@@ -36,6 +41,7 @@ export interface PricingBreakdown {
   hasRealPoiCosts?: boolean;
   appliedNationalityTier?: "SAARC_AND_THAILAND" | "LOCAL" | "FOREIGN";
   tieredAttractionCost?: number;
+  customAttractionsCost?: number;
 }
 
 export const SAARC_AND_BILATERAL_COUNTRIES = [
