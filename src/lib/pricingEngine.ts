@@ -46,6 +46,16 @@ export const SAARC_AND_BILATERAL_COUNTRIES = [
   "Afghanistan",
 ];
 
+// Tiered rates for prominent Sri Lankan heritage & wildlife attractions
+export const TIERED_ATTRACTION_TICKETS_USD: Record<string, { saarc: number; foreign: number; local: number }> = {
+  Sigiriya: { saarc: 6.6, foreign: 10.0, local: 0.4 }, // ~LKR 2000 vs ~LKR 3000
+  Kandy: { saarc: 5.0, foreign: 6.6, local: 0.0 }, // Temple of the Tooth (Maligawa)
+  Dambulla: { saarc: 6.6, foreign: 8.2, local: 0.35 },
+  Yala: { saarc: 13.0, foreign: 24.5, local: 1.6 },
+  Polonnaruwa: { saarc: 6.6, foreign: 10.0, local: 0.35 },
+  "Nuwara Eliya": { saarc: 11.5, foreign: 21.3, local: 1.3 }, // Horton Plains
+};
+
 export const HOTEL_RATES = {
   budget: 30, // $30 per night per traveler
   standard: 60, // $60 per night per traveler
