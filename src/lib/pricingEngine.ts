@@ -16,6 +16,7 @@ export interface PricingInputs {
   baggageCount?: number;
   pricingMode?: "per-day" | "per-trip";
   selectedRealPrices?: SelectedRealPrices;
+  touristCountry?: string;
 }
 
 export interface PricingBreakdown {
@@ -33,6 +34,8 @@ export interface PricingBreakdown {
   totalPrice: number;
   hasRealHotelRates?: boolean;
   hasRealPoiCosts?: boolean;
+  appliedNationalityTier?: "SAARC_AND_THAILAND" | "LOCAL" | "FOREIGN";
+  tieredAttractionCost?: number;
 }
 
 export const SAARC_AND_BILATERAL_COUNTRIES = [
