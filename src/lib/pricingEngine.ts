@@ -16,7 +16,7 @@ export interface PricingInputs {
   baggageCount?: number;
   pricingMode?: "per-day" | "per-trip";
   selectedRealPrices?: SelectedRealPrices;
-  touristCountry?: string;
+  touristCountry?: string; // e.g. "Thailand", "India", "UK", "USA", "Sri Lanka"
   customAttractions?: Array<{
     name: string;
     priceLKR?: number;
@@ -31,17 +31,18 @@ export interface PricingBreakdown {
   baggageSurcharge: number;
   destinationSurcharges: number;
   activityCost: number;
+  tieredAttractionCost: number;
+  customAttractionsCost: number;
   addOnsCost: number;
   subtotal: number;
   discountRate: number;
   discount: number;
   taxes: number;
   totalPrice: number;
+  totalPriceLKR?: number;
   hasRealHotelRates?: boolean;
   hasRealPoiCosts?: boolean;
   appliedNationalityTier?: "SAARC_AND_THAILAND" | "LOCAL" | "FOREIGN";
-  tieredAttractionCost?: number;
-  customAttractionsCost?: number;
 }
 
 export const SAARC_AND_BILATERAL_COUNTRIES = [
@@ -185,6 +186,8 @@ export function calculateTripPricing(inputs: PricingInputs): PricingBreakdown {
     baggageCount = 0,
     pricingMode = "per-day",
     selectedRealPrices,
+    touristCountry = "Other",
+    customAttractions = [],
   } = inputs;
 
   const totalNights = Math.max(1, duration + extraNights);
@@ -254,6 +257,53 @@ export function calculateTripPricing(inputs: PricingInputs): PricingBreakdown {
   }
   activityCost = Math.round(activityCost);
 
+  // 6b. Tiered Attraction Tickets based on Tourist Nationality
+  let appliedNationalityTier: "SAARC_AND_THAILAND" | "LOCAL" | "FOREIGN" = "FOREIGN";
+  const normalizedCountry = (touristCountry || "").trim().toLowerCase();
+  const isSaarcOrThai = SAARC_AND_BILATERAL_COUNTRIES.some(
+    (c) => c.toLowerCase() === normalizedCountry
+  );
+  const isLocal =
+    normalizedCountry === "sri lanka" ||
+    normalizedCountry === "lk" ||
+    normalizedCountry === "local";
+
+  if (isLocal) {
+    appliedNationalityTier = "LOCAL";
+  } else if (isSaarcOrThai) {
+    appliedNationalityTier = "SAARC_AND_THAILAND";
+  }
+
+  let tieredAttractionCost = 0;
+  destinations.forEach((dest) => {
+    const tieredRate = TIERED_ATTRACTION_TICKETS_USD[dest];
+    if (tieredRate) {
+      const unitCost =
+        appliedNationalityTier === "LOCAL"
+          ? tieredRate.local
+          : appliedNationalityTier === "SAARC_AND_THAILAND"
+          ? tieredRate.saarc
+          : tieredRate.foreign;
+      tieredAttractionCost += unitCost * numberOfTravelers;
+    }
+  });
+  tieredAttractionCost = Math.round(tieredAttractionCost);
+
+  // 6c. Dynamic 'Other' Custom Attractions (instant spot pricing)
+  let customAttractionsCost = 0;
+  if (customAttractions && customAttractions.length > 0) {
+    customAttractions.forEach((custom) => {
+      const priceUSD =
+        custom.priceUSD !== undefined
+          ? custom.priceUSD
+          : custom.priceLKR !== undefined
+          ? Math.round((custom.priceLKR / 305) * 100) / 100
+          : 0;
+      customAttractionsCost += priceUSD * numberOfTravelers;
+    });
+  }
+  customAttractionsCost = Math.round(customAttractionsCost);
+
   // 7. Add-Ons Cost
   let addOnsCost = 0;
   addOns.forEach((addon) => {
@@ -272,13 +322,21 @@ export function calculateTripPricing(inputs: PricingInputs): PricingBreakdown {
 
   // 8. Subtotal
   const subtotal = Math.round(
-    baseCost + accommodationCost + transportCost + baggageSurcharge + destinationSurcharges + activityCost + addOnsCost
+    baseCost +
+      accommodationCost +
+      transportCost +
+      baggageSurcharge +
+      destinationSurcharges +
+      activityCost +
+      tieredAttractionCost +
+      customAttractionsCost +
+      addOnsCost
   );
 
   // 9. Group Discount (10% off for 4+ travelers)
   let discountRate = 0;
   if (numberOfTravelers >= 4) {
-    discountRate = 0.10;
+    discountRate = 0.1;
   }
   const discount = Math.round(subtotal * discountRate);
 
@@ -288,6 +346,7 @@ export function calculateTripPricing(inputs: PricingInputs): PricingBreakdown {
 
   // 11. Grand Total Price
   const totalPrice = Math.round(taxableAmount + taxes);
+  const totalPriceLKR = Math.round(totalPrice * 305);
 
   return {
     baseCost,
@@ -296,13 +355,18 @@ export function calculateTripPricing(inputs: PricingInputs): PricingBreakdown {
     baggageSurcharge,
     destinationSurcharges,
     activityCost,
+    tieredAttractionCost,
+    customAttractionsCost,
     addOnsCost,
     subtotal,
     discountRate,
     discount,
     taxes,
     totalPrice,
+    totalPriceLKR,
     hasRealHotelRates,
     hasRealPoiCosts,
+    appliedNationalityTier,
   };
 }
+
