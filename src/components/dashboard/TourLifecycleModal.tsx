@@ -17,6 +17,7 @@ import {
 } from "@ant-design/icons";
 import { pdf } from "@react-pdf/renderer";
 import ProformaInvoiceDocument from "../pdf/ProformaInvoiceDocument";
+import ActualInvoiceDocument from "../pdf/ActualInvoiceDocument";
 
 interface TourLifecycleModalProps {
   isOpen: boolean;
@@ -291,19 +292,65 @@ export default function TourLifecycleModal({
             bookingId: booking._id,
             deductionsTotal,
             notes: actualNotes,
-            downloadPdf: true,
+            downloadPdf: false,
+            sendToCustomer: false,
           }),
         });
-        if (!res.ok) throw new Error("Failed to download actual invoice PDF");
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `ActualInvoice-${booking.tourId || booking._id}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setMsg("Actual Invoice PDF downloaded!");
+        
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to fetch actual invoice data");
+
+        const aData = data.actualInvoice;
+        
+        try {
+          console.log("Generating actual invoice PDF with data:", aData);
+          const blob = await pdf(
+            <ActualInvoiceDocument
+              invoiceNumber={aData.invoiceNumber}
+              proformaInvoiceNumber={booking.proforma?.invoiceNumber}
+              tourId={booking.tourId || booking._id}
+              issueDate={new Date(aData.issueDate).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+              tenantName="Travel Company"
+              customerName={booking.userName || "Guest"}
+              customerEmail={booking.userEmail || ""}
+              numberOfTravelers={booking.numberOfTravelers || 1}
+              packageName={booking.packageName || "Custom Tour"}
+              preferredStartDate={new Date(booking.preferredStartDate).toLocaleDateString()}
+              proformaBaseTotal={aData.proformaBaseTotal || 0}
+              inTourAdditions={booking.inTourExpenses?.map((exp: any) => ({
+                description: exp.description || "",
+                category: exp.category || "",
+                amount: exp.amount || 0,
+              })) || []}
+              additionsTotal={aData.additionsTotal || 0}
+              deductionsTotal={aData.deductionsTotal || 0}
+              netFinalTotal={aData.netFinalTotal || 0}
+              advancePaid={aData.advancePaid || 0}
+              balanceDue={aData.balanceDue || 0}
+              refundDue={aData.refundDue || 0}
+              settlementStatus={aData.settlementStatus || "unsettled"}
+              currency="USD"
+              notes={aData.notes || ""}
+              checkoutUrl={data.checkoutUrl}
+              destinationImages={data.destinationImages?.map((img: any) => {
+                const urlPath = img.imagePath.split("public")[1] || "/images/sigiriya.png";
+                return { ...img, imagePath: window.location.origin + urlPath.replace(/\\/g, '/') };
+              }) || []}
+            />
+          ).toBlob();
+
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `ActualInvoice-${booking.tourId || booking._id}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setMsg("Actual Invoice PDF downloaded!");
+        } catch (pdfError: any) {
+          console.error("PDF generation failed:", pdfError);
+          throw new Error("Failed to render PDF: " + (pdfError.message || "Internal rendering error"));
+        }
       } else {
         const res = await fetch("/api/invoices/actual", {
           method: "POST",

@@ -1,5 +1,5 @@
 import React from "react";
-import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, Text, View, StyleSheet, Image, Link } from "@react-pdf/renderer";
 
 export interface InTourAdditionItem {
   description: string;
@@ -32,6 +32,8 @@ export interface ActualInvoiceProps {
   settlementStatus: "unsettled" | "settled" | "refunded";
   currency?: string;
   notes?: string;
+  checkoutUrl?: string;
+  destinationImages?: { title: string; imagePath: string }[];
 }
 
 export default function ActualInvoiceDocument({
@@ -59,6 +61,8 @@ export default function ActualInvoiceDocument({
   settlementStatus,
   currency = "USD",
   notes,
+  checkoutUrl,
+  destinationImages = [],
 }: ActualInvoiceProps) {
   const isRefund = refundDue > 0;
 
@@ -167,8 +171,9 @@ export default function ActualInvoiceDocument({
     colTotal: { flex: 1.5, textAlign: "right" },
     totalSection: {
       flexDirection: "row",
-      justifyContent: "flex-end",
-      marginTop: 2,
+      justifyContent: "space-between",
+      alignItems: "flex-end",
+      marginTop: 10,
       marginBottom: 14,
     },
     totalBox: {
@@ -210,6 +215,51 @@ export default function ActualInvoiceDocument({
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
+    },
+    paymentButton: {
+      backgroundColor: "#059669",
+      color: "#ffffff",
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 6,
+      textAlign: "center",
+      textDecoration: "none",
+      fontFamily: "Helvetica-Bold",
+      fontSize: 10,
+      marginBottom: 4,
+    },
+    destinationsSection: {
+      marginTop: 10,
+      borderTopWidth: 1,
+      borderTopColor: "#e2e8f0",
+      paddingTop: 12,
+    },
+    destinationsTitle: {
+      fontSize: 10,
+      fontFamily: "Helvetica-Bold",
+      color: primaryColor,
+      marginBottom: 8,
+    },
+    imageGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 10,
+    },
+    imageWrapper: {
+      width: "30%", // 3 per row approx
+      marginBottom: 8,
+    },
+    destinationImage: {
+      width: "100%",
+      height: 60,
+      borderRadius: 4,
+      objectFit: "cover",
+    },
+    imageTitle: {
+      fontSize: 7,
+      color: "#64748b",
+      textAlign: "center",
+      marginTop: 3,
     },
   });
 
@@ -299,7 +349,7 @@ export default function ActualInvoiceDocument({
               </Text>
             </View>
             <Text style={[styles.colTotal, { fontFamily: "Helvetica-Bold", fontSize: 8.5 }]}>
-              {proformaBaseTotal.toFixed(2)}
+              {(proformaBaseTotal || 0).toFixed(2)}
             </Text>
           </View>
 
@@ -322,7 +372,7 @@ export default function ActualInvoiceDocument({
                   </Text>
                 </View>
                 <Text style={[styles.colTotal, { fontSize: 8.5, color: "#059669" }]}>
-                  + {item.amount.toFixed(2)}
+                  + {(item.amount || 0).toFixed(2)}
                 </Text>
               </View>
             ))
@@ -337,7 +387,7 @@ export default function ActualInvoiceDocument({
                 </Text>
               </View>
               <Text style={[styles.colTotal, { fontSize: 8.5, color: "#dc2626", fontFamily: "Helvetica-Bold" }]}>
-                - {deductionsTotal.toFixed(2)}
+                - {(deductionsTotal || 0).toFixed(2)}
               </Text>
             </View>
           )}
@@ -345,16 +395,25 @@ export default function ActualInvoiceDocument({
 
         {/* Final Financial Summary */}
         <View style={styles.totalSection}>
+          <View style={{ flex: 1, paddingRight: 30, paddingBottom: 6 }}>
+            {/* Payment Link on the left */}
+            {balanceDue > 0 && checkoutUrl ? (
+              <Link src={checkoutUrl} style={styles.paymentButton}>
+                Click Here to Pay Now
+              </Link>
+            ) : null}
+          </View>
+          
           <View style={styles.totalBox}>
             <View style={styles.totalRow}>
               <Text style={styles.infoLabel}>Proforma Base:</Text>
-              <Text style={styles.infoVal}>{currency} {proformaBaseTotal.toFixed(2)}</Text>
+              <Text style={styles.infoVal}>{currency} {(proformaBaseTotal || 0).toFixed(2)}</Text>
             </View>
             {additionsTotal > 0 && (
               <View style={styles.totalRow}>
                 <Text style={styles.infoLabel}>Total Mid-Tour Additions:</Text>
                 <Text style={[styles.infoVal, { color: "#059669" }]}>
-                  + {currency} {additionsTotal.toFixed(2)}
+                  + {currency} {(additionsTotal || 0).toFixed(2)}
                 </Text>
               </View>
             )}
@@ -362,7 +421,7 @@ export default function ActualInvoiceDocument({
               <View style={styles.totalRow}>
                 <Text style={styles.infoLabel}>Total Deductions:</Text>
                 <Text style={[styles.infoVal, { color: "#dc2626" }]}>
-                  - {currency} {deductionsTotal.toFixed(2)}
+                  - {currency} {(deductionsTotal || 0).toFixed(2)}
                 </Text>
               </View>
             )}
@@ -371,13 +430,13 @@ export default function ActualInvoiceDocument({
                 Net Actual Tour Cost:
               </Text>
               <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 10.5, color: "#1e293b" }}>
-                {currency} {netFinalTotal.toFixed(2)}
+                {currency} {(netFinalTotal || 0).toFixed(2)}
               </Text>
             </View>
             <View style={[styles.totalRow, { marginTop: 4 }]}>
               <Text style={{ fontSize: 8, color: "#059669" }}>Less: Advance Deposit Paid:</Text>
               <Text style={{ fontSize: 8.5, fontFamily: "Helvetica-Bold", color: "#059669" }}>
-                - {currency} {advancePaid.toFixed(2)}
+                - {currency} {(advancePaid || 0).toFixed(2)}
               </Text>
             </View>
 
@@ -387,7 +446,7 @@ export default function ActualInvoiceDocument({
                 {isRefund ? "Refund Due to Guest:" : "Final Balance Payable:"}
               </Text>
               <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 11, color: isRefund ? "#065f46" : "#991b1b" }}>
-                {currency} {isRefund ? refundDue.toFixed(2) : balanceDue.toFixed(2)}
+                {currency} {isRefund ? (refundDue || 0).toFixed(2) : (balanceDue || 0).toFixed(2)}
               </Text>
             </View>
           </View>
@@ -397,6 +456,21 @@ export default function ActualInvoiceDocument({
           <View style={[styles.card, { marginBottom: 12 }]}>
             <Text style={styles.cardTitle}>Settlement & Reconciliation Notes</Text>
             <Text style={{ fontSize: 8, color: "#475569" }}>{notes}</Text>
+          </View>
+        )}
+
+        {/* Destination Images */}
+        {destinationImages && destinationImages.length > 0 && (
+          <View style={styles.destinationsSection}>
+            <Text style={styles.destinationsTitle}>Your Custom Tailor-Made Tour Destinations</Text>
+            <View style={styles.imageGrid}>
+              {destinationImages.map((dest, idx) => (
+                <View key={idx} style={styles.imageWrapper}>
+                  <Image src={dest.imagePath} style={styles.destinationImage} />
+                  <Text style={styles.imageTitle}>{dest.title}</Text>
+                </View>
+              ))}
+            </View>
           </View>
         )}
 
