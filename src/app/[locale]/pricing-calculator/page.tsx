@@ -1,3 +1,4 @@
+// Interactive modal for unlisted/other excursions
 // Concession badge indicators for SAARC and Thailand
 // Section 0: Nationality & Bilateral Country Selector
 "use client";
