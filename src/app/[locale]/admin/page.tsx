@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useLocale } from "next-intl";
 import LogoUpload from "@/components/LogoUpload";
 
 interface TenantData {
@@ -33,6 +35,7 @@ interface StatsData {
 export default function SuperAdminPage() {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
+  const locale = useLocale();
 
   // Authentication states
   const [email, setEmail] = useState("");
@@ -311,6 +314,12 @@ export default function SuperAdminPage() {
           <h1 className="text-xl font-black text-white">Global SuperAdmin Registry</h1>
         </div>
         <div className="flex items-center gap-4">
+          <Link
+            href={`/${locale}/admin/rates`}
+            className="px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-xs font-bold rounded-full text-white shadow-md shadow-emerald-500/20 transition flex items-center gap-1.5"
+          >
+            <span>💱</span> Master Rates Portal
+          </Link>
           <span className="bg-slate-950 border border-cyan-500/30 text-cyan-400 text-xs font-bold px-3.5 py-1.5 rounded-full">
             Active Operator: {session.user.name}
           </span>
