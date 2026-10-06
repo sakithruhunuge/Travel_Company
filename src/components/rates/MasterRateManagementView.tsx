@@ -1,4 +1,3 @@
-/* Master Rates UI Pass: Top 4 KPI Metrics & Segmented Pill Tabs */
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
