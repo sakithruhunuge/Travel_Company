@@ -21,6 +21,7 @@ import {
     LineChartOutlined,
     CarOutlined,
     CompassOutlined,
+    DollarOutlined,
 } from "@ant-design/icons";
 import { useLocale, useTranslations } from "next-intl";
 
@@ -58,6 +59,7 @@ export default function Sidebar({ onNavigate, onLogout, isCollapsed = false, onT
 
     if (isAuthorizedAdmin) {
         menuItems.push(
+            { href: `/${locale}/dashboard/rates`, label: "Master Rates", icon: DollarOutlined },
             { href: `/${locale}/dashboard/packages`, label: "Manage Packages", icon: GiftOutlined },
             { href: `/${locale}/dashboard/requests`, label: "Approve Bookings", icon: CheckCircleOutlined },
             { href: `/${locale}/dashboard/crew`, label: "Crew & Drivers", icon: CarOutlined },
@@ -68,6 +70,7 @@ export default function Sidebar({ onNavigate, onLogout, isCollapsed = false, onT
         );
     } else if (isMarketingOfficer) {
         menuItems.push(
+            { href: `/${locale}/dashboard/rates`, label: "Master Rates", icon: DollarOutlined },
             { href: `/${locale}/dashboard/requests`, label: "Inquiries & Leads", icon: CheckCircleOutlined },
             { href: `/${locale}/dashboard/packages`, label: "Packages & Tours", icon: GiftOutlined },
             { href: `/${locale}/dashboard/crew`, label: "Crew & Drivers", icon: CarOutlined },
