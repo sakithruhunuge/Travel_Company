@@ -1,3 +1,4 @@
+/* Master Rates Visual Design System & Ambient Glassmorphic Pass */
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
