@@ -97,6 +97,12 @@ export default function DashboardHomePage() {
               </p>
               <div className="flex flex-wrap gap-4 pt-2">
                 <Link
+                  href={`/${locale}/dashboard/rates`}
+                  className="rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg hover:from-teal-500 hover:to-emerald-500 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center gap-2"
+                >
+                  <span>💱</span> Master Rates & Forex
+                </Link>
+                <Link
                   href={`/${locale}/dashboard/requests`}
                   className="rounded-xl bg-slate-900 px-6 py-3.5 text-sm font-bold text-white shadow-lg hover:bg-slate-800 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
                 >
