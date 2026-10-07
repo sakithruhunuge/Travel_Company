@@ -120,6 +120,51 @@ def allocate_days_per_destination(duration_days: int, destinations: List[str]) -
     return effective_dests, day_ranges, is_trimmed
 
 
+SCRAPED_HOTEL_IMAGE_PATTERNS = [
+    "photo-1564501049412",
+    "photo-1542314831068",
+    "photo-1578575437130",
+    "photo-1520250497591",
+    "photo-1571003123894",
+    "photo-1566073771259",
+    "photo-1590490360182",
+    "photo-1589182373726",
+    "photo-1588258524675",
+    "photo-1580618672591",
+    "photo-1582719508461",
+    "photo-1571896349842",
+    "photo-1596394516093",
+]
+
+def resolve_ai_poi_image(name: str, dest: str, desc: str = "") -> str:
+    text = f"{name} {dest} {desc}".lower()
+    if any(k in text for k in ["tooth", "maligawa", "dalada", "malwathu", "asgiri"]):
+        return "/maliga.png"
+    if any(k in text for k in ["sigiriya", "lion rock", "pidurangala"]):
+        return "/sigiri.png"
+    if any(k in text for k in ["yala", "safari", "leopard", "cheetah", "wilpattu", "udawalawe", "minneriya", "wildlife", "kumana"]):
+        return "/chita.png"
+    if any(k in text for k in ["nine arch", "demodara", "ella", "little adam"]):
+        return "/ella.png"
+    if any(k in text for k in ["mirissa", "coconut tree", "secret beach", "weligama", "whale"]):
+        return "/miris.png"
+    if any(k in text for k in ["dambulla", "cave temple", "rock temple", "sithulpawwa", "aukana", "bahirawakanda", "gangaramaya", "bodhiraja", "viharaya", "vihara", "kovil", "pansala", "dagoba", "pagoda", "stupa", "statue", "temple", "pirivena"]):
+        return "/pilima.png"
+    if any(k in text for k in ["tea", "nuwara eliya", "plantation", "estate", "pedro", "mackwood", "horton"]):
+        return "/tea.png"
+    if any(k in text for k in ["lotus tower", "galle face", "colombo", "pettah", "colpetty", "slave island"]):
+        return "/col.png"
+    if any(k in text for k in ["galle fort", "dutch fort", "galle", "lighthouse", "unawatuna"]):
+        return "/images/galle.png"
+    if any(k in text for k in ["bentota", "madu", "river safari", "turtle"]):
+        return "/images/bentota.png"
+    if any(k in text for k in ["botanical", "peradeniya", "garden", "park", "forest", "nature"]):
+        return "/sri3.png"
+    if any(k in text for k in ["anuradhapura", "polonnaruwa", "ruins", "ancient"]):
+        return "/sri.png"
+    return "/sri2.png"
+
+
 def extract_suggested_places_by_destination(agent2_data: Dict[str, Any]) -> Dict[str, Dict[str, List[Dict[str, Any]]]]:
     """
     Assembles selectable suggested hotels and POIs for the frontend cards with real scraped prices.
@@ -186,31 +231,17 @@ def extract_suggested_places_by_destination(agent2_data: Dict[str, Any]) -> Dict
                         if not primary_image:
                             primary_image = clean_url
 
-            if not primary_image or "photos.app.goo.gl" in primary_image:
-                name_lower = p.get("name", "").lower()
-                dest_lower = dest.lower()
-                if "sigiriya" in name_lower or "sigiriya" in dest_lower:
-                    primary_image = "/images/sigiriya.png"
-                elif "yala" in name_lower or "yala" in dest_lower:
-                    primary_image = "/images/yala.png"
-                elif "kandy" in name_lower or "kandy" in dest_lower or "tooth" in name_lower or "malwathu" in name_lower:
-                    primary_image = "/images/kandy.png"
-                elif "galle" in name_lower or "galle" in dest_lower:
-                    primary_image = "/images/galle.png"
-                elif "dambulla" in name_lower or "dambulla" in dest_lower:
-                    primary_image = "/images/dambulla.png"
-                elif "ella" in name_lower or "ella" in dest_lower or "arch" in name_lower:
-                    primary_image = "/images/nine_arch.png"
-                elif "tea" in name_lower or "nuwara" in dest_lower or "eliya" in dest_lower:
-                    primary_image = "/images/tea.png"
-                elif "bentota" in name_lower or "bentota" in dest_lower:
-                    primary_image = "/images/bentota.png"
-                elif "mirissa" in name_lower or "mirissa" in dest_lower:
-                    primary_image = "/images/mirissa.png"
-                elif "colombo" in name_lower or "colombo" in dest_lower:
-                    primary_image = "/images/colombo.png"
-                else:
-                    primary_image = "/images/colombo.png"
+            is_placeholder = (
+                not primary_image
+                or "photos.app.goo.gl" in primary_image
+                or primary_image == "/images/colombo.png"
+                or any(pat in primary_image for pat in SCRAPED_HOTEL_IMAGE_PATTERNS)
+            )
+
+            is_ai_generated = False
+            if is_placeholder:
+                primary_image = resolve_ai_poi_image(p.get("name", ""), dest, p.get("description", ""))
+                is_ai_generated = True
 
             formatted_poi.append({
                 "id": str(p.get("id") or p.get("_id") or p.get("name")),
@@ -221,7 +252,8 @@ def extract_suggested_places_by_destination(agent2_data: Dict[str, Any]) -> Dict
                 "categories": p.get("categories", []),
                 "primary_image": primary_image,
                 "street_view_url": street_view_url,
-                "description": p.get("description", "Attraction landmark in Sri Lanka.")
+                "description": p.get("description", "Attraction landmark in Sri Lanka."),
+                "is_ai_generated": is_ai_generated
             })
 
         result[dest] = {

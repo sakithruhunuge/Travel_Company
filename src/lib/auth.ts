@@ -17,7 +17,7 @@ declare module "next-auth" {
       name: string;
       email: string;
       image?: string | null;
-      role: "customer" | "tenant_admin" | "super_admin";
+      role: "customer" | "tenant_admin" | "marketing_officer" | "travel_agent" | "driver" | "tour_guide" | "super_admin";
       tenantId: string | null;
       slug: string | null;
       provider?: string;
@@ -30,7 +30,7 @@ declare module "next-auth" {
     name: string;
     email: string;
     image?: string | null;
-    role: "customer" | "tenant_admin" | "super_admin";
+    role: "customer" | "tenant_admin" | "marketing_officer" | "travel_agent" | "driver" | "tour_guide" | "super_admin";
     tenantId: string | null;
     slug: string | null;
     provider?: string;
@@ -41,7 +41,7 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT {
     id: string;
-    role: "customer" | "tenant_admin" | "super_admin";
+    role: "customer" | "tenant_admin" | "marketing_officer" | "travel_agent" | "driver" | "tour_guide" | "super_admin";
     tenantId: string | null;
     slug: string | null;
     provider?: string;

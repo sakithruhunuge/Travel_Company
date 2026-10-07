@@ -62,7 +62,8 @@ export function parseTenantHostname(hostname: string): {
 
   // 2. Default Localhost Tenant
   if (host === "localhost" || host === "127.0.0.1") {
-    return { slug: "default-tenant", isAdmin: false };
+    const defaultSlug = process.env.DEFAULT_TENANT_SLUG || "ceylon";
+    return { slug: defaultSlug, isAdmin: false };
   }
 
   // 3. Tenant.localhost Check

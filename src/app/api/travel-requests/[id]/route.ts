@@ -5,6 +5,7 @@ import { dbConnect } from "@/lib/mongodb";
 import { tenantScope } from "@/lib/tenantContext";
 import { updateRequestPricing, parseRequestPricing, parseSpecifications } from "@/lib/pricingParser";
 import Tenant from "@/models/Tenant";
+import TravelRequest from "@/models/TravelRequest";
 import { sendInvoiceEmail } from "@/lib/emailService";
 import InvoiceDocument from "@/components/pdf/InvoiceDocument";
 import React from "react";
@@ -26,18 +27,21 @@ export async function GET(request: Request, { params }: { params: { id: string }
     const tenantId = sessionUser.tenantId;
     const userRole = sessionUser.role;
 
+    const isAdmin = userRole === "tenant_admin" || userRole === "super_admin" || userRole === "admin";
+
     if (!userId) {
       return NextResponse.json({ error: "Missing user identity" }, { status: 400 });
     }
 
-    if (!tenantId) {
+    if (!tenantId && !isAdmin) {
       return NextResponse.json({ error: "Tenant context is required" }, { status: 400 });
     }
 
-    const db = tenantScope(tenantId);
-    // Dual-scoping detail lookup
-    const query = userRole === "tenant_admin" ? { _id: params.id } : { _id: params.id, userId };
-    const requestDoc = await db.TravelRequest.findOne(query).lean();
+    const query: Record<string, any> = { _id: params.id };
+    if (!isAdmin) {
+      query.userId = userId;
+    }
+    const requestDoc = await TravelRequest.findOne(query).lean();
 
     if (!requestDoc) {
       return NextResponse.json({ error: "Request not found" }, { status: 404 });
@@ -62,12 +66,14 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const userRole = sessionUser.role;
     const tenantId = sessionUser.tenantId;
 
-    // Guard: Only Tenant Admin is authorized to modify travel requests
-    if (userRole !== "tenant_admin") {
-      return NextResponse.json({ error: "Access Denied: Tenant Admin role required" }, { status: 403 });
+    const isAdmin = userRole === "tenant_admin" || userRole === "super_admin" || userRole === "admin";
+
+    // Guard: Only Tenant / Super Admin is authorized to modify travel requests
+    if (!isAdmin) {
+      return NextResponse.json({ error: "Access Denied: Admin role required" }, { status: 403 });
     }
 
-    if (!tenantId) {
+    if (!tenantId && !isAdmin) {
       return NextResponse.json({ error: "Tenant context is required" }, { status: 400 });
     }
 
@@ -80,17 +86,15 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    const { status, customCharges, additionalTaxes } = body;
+    const { status, customCharges, additionalTaxes, tourGuide, driver, agencyNotes } = body;
     if (status && !["pending", "approved", "rejected", "cancelled"].includes(status)) {
       return NextResponse.json({ error: "Invalid status value" }, { status: 400 });
     }
 
-    const db = tenantScope(tenantId);
-
     // Fetch existing request to update its pricing notes
-    const existingRequest = await db.TravelRequest.findOne({ _id: params.id });
+    const existingRequest = await TravelRequest.findOne({ _id: params.id });
     if (!existingRequest) {
-      return NextResponse.json({ error: "Request not found under this tenant" }, { status: 404 });
+      return NextResponse.json({ error: "Request not found" }, { status: 404 });
     }
 
     const updateFields: any = {};
@@ -111,7 +115,18 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       }
     }
 
-    const updatedRequest = (await db.TravelRequest.findOneAndUpdate(
+    // Apply guide/driver/agencyNotes if provided
+    if (tourGuide !== undefined) {
+      updateFields.tourGuide = tourGuide;
+    }
+    if (driver !== undefined) {
+      updateFields.driver = driver;
+    }
+    if (agencyNotes !== undefined) {
+      updateFields.agencyNotes = agencyNotes;
+    }
+
+    const updatedRequest = (await TravelRequest.findOneAndUpdate(
       { _id: params.id },
       updateFields,
       { new: true }
@@ -124,7 +139,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
           console.log(`[PDF/Email Workflow] Launching background invoice pipeline for request ${updatedRequest._id}`);
           
           // Fetch tenant branding and name
-          const tenant = await Tenant.findById(tenantId).lean();
+          const tenant = await Tenant.findById(updatedRequest.tenantId || tenantId).lean();
           const tenantName = tenant?.name || "Travel Agency";
           const primaryColor = tenant?.branding?.primaryColor || "#0B7C8A";
           const secondaryColor = tenant?.branding?.secondaryColor || "#041A16";
@@ -162,6 +177,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             secondaryColor,
             paymentLink,
             specs,
+            tourGuide: updatedRequest.tourGuide?.name ? { name: updatedRequest.tourGuide.name, email: updatedRequest.tourGuide.email } : undefined,
+            driver: updatedRequest.driver?.name ? { name: updatedRequest.driver.name, email: updatedRequest.driver.email } : undefined,
           });
 
           // Render PDF to Buffer
