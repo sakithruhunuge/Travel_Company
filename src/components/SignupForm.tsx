@@ -10,6 +10,10 @@ export default function SignupForm() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    
+    // Validation errors state
+    const [errors, setErrors] = useState<{name?: string; email?: string; password?: string; confirmPassword?: string}>({});
+    
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
@@ -23,15 +27,43 @@ export default function SignupForm() {
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // --- Client-Side Validation ---
+        const newErrors: {name?: string; email?: string; password?: string; confirmPassword?: string} = {};
+        
+        // Name validation
+        if (!/^[a-zA-Z\s]+$/.test(name)) {
+            newErrors.name = "Name can only contain letters and spaces.";
+        }
+        
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            newErrors.email = "Please enter a valid email address.";
+        }
+        
+        // Password validation
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        if (!passwordRegex.test(password)) {
+            newErrors.password = "Password must be at least 8 characters and include uppercase, lowercase, number, and special character.";
+        }
+        
+        // Confirm Password validation
+        if (password !== confirmPassword) {
+            newErrors.confirmPassword = "Passwords do not match.";
+        }
+
+        setErrors(newErrors);
+
+        // Prevent submission if errors exist
+        if (Object.keys(newErrors).length > 0) {
+            return;
+        }
+        // ------------------------------
+
         setIsLoading(true);
         setError("");
         setSuccess("");
-
-        if (password !== confirmPassword) {
-            setError("Passwords do not match.");
-            setIsLoading(false);
-            return;
-        }
 
         try {
             const res = await fetch("/api/auth/register", {
@@ -98,8 +130,8 @@ export default function SignupForm() {
                 </div>
             )}
 
-            <div>
-                <label htmlFor="name" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+            <div className="space-y-1">
+                <label htmlFor="name" className="block text-sm font-medium text-slate-700">
                     Full Name
                 </label>
                 <input
@@ -107,14 +139,18 @@ export default function SignupForm() {
                     type="text"
                     required
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => {
+                        setName(e.target.value);
+                        if (errors.name) setErrors({ ...errors, name: undefined });
+                    }}
                     placeholder="John Doe"
-                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all duration-200"
+                    className={`w-full bg-transparent border ${errors.name ? 'border-red-500 focus:ring-red-500' : 'border-slate-300 focus:ring-slate-900'} rounded px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:border-slate-900 transition-all placeholder:text-slate-400`}
                 />
+                {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
             </div>
 
-            <div>
-                <label htmlFor="email" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+            <div className="space-y-1">
+                <label htmlFor="email" className="block text-sm font-medium text-slate-700">
                     Email Address
                 </label>
                 <input
@@ -122,14 +158,18 @@ export default function SignupForm() {
                     type="email"
                     required
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (errors.email) setErrors({ ...errors, email: undefined });
+                    }}
                     placeholder="name@example.com"
-                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all duration-200"
+                    className={`w-full bg-transparent border ${errors.email ? 'border-red-500 focus:ring-red-500' : 'border-slate-300 focus:ring-slate-900'} rounded px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:border-slate-900 transition-all placeholder:text-slate-400`}
                 />
+                {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
             </div>
 
-            <div>
-                <label htmlFor="password" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+            <div className="space-y-1">
+                <label htmlFor="password" className="block text-sm font-medium text-slate-700">
                     Password
                 </label>
                 <input
@@ -138,14 +178,18 @@ export default function SignupForm() {
                     required
                     minLength={6}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (errors.password) setErrors({ ...errors, password: undefined });
+                    }}
                     placeholder="••••••••"
-                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all duration-200"
+                    className={`w-full bg-transparent border ${errors.password ? 'border-red-500 focus:ring-red-500' : 'border-slate-300 focus:ring-slate-900'} rounded px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:border-slate-900 transition-all placeholder:text-slate-400`}
                 />
+                {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
             </div>
 
-            <div>
-                <label htmlFor="confirmPassword" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+            <div className="space-y-1">
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700">
                     Confirm Password
                 </label>
                 <input
@@ -154,16 +198,20 @@ export default function SignupForm() {
                     required
                     minLength={6}
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: undefined });
+                    }}
                     placeholder="••••••••"
-                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all duration-200"
+                    className={`w-full bg-transparent border ${errors.confirmPassword ? 'border-red-500 focus:ring-red-500' : 'border-slate-300 focus:ring-slate-900'} rounded px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:border-slate-900 transition-all placeholder:text-slate-400`}
                 />
+                {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
             </div>
 
             <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-4 bg-brand-primary hover:bg-brand-primary/95 text-white font-extrabold rounded-xl hover:shadow-lg hover:shadow-brand-primary/25 transition-all duration-200 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded transition-colors disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
                 {isLoading ? (
                     <>
