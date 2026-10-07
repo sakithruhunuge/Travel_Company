@@ -139,6 +139,10 @@ export async function POST(request: Request) {
     }
 
     // 2. Destination Images fetching
+    const protocol = request.headers.get("x-forwarded-proto") || "http";
+    const host = request.headers.get("host") || "localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${protocol}://${host}`;
+
     const specs = parseSpecifications(booking.specialRequests || "");
     let rawDestinations: string[] | string = specs.destinations || "";
 
@@ -171,9 +175,10 @@ export async function POST(request: Request) {
           dest.toLowerCase().includes(d.title.toLowerCase())
         );
         if (found && !destinationImages.some(img => img.title === found.title)) {
+          const imgUrl = found.imageUrl.startsWith("/") ? found.imageUrl : `/${found.imageUrl}`;
           destinationImages.push({
             title: found.title,
-            imagePath: path.join(process.cwd(), "public", found.imageUrl),
+            imagePath: `${baseUrl}${imgUrl}`,
           });
         }
       }
@@ -181,10 +186,13 @@ export async function POST(request: Request) {
 
     // Fallback if no images found
     if (destinationImages.length === 0) {
-      destinationImages = sriLankaImages.destinations.slice(0, 3).map(img => ({
-        title: img.title,
-        imagePath: path.join(process.cwd(), "public", img.imageUrl),
-      }));
+      destinationImages = sriLankaImages.destinations.slice(0, 3).map(img => {
+        const imgUrl = img.imageUrl.startsWith("/") ? img.imageUrl : `/${img.imageUrl}`;
+        return {
+          title: img.title,
+          imagePath: `${baseUrl}${imgUrl}`,
+        };
+      });
     }
     // Limit to max 3 images to fit nicely on the PDF
     destinationImages = destinationImages.slice(0, 3);

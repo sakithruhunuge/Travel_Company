@@ -4,6 +4,9 @@ import User from "@/models/User";
 import TravelRequest from "@/models/TravelRequest";
 import Package from "@/models/Package";
 import DriverGuide from "@/models/DriverGuide";
+import Vendor from "@/models/Vendor";
+import Payable from "@/models/Payable";
+import Payment from "@/models/Payment";
 import { resolveTenant } from "@/lib/tenantResolver";
 
 export interface TenantContext {
@@ -189,6 +192,52 @@ export function tenantScope(tenantId: string | mongoose.Types.ObjectId) {
         return DriverGuide.create({ ...docs, tenantId: tId });
       },
       raw: DriverGuide,
+    },
+    Vendor: {
+      find: (filter: any = {}) => Vendor.find({ ...filter, tenantId: tId }),
+      findOne: (filter: any = {}) => Vendor.findOne({ ...filter, tenantId: tId }),
+      findOneAndUpdate: (filter: any = {}, update: any, options?: any) => Vendor.findOneAndUpdate({ ...filter, tenantId: tId }, update, options),
+      updateOne: (filter: any = {}, update: any, options?: any) => Vendor.updateOne({ ...filter, tenantId: tId }, update, options),
+      updateMany: (filter: any = {}, update: any, options?: any) => Vendor.updateMany({ ...filter, tenantId: tId }, update, options),
+      deleteOne: (filter: any = {}) => Vendor.deleteOne({ ...filter, tenantId: tId }),
+      deleteMany: (filter: any = {}) => Vendor.deleteMany({ ...filter, tenantId: tId }),
+      countDocuments: (filter: any = {}) => Vendor.countDocuments({ ...filter, tenantId: tId }),
+      create: (docs: any) => {
+        if (Array.isArray(docs)) return Vendor.create(docs.map((doc) => ({ ...doc, tenantId: tId })));
+        return Vendor.create({ ...docs, tenantId: tId });
+      },
+      raw: Vendor,
+    },
+    Payable: {
+      find: (filter: any = {}) => Payable.find({ ...filter, tenantId: tId }),
+      findOne: (filter: any = {}) => Payable.findOne({ ...filter, tenantId: tId }),
+      findOneAndUpdate: (filter: any = {}, update: any, options?: any) => Payable.findOneAndUpdate({ ...filter, tenantId: tId }, update, options),
+      updateOne: (filter: any = {}, update: any, options?: any) => Payable.updateOne({ ...filter, tenantId: tId }, update, options),
+      updateMany: (filter: any = {}, update: any, options?: any) => Payable.updateMany({ ...filter, tenantId: tId }, update, options),
+      deleteOne: (filter: any = {}) => Payable.deleteOne({ ...filter, tenantId: tId }),
+      deleteMany: (filter: any = {}) => Payable.deleteMany({ ...filter, tenantId: tId }),
+      countDocuments: (filter: any = {}) => Payable.countDocuments({ ...filter, tenantId: tId }),
+      create: (docs: any) => {
+        if (Array.isArray(docs)) return Payable.create(docs.map((doc) => ({ ...doc, tenantId: tId })));
+        return Payable.create({ ...docs, tenantId: tId });
+      },
+      raw: Payable,
+    },
+    Payment: {
+      find: (filter: any = {}) => Payment.find({ ...filter, tenantId: tId }),
+      findOne: (filter: any = {}) => Payment.findOne({ ...filter, tenantId: tId }),
+      findOneAndUpdate: (filter: any = {}, update: any, options?: any) => Payment.findOneAndUpdate({ ...filter, tenantId: tId }, update, options),
+      updateOne: (filter: any = {}, update: any, options?: any) => Payment.updateOne({ ...filter, tenantId: tId }, update, options),
+      updateMany: (filter: any = {}, update: any, options?: any) => Payment.updateMany({ ...filter, tenantId: tId }, update, options),
+      deleteOne: (filter: any = {}) => Payment.deleteOne({ ...filter, tenantId: tId }),
+      deleteMany: (filter: any = {}) => Payment.deleteMany({ ...filter, tenantId: tId }),
+      countDocuments: (filter: any = {}) => Payment.countDocuments({ ...filter, tenantId: tId }),
+      create: (docs: any) => {
+        if (Array.isArray(docs)) return Payment.create(docs.map((doc) => ({ ...doc, tenantId: tId })));
+        return Payment.create({ ...docs, tenantId: tId });
+      },
+      aggregate: (pipeline: any[]) => Payment.aggregate([{ $match: { tenantId: tId } }, ...pipeline]),
+      raw: Payment,
     },
   };
 }

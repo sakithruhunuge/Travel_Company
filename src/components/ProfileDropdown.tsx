@@ -74,6 +74,7 @@ export default function ProfileDropdown() {
                     </div>
                     <div className="flex flex-col py-1.5 text-xs font-semibold text-slate-700">
                         <Link href={`/${locale}/dashboard`} onClick={() => setOpen(false)} className="px-4 py-2 hover:bg-amber-50 hover:text-slate-900 transition-colors">Dashboard</Link>
+                        <Link href={`/${locale}/admin/accounting`} onClick={() => setOpen(false)} className="px-4 py-2 hover:bg-amber-50 hover:text-slate-900 transition-colors">Accounting</Link>
                         <Link href={`/${locale}/dashboard/profile`} onClick={() => setOpen(false)} className="px-4 py-2 hover:bg-amber-50 hover:text-slate-900 transition-colors">Profile</Link>
                         <button onClick={handleSignOut} className="text-left px-4 py-2 hover:bg-red-50 hover:text-red-600 transition-colors border-t border-slate-100 mt-1 pt-2">Sign Out</button>
                     </div>
