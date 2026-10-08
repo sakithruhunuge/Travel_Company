@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useLocale } from "next-intl";
 import LogoUpload from "@/components/LogoUpload";
 
 interface TenantData {
@@ -33,6 +35,7 @@ interface StatsData {
 export default function SuperAdminPage() {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
+  const locale = useLocale();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -314,6 +317,14 @@ export default function SuperAdminPage() {
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
               Dashboard
             </div>
+            <Link
+              href={`/${locale}/admin/rates`}
+              className="sa-nav-item"
+              style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: "10px" }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
+              Master Rates
+            </Link>
             <div className="sa-nav-item">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
               Payment
@@ -377,6 +388,25 @@ export default function SuperAdminPage() {
               <span className="sa-kbd">⌘ + F</span>
             </div>
             <div className="sa-topbar-right">
+              <Link
+                href={`/${locale}/admin/rates`}
+                className="sa-create-btn"
+                style={{
+                  background: "linear-gradient(135deg, #0d9488 0%, #10b981 100%)",
+                  color: "#fff",
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "8px 16px",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  borderRadius: "10px",
+                  boxShadow: "0 2px 8px rgba(13,148,136,0.25)",
+                }}
+              >
+                <span>💱</span> Master Rates Portal
+              </Link>
               <div className="sa-icon-btn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
               </div>

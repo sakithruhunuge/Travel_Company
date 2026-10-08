@@ -23,11 +23,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const tHome = useTranslations("Dashboard.Home");
 
     useEffect(() => {
-        if (status !== "authenticated") return;
-        if (!session?.user) {
+        if (status === "unauthenticated") {
             router.replace(`/${locale}/login`);
         }
-    }, [router, session, status, locale]);
+    }, [router, status, locale]);
 
     if (status === "loading") {
         return (

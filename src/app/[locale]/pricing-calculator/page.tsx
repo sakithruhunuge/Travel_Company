@@ -23,6 +23,9 @@ import {
   TeamOutlined,
   CompassOutlined,
   InfoCircleOutlined,
+  GlobalOutlined,
+  PlusOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 
 const AVAILABLE_DESTINATIONS = [
@@ -56,13 +59,52 @@ export default function PricingCalculatorPage() {
     activities: [],
     extraNights: 0,
     addOns: [],
+    touristCountry: "Thailand",
+    customAttractions: [],
   });
+
+  const [newCustomName, setNewCustomName] = useState("");
+  const [newCustomPriceLKR, setNewCustomPriceLKR] = useState<string>("");
+  const [showAddCustomModal, setShowAddCustomModal] = useState(false);
 
   const [preferredStartDate, setPreferredStartDate] = useState<string>("");
   const [specialRequests, setSpecialRequests] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitSuccess, setSubmitSuccess] = useState<boolean>(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const handleAddCustomAttraction = () => {
+    if (!newCustomName.trim()) {
+      addToast("error", "Please enter the custom attraction name.");
+      return;
+    }
+    const priceNum = Number(newCustomPriceLKR) || 0;
+    if (priceNum <= 0) {
+      addToast("error", "Please enter a valid ticket price in LKR.");
+      return;
+    }
+
+    setInputs((prev) => ({
+      ...prev,
+      customAttractions: [
+        ...(prev.customAttractions || []),
+        { name: newCustomName.trim(), priceLKR: priceNum },
+      ],
+    }));
+
+    setNewCustomName("");
+    setNewCustomPriceLKR("");
+    setShowAddCustomModal(false);
+    addToast("success", `Added custom attraction "${newCustomName}" to your tour calculation!`);
+  };
+
+  const handleRemoveCustomAttraction = (index: number) => {
+    setInputs((prev) => ({
+      ...prev,
+      customAttractions: (prev.customAttractions || []).filter((_, i) => i !== index),
+    }));
+    addToast("info", "Removed custom attraction.");
+  };
 
   // 2. Load draft from sessionStorage on mount (only once)
   useEffect(() => {
@@ -239,6 +281,65 @@ export default function PricingCalculatorPage() {
           {/* Configurator Controls */}
           <div className="space-y-8">
             
+            {/* 0. Tourist Nationality & Origin Country (Determines Official Ticket Rates) */}
+            <section className="bg-white/85 backdrop-blur-md rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+              <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                <div>
+                  <h3 className="text-lg font-black text-slate-950 flex items-center gap-2">
+                    <GlobalOutlined className="text-brand-secondary" />
+                    <span>0. Tourist Nationality (Tiered Attraction Pricing)</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                    Official Sri Lankan monuments (Sigiriya, Maligawa, etc.) offer tiered entry fees based on origin country.
+                  </p>
+                </div>
+                {breakdown.appliedNationalityTier === "SAARC_AND_THAILAND" && (
+                  <span className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold px-2.5 py-1 rounded-full">
+                    ✓ SAARC & Thailand Concession (~LKR 2,000)
+                  </span>
+                )}
+                {breakdown.appliedNationalityTier === "FOREIGN" && (
+                  <span className="bg-blue-50 border border-blue-200 text-blue-800 text-[11px] font-bold px-2.5 py-1 rounded-full">
+                    Standard International (~LKR 3,000)
+                  </span>
+                )}
+                {breakdown.appliedNationalityTier === "LOCAL" && (
+                  <span className="bg-slate-100 border border-slate-200 text-slate-800 text-[11px] font-bold px-2.5 py-1 rounded-full">
+                    Domestic / Local Tariffs
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                {[
+                  { id: "Thailand", label: "Thailand (Bilateral Rate)" },
+                  { id: "India", label: "India (SAARC Rate)" },
+                  { id: "Sri Lanka", label: "Sri Lanka (Domestic)" },
+                  { id: "United Kingdom", label: "United Kingdom" },
+                  { id: "Germany", label: "Germany" },
+                  { id: "United States", label: "United States" },
+                  { id: "Australia", label: "Australia" },
+                  { id: "Other", label: "Other International" },
+                ].map((nat) => {
+                  const isSelected = inputs.touristCountry === nat.id;
+                  return (
+                    <button
+                      key={nat.id}
+                      type="button"
+                      onClick={() => setInputs((prev) => ({ ...prev, touristCountry: nat.id }))}
+                      className={`p-3 rounded-2xl border text-center font-bold text-xs transition ${
+                        isSelected
+                          ? "border-brand-secondary bg-sky-50 text-slate-900 shadow-sm"
+                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      {nat.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
             {/* 1. Destinations select */}
             <section className="bg-white/85 backdrop-blur-md rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
               <div className="flex justify-between items-center border-b border-slate-100 pb-4">
@@ -501,6 +602,58 @@ export default function PricingCalculatorPage() {
               </div>
             </section>
 
+            {/* 7. Custom / Other Excursions (Dynamic On-the-Fly Entry) */}
+            <section className="bg-white/85 backdrop-blur-md rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+              <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+                <div>
+                  <h3 className="text-lg font-black text-slate-950 flex items-center gap-2">
+                    <PlusOutlined className="text-brand-secondary" />
+                    <span>7. Unexpected / Custom Attractions (&apos;Other&apos; Option)</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                    For impromptu stops or unlisted locations, enter the spot price right now to automatically include it in the calculation.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddCustomModal(true)}
+                  className="bg-brand-secondary text-white text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-brand-secondary/90 transition flex items-center gap-1.5"
+                >
+                  <PlusOutlined /> Add Other Location
+                </button>
+              </div>
+
+              {inputs.customAttractions && inputs.customAttractions.length > 0 ? (
+                <div className="space-y-2">
+                  {inputs.customAttractions.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200 text-sm"
+                    >
+                      <div>
+                        <span className="font-bold text-slate-800">{item.name}</span>
+                        <span className="text-xs text-slate-400 ml-2">
+                          (LKR {item.priceLKR?.toLocaleString()} / traveler)
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCustomAttraction(idx)}
+                        className="text-red-500 hover:text-red-700 p-1 text-xs font-bold"
+                        title="Remove"
+                      >
+                        <DeleteOutlined />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-xs text-slate-400 italic text-center py-2">
+                  No custom &apos;other&apos; locations added yet. Click &quot;Add Other Location&quot; to include custom excursion tickets.
+                </div>
+              )}
+            </section>
+
           </div>
 
           {/* Pricing Invoice Summary Card */}
@@ -557,9 +710,23 @@ export default function PricingCalculatorPage() {
                   <span className="text-slate-800 font-bold">{formatPrice(breakdown.transportCost)}</span>
                 </div>
                 <div className="flex justify-between items-center text-slate-500">
-                  <span>Destination ticket entry fees</span>
+                  <span>Destination base handling fees</span>
                   <span className="text-slate-800 font-bold">{formatPrice(breakdown.destinationSurcharges)}</span>
                 </div>
+                {breakdown.tieredAttractionCost > 0 && (
+                  <div className="flex justify-between items-center text-teal-700 bg-teal-50/60 px-3 py-1.5 rounded-xl border border-teal-100">
+                    <span className="text-xs">
+                      Monument Tickets ({breakdown.appliedNationalityTier === "SAARC_AND_THAILAND" ? "SAARC/Thai ~LKR 2,000" : "Foreign ~LKR 3,000"})
+                    </span>
+                    <span className="font-bold">{formatPrice(breakdown.tieredAttractionCost)}</span>
+                  </div>
+                )}
+                {breakdown.customAttractionsCost > 0 && (
+                  <div className="flex justify-between items-center text-amber-700 bg-amber-50/60 px-3 py-1.5 rounded-xl border border-amber-100">
+                    <span className="text-xs">Custom 'Other' Excursions ({inputs.customAttractions?.length})</span>
+                    <span className="font-bold">{formatPrice(breakdown.customAttractionsCost)}</span>
+                  </div>
+                )}
                 {breakdown.activityCost > 0 && (
                   <div className="flex justify-between items-center text-slate-500">
                     <span>Selected add-on activities</span>
@@ -575,6 +742,9 @@ export default function PricingCalculatorPage() {
                 <div className="flex justify-between items-center text-slate-500">
                   <span>Local taxes & service charge (12%)</span>
                   <span className="text-slate-800 font-bold">{formatPrice(breakdown.taxes)}</span>
+                </div>
+                <div className="text-[11px] text-slate-400 text-right pt-1 font-medium">
+                  Exact Forex conversion: 1 USD = 305 LKR (Includes 2.5% Volatility Buffer)
                 </div>
               </div>
 
@@ -652,6 +822,62 @@ export default function PricingCalculatorPage() {
 
         </div>
       </div>
+
+      {/* Modal for adding unlisted 'Other' attraction */}
+      {showAddCustomModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <h3 className="text-lg font-black text-slate-900 border-b border-slate-100 pb-3">
+              Add Custom / Unlisted Attraction
+            </h3>
+            <p className="text-xs text-slate-500">
+              Enter the site name and spot ticket price in Sri Lankan Rupees. The system will automatically convert and add it to the tour quote.
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  Location / Attraction Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Ranweli Herbal Garden, Madu River Boat Safari"
+                  value={newCustomName}
+                  onChange={(e) => setNewCustomName(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  Spot Ticket Price per Traveler (LKR)
+                </label>
+                <input
+                  type="number"
+                  placeholder="e.g. 2500"
+                  value={newCustomPriceLKR}
+                  onChange={(e) => setNewCustomPriceLKR(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowAddCustomModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddCustomAttraction}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-brand-secondary text-white hover:bg-brand-secondary/90"
+              >
+                Add to Calculation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

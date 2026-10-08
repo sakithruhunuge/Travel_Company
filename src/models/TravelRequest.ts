@@ -117,6 +117,10 @@ export interface ITravelRequest extends Document {
   agentId?: mongoose.Types.ObjectId;
   agentCommissionPercent?: number;
   marketingOfficerId?: mongoose.Types.ObjectId;
+  completedAt?: Date;
+  endJourneyNotes?: string;
+  endJourneyOdometer?: number;
+  endJourneyDropOffLocation?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -268,6 +272,10 @@ const TravelRequestSchema: Schema = new Schema(
     agentId: { type: Schema.Types.ObjectId, ref: "User" },
     agentCommissionPercent: { type: Number, default: 0 },
     marketingOfficerId: { type: Schema.Types.ObjectId, ref: "User" },
+    completedAt: { type: Date },
+    endJourneyNotes: { type: String, default: "" },
+    endJourneyOdometer: { type: Number },
+    endJourneyDropOffLocation: { type: String, default: "" },
   },
   {
     timestamps: true,

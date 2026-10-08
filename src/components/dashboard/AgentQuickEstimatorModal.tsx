@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CloseOutlined,
@@ -12,6 +13,7 @@ import {
   CarOutlined,
   ArrowRightOutlined,
 } from "@ant-design/icons";
+import { useTenant } from "@/context/TenantBrandingContext";
 
 interface AgentQuickEstimatorModalProps {
   isOpen: boolean;
@@ -24,6 +26,25 @@ export default function AgentQuickEstimatorModal({
   onClose,
   onConvertToQuotation,
 }: AgentQuickEstimatorModalProps) {
+  const tenant = useTenant();
+  const primaryColor = tenant?.branding?.primaryColor || "#FF8B50";
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
+
   const [days, setDays] = useState(7);
   const [travelers, setTravelers] = useState(2);
   const [hotelTier, setHotelTier] = useState("4-Star Premium");
@@ -64,33 +85,56 @@ export default function AgentQuickEstimatorModal({
     }
   }, [isOpen, days, travelers, hotelTier, vehicleType, commissionPercent]);
 
-  if (!isOpen) return null;
+  if (!mounted) return null;
 
-  return (
+  return createPortal(
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+      {isOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
-          className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden my-8 border border-slate-200"
+          className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden my-8 border border-slate-200"
         >
-          {/* Header */}
-          <div className="bg-gradient-to-r from-amber-600 to-orange-700 px-6 py-4 text-white flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/20 rounded-xl text-lg">
+          {/* Header - Glass Shaded with Tenant Primary Color */}
+          <div
+            className="relative overflow-hidden px-7 py-5 flex justify-between items-center border-b border-white/60 backdrop-blur-2xl"
+            style={{
+              background: `linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.6) 50%, ${primaryColor}18 100%)`,
+            }}
+          >
+            {/* Ambient Radial Glow with primaryColor */}
+            <div
+              className="absolute -top-16 -right-16 h-48 w-48 rounded-full blur-2xl pointer-events-none opacity-30"
+              style={{ backgroundColor: primaryColor }}
+            />
+            <div
+              className="absolute -bottom-16 -left-16 h-40 w-40 rounded-full blur-2xl pointer-events-none opacity-20"
+              style={{ backgroundColor: primaryColor }}
+            />
+
+            <div className="flex items-center gap-3.5 relative z-10">
+              <div
+                className="h-10 w-10 rounded-xl border flex items-center justify-center text-lg font-bold shadow-sm"
+                style={{
+                  backgroundColor: `${primaryColor}18`,
+                  borderColor: `${primaryColor}35`,
+                  color: primaryColor,
+                }}
+              >
                 <ThunderboltOutlined />
               </div>
               <div>
-                <h2 className="text-lg font-bold">Travel Agent Rapid Estimator</h2>
-                <p className="text-xs text-white/80">
-                  Instant ballpark calculation for prospective guest phone inquiries & B2B margins
+                <h2 className="text-lg font-black text-slate-900 leading-tight">Agent Quick Estimator Terminal</h2>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Instant ballpark calculation for guest phone inquiries & wholesale margins
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-full hover:bg-white/20 transition-colors text-white"
+              className="h-8 w-8 rounded-full hover:bg-white/80 text-slate-400 hover:text-slate-800 flex items-center justify-center transition relative z-10 shadow-sm border border-slate-200/50"
             >
               <CloseOutlined />
             </button>
@@ -287,6 +331,8 @@ export default function AgentQuickEstimatorModal({
           </div>
         </motion.div>
       </div>
-    </AnimatePresence>
+    )}
+  </AnimatePresence>,
+  document.body
   );
 }

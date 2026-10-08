@@ -12,19 +12,29 @@ interface RequestData {
 }
 
 export default function TenantAnalyticsPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
 
   const [requests, setRequests] = useState<RequestData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const userRole = (session?.user as any)?.role;
+  const isAuthorized = [
+    "tenant_admin",
+    "super_admin",
+    "admin",
+    "marketing_officer",
+    "travel_agent",
+  ].includes(userRole);
 
   useEffect(() => {
-    if (userRole === "tenant_admin") {
+    if (status === "loading") return;
+    if (isAuthorized) {
       loadRequests();
+    } else {
+      setLoading(false);
     }
-  }, [userRole]);
+  }, [isAuthorized, status]);
 
   const loadRequests = async () => {
     setLoading(true);

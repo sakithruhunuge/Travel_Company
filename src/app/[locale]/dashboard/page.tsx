@@ -9,6 +9,8 @@ import SettingsCard from "@/components/dashboard/SettingsCard";
 import { useTenant } from "@/context/TenantBrandingContext";
 import { useLocale, useTranslations } from "next-intl";
 import { detectRequestedServices } from "@/lib/requestedServices";
+import MarketingOfficerDashboard from "@/components/dashboard/MarketingOfficerDashboard";
+import DriverDispatchDashboard from "@/components/dashboard/DriverDispatchDashboard";
 
 export default function DashboardHomePage() {
   const { data: session } = useSession();
@@ -94,6 +96,12 @@ export default function DashboardHomePage() {
                 Manage travel packages, review booking requests, update company branding, and analyze user statistics.
               </p>
               <div className="flex flex-wrap gap-4 pt-2">
+                <Link
+                  href={`/${locale}/dashboard/rates`}
+                  className="rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg hover:from-teal-500 hover:to-emerald-500 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center gap-2"
+                >
+                  <span>💱</span> Master Rates & Forex
+                </Link>
                 <Link
                   href={`/${locale}/dashboard/requests`}
                   className="rounded-xl bg-slate-900 px-6 py-3.5 text-sm font-bold text-white shadow-lg hover:bg-slate-800 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
@@ -291,6 +299,20 @@ export default function DashboardHomePage() {
         </section>
       </div>
     );
+  }
+
+  // -------------------------------------------------------------
+  // MARKETING OFFICER & TRAVEL AGENT VIEW
+  // -------------------------------------------------------------
+  if (userRole === "marketing_officer" || userRole === "travel_agent") {
+    return <MarketingOfficerDashboard />;
+  }
+
+  // -------------------------------------------------------------
+  // DRIVER & TOUR GUIDE VIEW (DISPATCH PORTAL)
+  // -------------------------------------------------------------
+  if (userRole === "driver" || userRole === "tour_guide") {
+    return <DriverDispatchDashboard />;
   }
 
   // -------------------------------------------------------------

@@ -7,6 +7,11 @@ import DriverGuide from "@/models/DriverGuide";
 import Vendor from "@/models/Vendor";
 import Payable from "@/models/Payable";
 import Payment from "@/models/Payment";
+import SeasonRateTier from "@/models/SeasonRateTier";
+import CurrencyExchange from "@/models/CurrencyExchange";
+import HotelContractRate from "@/models/HotelContractRate";
+import VehiclePricingPackage from "@/models/VehiclePricingPackage";
+import AttractionRate from "@/models/AttractionRate";
 import { resolveTenant } from "@/lib/tenantResolver";
 
 export interface TenantContext {
@@ -54,190 +59,58 @@ export async function resolveTenantId(sessionUser?: any): Promise<string | null>
 }
 
 /**
+ * Helper to build a standard tenant-scoped model wrapper
+ */
+function createScopedModel<T extends mongoose.Document>(
+  model: mongoose.Model<T>,
+  tId: mongoose.Types.ObjectId
+) {
+  return {
+    find: (filter: any = {}) => model.find({ ...filter, tenantId: tId }),
+    findOne: (filter: any = {}) => model.findOne({ ...filter, tenantId: tId }),
+    findOneAndUpdate: (filter: any = {}, update: any, options?: any) =>
+      model.findOneAndUpdate({ ...filter, tenantId: tId }, update, options),
+    updateOne: (filter: any = {}, update: any, options?: any) =>
+      model.updateOne({ ...filter, tenantId: tId }, update, options),
+    updateMany: (filter: any = {}, update: any, options?: any) =>
+      model.updateMany({ ...filter, tenantId: tId }, update, options),
+    deleteOne: (filter: any = {}) => model.deleteOne({ ...filter, tenantId: tId }),
+    deleteMany: (filter: any = {}) => model.deleteMany({ ...filter, tenantId: tId }),
+    countDocuments: (filter: any = {}) => model.countDocuments({ ...filter, tenantId: tId }),
+    create: (docs: any) => {
+      if (Array.isArray(docs)) {
+        return model.create(docs.map((doc) => ({ ...doc, tenantId: tId })));
+      }
+      return model.create({ ...docs, tenantId: tId });
+    },
+    raw: model,
+  };
+}
+
+/**
  * Creates a tenant-scoped database context object.
- * Returns pre-scoped wrappers around User, TravelRequest, and Package.
+ * Returns pre-scoped wrappers around User, TravelRequest, Package, DriverGuide,
+ * SeasonRateTier, CurrencyExchange, HotelContractRate, VehiclePricingPackage, and AttractionRate.
  */
 export function tenantScope(tenantId: string | mongoose.Types.ObjectId) {
   const tId = typeof tenantId === "string" ? new mongoose.Types.ObjectId(tenantId) : tenantId;
 
   return {
-    User: {
-      find: (filter: any = {}) => {
-        return User.find({ ...filter, tenantId: tId });
-      },
-      findOne: (filter: any = {}) => {
-        return User.findOne({ ...filter, tenantId: tId });
-      },
-      findOneAndUpdate: (filter: any = {}, update: any, options?: any) => {
-        return User.findOneAndUpdate({ ...filter, tenantId: tId }, update, options);
-      },
-      updateOne: (filter: any = {}, update: any, options?: any) => {
-        return User.updateOne({ ...filter, tenantId: tId }, update, options);
-      },
-      updateMany: (filter: any = {}, update: any, options?: any) => {
-        return User.updateMany({ ...filter, tenantId: tId }, update, options);
-      },
-      deleteOne: (filter: any = {}) => {
-        return User.deleteOne({ ...filter, tenantId: tId });
-      },
-      deleteMany: (filter: any = {}) => {
-        return User.deleteMany({ ...filter, tenantId: tId });
-      },
-      countDocuments: (filter: any = {}) => {
-        return User.countDocuments({ ...filter, tenantId: tId });
-      },
-      create: (docs: any) => {
-        if (Array.isArray(docs)) {
-          return User.create(docs.map((doc) => ({ ...doc, tenantId: tId })));
-        }
-        return User.create({ ...docs, tenantId: tId });
-      },
-      raw: User,
-    },
-    TravelRequest: {
-      find: (filter: any = {}) => {
-        return TravelRequest.find({ ...filter, tenantId: tId });
-      },
-      findOne: (filter: any = {}) => {
-        return TravelRequest.findOne({ ...filter, tenantId: tId });
-      },
-      findOneAndUpdate: (filter: any = {}, update: any, options?: any) => {
-        return TravelRequest.findOneAndUpdate({ ...filter, tenantId: tId }, update, options);
-      },
-      updateOne: (filter: any = {}, update: any, options?: any) => {
-        return TravelRequest.updateOne({ ...filter, tenantId: tId }, update, options);
-      },
-      updateMany: (filter: any = {}, update: any, options?: any) => {
-        return TravelRequest.updateMany({ ...filter, tenantId: tId }, update, options);
-      },
-      deleteOne: (filter: any = {}) => {
-        return TravelRequest.deleteOne({ ...filter, tenantId: tId });
-      },
-      deleteMany: (filter: any = {}) => {
-        return TravelRequest.deleteMany({ ...filter, tenantId: tId });
-      },
-      countDocuments: (filter: any = {}) => {
-        return TravelRequest.countDocuments({ ...filter, tenantId: tId });
-      },
-      create: (docs: any) => {
-        if (Array.isArray(docs)) {
-          return TravelRequest.create(docs.map((doc) => ({ ...doc, tenantId: tId })));
-        }
-        return TravelRequest.create({ ...docs, tenantId: tId });
-      },
-      raw: TravelRequest,
-    },
-    Package: {
-      find: (filter: any = {}) => {
-        return Package.find({ ...filter, tenantId: tId });
-      },
-      findOne: (filter: any = {}) => {
-        return Package.findOne({ ...filter, tenantId: tId });
-      },
-      findOneAndUpdate: (filter: any = {}, update: any, options?: any) => {
-        return Package.findOneAndUpdate({ ...filter, tenantId: tId }, update, options);
-      },
-      updateOne: (filter: any = {}, update: any, options?: any) => {
-        return Package.updateOne({ ...filter, tenantId: tId }, update, options);
-      },
-      updateMany: (filter: any = {}, update: any, options?: any) => {
-        return Package.updateMany({ ...filter, tenantId: tId }, update, options);
-      },
-      deleteOne: (filter: any = {}) => {
-        return Package.deleteOne({ ...filter, tenantId: tId });
-      },
-      deleteMany: (filter: any = {}) => {
-        return Package.deleteMany({ ...filter, tenantId: tId });
-      },
-      countDocuments: (filter: any = {}) => {
-        return Package.countDocuments({ ...filter, tenantId: tId });
-      },
-      create: (docs: any) => {
-        if (Array.isArray(docs)) {
-          return Package.create(docs.map((doc) => ({ ...doc, tenantId: tId })));
-        }
-        return Package.create({ ...docs, tenantId: tId });
-      },
-      raw: Package,
-    },
-    DriverGuide: {
-      find: (filter: any = {}) => {
-        return DriverGuide.find({ ...filter, tenantId: tId });
-      },
-      findOne: (filter: any = {}) => {
-        return DriverGuide.findOne({ ...filter, tenantId: tId });
-      },
-      findOneAndUpdate: (filter: any = {}, update: any, options?: any) => {
-        return DriverGuide.findOneAndUpdate({ ...filter, tenantId: tId }, update, options);
-      },
-      updateOne: (filter: any = {}, update: any, options?: any) => {
-        return DriverGuide.updateOne({ ...filter, tenantId: tId }, update, options);
-      },
-      updateMany: (filter: any = {}, update: any, options?: any) => {
-        return DriverGuide.updateMany({ ...filter, tenantId: tId }, update, options);
-      },
-      deleteOne: (filter: any = {}) => {
-        return DriverGuide.deleteOne({ ...filter, tenantId: tId });
-      },
-      deleteMany: (filter: any = {}) => {
-        return DriverGuide.deleteMany({ ...filter, tenantId: tId });
-      },
-      countDocuments: (filter: any = {}) => {
-        return DriverGuide.countDocuments({ ...filter, tenantId: tId });
-      },
-      create: (docs: any) => {
-        if (Array.isArray(docs)) {
-          return DriverGuide.create(docs.map((doc) => ({ ...doc, tenantId: tId })));
-        }
-        return DriverGuide.create({ ...docs, tenantId: tId });
-      },
-      raw: DriverGuide,
-    },
-    Vendor: {
-      find: (filter: any = {}) => Vendor.find({ ...filter, tenantId: tId }),
-      findOne: (filter: any = {}) => Vendor.findOne({ ...filter, tenantId: tId }),
-      findOneAndUpdate: (filter: any = {}, update: any, options?: any) => Vendor.findOneAndUpdate({ ...filter, tenantId: tId }, update, options),
-      updateOne: (filter: any = {}, update: any, options?: any) => Vendor.updateOne({ ...filter, tenantId: tId }, update, options),
-      updateMany: (filter: any = {}, update: any, options?: any) => Vendor.updateMany({ ...filter, tenantId: tId }, update, options),
-      deleteOne: (filter: any = {}) => Vendor.deleteOne({ ...filter, tenantId: tId }),
-      deleteMany: (filter: any = {}) => Vendor.deleteMany({ ...filter, tenantId: tId }),
-      countDocuments: (filter: any = {}) => Vendor.countDocuments({ ...filter, tenantId: tId }),
-      create: (docs: any) => {
-        if (Array.isArray(docs)) return Vendor.create(docs.map((doc) => ({ ...doc, tenantId: tId })));
-        return Vendor.create({ ...docs, tenantId: tId });
-      },
-      raw: Vendor,
-    },
-    Payable: {
-      find: (filter: any = {}) => Payable.find({ ...filter, tenantId: tId }),
-      findOne: (filter: any = {}) => Payable.findOne({ ...filter, tenantId: tId }),
-      findOneAndUpdate: (filter: any = {}, update: any, options?: any) => Payable.findOneAndUpdate({ ...filter, tenantId: tId }, update, options),
-      updateOne: (filter: any = {}, update: any, options?: any) => Payable.updateOne({ ...filter, tenantId: tId }, update, options),
-      updateMany: (filter: any = {}, update: any, options?: any) => Payable.updateMany({ ...filter, tenantId: tId }, update, options),
-      deleteOne: (filter: any = {}) => Payable.deleteOne({ ...filter, tenantId: tId }),
-      deleteMany: (filter: any = {}) => Payable.deleteMany({ ...filter, tenantId: tId }),
-      countDocuments: (filter: any = {}) => Payable.countDocuments({ ...filter, tenantId: tId }),
-      create: (docs: any) => {
-        if (Array.isArray(docs)) return Payable.create(docs.map((doc) => ({ ...doc, tenantId: tId })));
-        return Payable.create({ ...docs, tenantId: tId });
-      },
-      raw: Payable,
-    },
+    User: createScopedModel(User, tId),
+    TravelRequest: createScopedModel(TravelRequest, tId),
+    Package: createScopedModel(Package, tId),
+    DriverGuide: createScopedModel(DriverGuide, tId),
+    Vendor: createScopedModel(Vendor, tId),
+    Payable: createScopedModel(Payable, tId),
     Payment: {
-      find: (filter: any = {}) => Payment.find({ ...filter, tenantId: tId }),
-      findOne: (filter: any = {}) => Payment.findOne({ ...filter, tenantId: tId }),
-      findOneAndUpdate: (filter: any = {}, update: any, options?: any) => Payment.findOneAndUpdate({ ...filter, tenantId: tId }, update, options),
-      updateOne: (filter: any = {}, update: any, options?: any) => Payment.updateOne({ ...filter, tenantId: tId }, update, options),
-      updateMany: (filter: any = {}, update: any, options?: any) => Payment.updateMany({ ...filter, tenantId: tId }, update, options),
-      deleteOne: (filter: any = {}) => Payment.deleteOne({ ...filter, tenantId: tId }),
-      deleteMany: (filter: any = {}) => Payment.deleteMany({ ...filter, tenantId: tId }),
-      countDocuments: (filter: any = {}) => Payment.countDocuments({ ...filter, tenantId: tId }),
-      create: (docs: any) => {
-        if (Array.isArray(docs)) return Payment.create(docs.map((doc) => ({ ...doc, tenantId: tId })));
-        return Payment.create({ ...docs, tenantId: tId });
-      },
+      ...createScopedModel(Payment, tId),
       aggregate: (pipeline: any[]) => Payment.aggregate([{ $match: { tenantId: tId } }, ...pipeline]),
-      raw: Payment,
     },
+    SeasonRateTier: createScopedModel(SeasonRateTier, tId),
+    CurrencyExchange: createScopedModel(CurrencyExchange, tId),
+    HotelContractRate: createScopedModel(HotelContractRate, tId),
+    VehiclePricingPackage: createScopedModel(VehiclePricingPackage, tId),
+    AttractionRate: createScopedModel(AttractionRate, tId),
   };
 }
+

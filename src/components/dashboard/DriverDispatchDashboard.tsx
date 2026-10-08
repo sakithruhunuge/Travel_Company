@@ -1,0 +1,1116 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
+import React, { useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
+import {
+  CarOutlined,
+  CompassOutlined,
+  PhoneOutlined,
+  MailOutlined,
+  CalendarOutlined,
+  TeamOutlined,
+  CheckCircleOutlined,
+  DollarOutlined,
+  CameraOutlined,
+  ReloadOutlined,
+  FileTextOutlined,
+  FlagOutlined,
+  PlayCircleOutlined,
+  HistoryOutlined,
+  DashboardOutlined,
+  EnvironmentOutlined,
+  CloseOutlined,
+} from "@ant-design/icons";
+import { motion, AnimatePresence } from "framer-motion";
+import EmptyState from "./EmptyState";
+import GuestNotesCard from "./GuestNotesCard";
+import DriverTripMap from "./DriverTripMap";
+import TourGuidePlacesList from "./TourGuidePlacesList";
+import { RoutePlan } from "@/lib/distanceMatrix";
+import { useTenant } from "@/context/TenantBrandingContext";
+
+interface TourItem {
+  _id: string;
+  tourId?: string;
+  packageName: string;
+  userName: string;
+  userEmail: string;
+  userPhone?: string;
+  numberOfTravelers: number;
+  preferredStartDate: string;
+  specialRequests?: string;
+  status: string;
+  driver?: { name: string; phone?: string; email?: string };
+  tourGuide?: { name: string; phone?: string; email?: string };
+  assignedVehicle?: { category: string; plateNumber: string; model: string };
+  inTourExpenses?: any[];
+  destinations?: string[];
+  routePlan?: RoutePlan;
+  pricingInputs?: any;
+  completedAt?: string;
+  endJourneyNotes?: string;
+  endJourneyOdometer?: number;
+  endJourneyDropOffLocation?: string;
+  updatedAt?: string;
+}
+
+export default function DriverDispatchDashboard() {
+  const { data: session } = useSession();
+  const tenant = useTenant();
+  const primaryColor = tenant?.branding?.primaryColor || "#0B7C8A";
+
+  const [identifier, setIdentifier] = useState("");
+  const [crewList, setCrewList] = useState<any[]>([]);
+  const [crewProfile, setCrewProfile] = useState<any>(null);
+  const [isManagement, setIsManagement] = useState(false);
+  const [tours, setTours] = useState<TourItem[]>([]);
+  const [stats, setStats] = useState({ total: 0, active: 0, completed: 0, upcoming: 0 });
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"active" | "upcoming" | "history">("active");
+
+  // Status updating state
+  const [currentStatus, setCurrentStatus] = useState<"available" | "on_tour" | "off_duty">("available");
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
+  // Expense Logger Modal
+  const [selectedTourForExpense, setSelectedTourForExpense] = useState<TourItem | null>(null);
+  const [expCategory, setExpCategory] = useState("ticket");
+  const [expDesc, setExpDesc] = useState("");
+  const [expAmount, setExpAmount] = useState<number>(0);
+  const [expReceipt, setExpReceipt] = useState("");
+  const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
+  const [isSubmittingExp, setIsSubmittingExp] = useState(false);
+  const [expSuccessMsg, setExpSuccessMsg] = useState("");
+  const [expErrorMsg, setExpErrorMsg] = useState("");
+
+  // End Journey Modal State
+  const [selectedTourForEndJourney, setSelectedTourForEndJourney] = useState<TourItem | null>(null);
+  const [endJourneyNotes, setEndJourneyNotes] = useState("");
+  const [endJourneyOdometer, setEndJourneyOdometer] = useState<string | number>("");
+  const [endJourneyDropOff, setEndJourneyDropOff] = useState("");
+  const [isEndingJourney, setIsEndingJourney] = useState(false);
+  const [endJourneySuccessMsg, setEndJourneySuccessMsg] = useState("");
+  const [endJourneyErrorMsg, setEndJourneyErrorMsg] = useState("");
+
+  // Starting journey state
+  const [isStartingJourneyId, setIsStartingJourneyId] = useState<string | null>(null);
+
+  // Global flash toast
+  const [flashMessage, setFlashMessage] = useState<{ text: string; type: "success" | "info" } | null>(null);
+
+  const loadDriverTours = useCallback(async () => {
+    setLoading(true);
+    try {
+      const url = identifier
+        ? `/api/driver/tours?identifier=${encodeURIComponent(identifier)}`
+        : "/api/driver/tours";
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.success) {
+        setTours(data.tours || []);
+        setStats(data.stats || { total: 0, active: 0, completed: 0, upcoming: 0 });
+        if (data.crewMember) {
+          setCrewProfile(data.crewMember);
+          if (data.crewMember.status) {
+            setCurrentStatus(data.crewMember.status);
+          }
+        }
+        if (data.allCrew) setCrewList(data.allCrew);
+        if (data.isManagement !== undefined) setIsManagement(data.isManagement);
+        if (!identifier && data.selectedIdentifier) {
+          setIdentifier(data.selectedIdentifier);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load driver tours:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [identifier]);
+
+  useEffect(() => {
+    loadDriverTours();
+  }, [loadDriverTours]);
+
+  const handleUpdateAvailability = async (newStatus: "available" | "on_tour" | "off_duty") => {
+    setIsUpdatingStatus(true);
+    try {
+      const res = await fetch("/api/driver-guide", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: crewProfile?._id,
+          status: newStatus,
+        }),
+      });
+      if (res.ok) {
+        setCurrentStatus(newStatus);
+        if (crewProfile) {
+          setCrewProfile({ ...crewProfile, status: newStatus });
+        }
+      }
+    } catch (err) {
+      console.error("Failed to update status:", err);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  const activeTourList = tours.filter((t) =>
+    ["allocated", "proforma_issued", "active_tour", "confirmed", "approved"].includes(t.status)
+  );
+  const upcomingTourList = tours.filter((t) => ["allocated", "confirmed", "approved"].includes(t.status));
+  const historyTourList = tours
+    .filter((t) => ["completed", "reconciling"].includes(t.status))
+    .sort((a, b) => {
+      const timeA = new Date(a.completedAt || a.updatedAt || a.preferredStartDate).getTime();
+      const timeB = new Date(b.completedAt || b.updatedAt || b.preferredStartDate).getTime();
+      return timeB - timeA;
+    });
+
+  const displayedTours =
+    activeTab === "active"
+      ? activeTourList
+      : activeTab === "upcoming"
+      ? upcomingTourList
+      : historyTourList;
+
+  const handleReceiptFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setIsUploadingReceipt(true);
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.url) {
+        setExpReceipt(data.url);
+      } else {
+        alert(data.error || "Receipt upload failed");
+      }
+    } catch (err: any) {
+      alert("Failed to upload receipt: " + err.message);
+    } finally {
+      setIsUploadingReceipt(false);
+    }
+  };
+
+  const handleLogFieldExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTourForExpense || !expDesc || !expAmount) return;
+
+    setIsSubmittingExp(true);
+    setExpSuccessMsg("");
+    setExpErrorMsg("");
+    try {
+      const res = await fetch("/api/intour/expense-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookingId: selectedTourForExpense._id,
+          category: expCategory,
+          description: expDesc,
+          amount: Number(expAmount),
+          receiptUrl: expReceipt || "",
+          reportedBy: crewProfile?.role === "tour_guide" ? "tour_guide" : "driver",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to submit field expense");
+
+      setExpSuccessMsg(`Successfully recorded $${expAmount} for ${expDesc}!`);
+      setTimeout(() => {
+        setSelectedTourForExpense(null);
+        setExpDesc("");
+        setExpAmount(0);
+        setExpReceipt("");
+        setExpSuccessMsg("");
+        loadDriverTours();
+      }, 1500);
+    } catch (err: any) {
+      setExpErrorMsg(err?.message || "Failed to record expense");
+    } finally {
+      setIsSubmittingExp(false);
+    }
+  };
+
+  const handleStartJourney = async (tour: TourItem) => {
+    setIsStartingJourneyId(tour._id);
+    try {
+      const res = await fetch("/api/driver/journey/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId: tour._id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to start journey");
+
+      setFlashMessage({
+        text: `🚗 Journey underway for "${tour.packageName}"! Tour is now active.`,
+        type: "success",
+      });
+      setCurrentStatus("on_tour");
+      await loadDriverTours();
+      setTimeout(() => setFlashMessage(null), 5000);
+    } catch (err: any) {
+      alert("Error starting journey: " + (err?.message || "Unknown error"));
+    } finally {
+      setIsStartingJourneyId(null);
+    }
+  };
+
+  const handleEndJourney = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTourForEndJourney) return;
+
+    setIsEndingJourney(true);
+    setEndJourneyErrorMsg("");
+    setEndJourneySuccessMsg("");
+    try {
+      const res = await fetch("/api/driver/journey/end", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookingId: selectedTourForEndJourney._id,
+          endJourneyNotes,
+          endJourneyOdometer: endJourneyOdometer !== "" ? Number(endJourneyOdometer) : undefined,
+          endJourneyDropOffLocation: endJourneyDropOff,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to end journey");
+
+      setEndJourneySuccessMsg(`🏁 Journey completed! Moving to Completed History...`);
+      setFlashMessage({
+        text: `🏁 Journey for "${selectedTourForEndJourney.packageName}" successfully ended and saved to your history!`,
+        type: "success",
+      });
+
+      setTimeout(() => {
+        setSelectedTourForEndJourney(null);
+        setEndJourneyNotes("");
+        setEndJourneyOdometer("");
+        setEndJourneyDropOff("");
+        setEndJourneySuccessMsg("");
+        setActiveTab("history");
+        loadDriverTours();
+      }, 1200);
+
+      setTimeout(() => {
+        setFlashMessage(null);
+      }, 6000);
+    } catch (err: any) {
+      setEndJourneyErrorMsg(err?.message || "Failed to end journey");
+    } finally {
+      setIsEndingJourney(false);
+    }
+  };
+
+  return (
+    <div className="space-y-8 text-left pb-16">
+      {/* Header Banner - Matching Dashboard Theme */}
+      <div className="relative overflow-hidden rounded-3xl bg-white/50 backdrop-blur-md border border-white/30 p-6 md:p-8 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-teal-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-teal-700 border border-teal-500/20 shadow-sm">
+              <CarOutlined /> Fleet & Dispatch Desk
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600 border border-slate-200">
+              License: {crewProfile?.licenseNumber || "Verified Chauffeur"}
+            </span>
+          </div>
+
+          <h2 className="text-2xl md:text-3xl font-black text-slate-900 leading-tight mt-2 flex items-center gap-2.5">
+            <span>{crewProfile?.name || session?.user?.name || "Dispatch Portal"}</span>
+            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-teal-100 text-teal-800 border border-teal-200">
+              {crewProfile?.role === "both" ? "Driver & Guide" : crewProfile?.role === "tour_guide" ? "Tour Guide" : "Official Chauffeur"}
+            </span>
+          </h2>
+          <p className="text-slate-600 text-sm mt-1 font-medium">
+            {crewProfile?.role === "tour_guide" ? (
+              <>Languages: <strong className="text-slate-800">{crewProfile?.languages?.join(", ") || "English"}</strong></>
+            ) : (
+              <>Vehicle: <strong className="text-slate-800">{crewProfile?.vehicleDetails?.model || "Standard Fleet"}</strong> ({crewProfile?.vehicleDetails?.plateNumber || "Plate Assigned"})</>
+            )}
+            {" • "}Rating: ★ {crewProfile?.rating ? crewProfile.rating.toFixed(1) : "5.0"}
+          </p>
+        </div>
+
+        {/* Action & Availability Controls */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          {/* Availability Status Selector */}
+          <div className="flex items-center gap-1.5 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200 shadow-inner">
+            <span className="text-[11px] text-slate-500 font-bold px-2">Status:</span>
+            <button
+              onClick={() => handleUpdateAvailability("available")}
+              disabled={isUpdatingStatus}
+              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition flex items-center gap-1 ${
+                currentStatus === "available"
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
+              Available
+            </button>
+
+            <button
+              onClick={() => handleUpdateAvailability("on_tour")}
+              disabled={isUpdatingStatus}
+              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition flex items-center gap-1 ${
+                currentStatus === "on_tour"
+                  ? "bg-amber-500 text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-amber-200" />
+              On Tour
+            </button>
+
+            <button
+              onClick={() => handleUpdateAvailability("off_duty")}
+              disabled={isUpdatingStatus}
+              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition ${
+                currentStatus === "off_duty"
+                  ? "bg-slate-700 text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+              }`}
+            >
+              Off Duty
+            </button>
+          </div>
+
+          {/* Admin / Management Driver Switcher */}
+          {isManagement && crewList.length > 0 && (
+            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm">
+              <span className="text-xs text-slate-500 font-semibold">Switch Crew:</span>
+              <select
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                className="text-xs font-bold text-slate-800 bg-transparent outline-none cursor-pointer"
+              >
+                {crewList.map((c) => (
+                  <option key={c._id || c.name} value={c.name}>
+                    {c.name} ({c.role === "both" ? "Driver & Guide" : c.role === "driver" ? "Driver" : "Guide"})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <button
+            onClick={loadDriverTours}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/80 px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition"
+            title="Refresh manifest"
+          >
+            <ReloadOutlined className={loading ? "animate-spin" : ""} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Flash Action Banner */}
+      <AnimatePresence>
+        {flashMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="p-4 rounded-2xl bg-emerald-600 text-white font-semibold text-xs md:text-sm shadow-md flex items-center justify-between gap-3"
+          >
+            <div className="flex items-center gap-2">
+              <CheckCircleOutlined className="text-lg text-emerald-200" />
+              <span>{flashMessage.text}</span>
+            </div>
+            {activeTab !== "history" && (
+              <button
+                onClick={() => setActiveTab("history")}
+                className="bg-white text-emerald-800 px-3 py-1.5 rounded-xl text-xs font-bold hover:bg-emerald-50 transition shrink-0 shadow-xs"
+              >
+                View Completed History &rarr;
+              </button>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Metrics Row - Matching Dashboard Style */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
+        <div className="rounded-2xl bg-white/50 backdrop-blur-md border border-white/40 p-4 shadow-sm">
+          <span className="text-xs font-semibold text-slate-500">Active Manifests</span>
+          <div className="flex items-baseline gap-2 mt-1">
+            <span className="text-2xl font-black text-teal-600">{stats.active}</span>
+            <span className="text-[11px] text-teal-600/80 font-medium">In Progress</span>
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-white/50 backdrop-blur-md border border-white/40 p-4 shadow-sm">
+          <span className="text-xs font-semibold text-slate-500">Upcoming Departures</span>
+          <div className="flex items-baseline gap-2 mt-1">
+            <span className="text-2xl font-black text-amber-500">{stats.upcoming}</span>
+            <span className="text-[11px] text-amber-600/80 font-medium">Scheduled</span>
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-white/50 backdrop-blur-md border border-white/40 p-4 shadow-sm">
+          <span className="text-xs font-semibold text-slate-500">Completed Tours</span>
+          <div className="flex items-baseline gap-2 mt-1">
+            <span className="text-2xl font-black text-slate-800">{stats.completed}</span>
+            <span className="text-[11px] text-slate-500 font-medium">Delivered</span>
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-white/50 backdrop-blur-md border border-white/40 p-4 shadow-sm">
+          <span className="text-xs font-semibold text-slate-500">Service Rating</span>
+          <div className="flex items-baseline gap-2 mt-1">
+            <span className="text-2xl font-black text-amber-500">
+              ★ {crewProfile?.rating ? crewProfile.rating.toFixed(1) : "5.0"}
+            </span>
+            <span className="text-[11px] text-slate-500 font-medium">Guest Feedback</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs Row */}
+      <div className="flex items-center gap-2 border-b border-slate-200/80 pb-3">
+        <button
+          onClick={() => setActiveTab("active")}
+          className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl transition ${
+            activeTab === "active"
+              ? "bg-teal-600 text-white shadow"
+              : "text-slate-600 hover:bg-white/60"
+          }`}
+        >
+          <CompassOutlined />
+          <span>Active Manifest ({activeTourList.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("upcoming")}
+          className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl transition ${
+            activeTab === "upcoming"
+              ? "bg-teal-600 text-white shadow"
+              : "text-slate-600 hover:bg-white/60"
+          }`}
+        >
+          <CalendarOutlined />
+          <span>Upcoming Departures ({upcomingTourList.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("history")}
+          className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl transition ${
+            activeTab === "history"
+              ? "bg-teal-600 text-white shadow"
+              : "text-slate-600 hover:bg-white/60"
+          }`}
+        >
+          <FileTextOutlined />
+          <span>Completed History ({historyTourList.length})</span>
+        </button>
+      </div>
+
+      {/* Completed History Top Banner */}
+      {activeTab === "history" && historyTourList.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-4 rounded-2xl bg-emerald-50/90 border border-emerald-200/80 text-xs shadow-xs">
+          <div className="flex items-center gap-2 text-emerald-900 font-bold">
+            <HistoryOutlined className="text-base text-emerald-600" />
+            <span>Delivered & Completed Journeys ({historyTourList.length})</span>
+          </div>
+          <span className="text-slate-500 font-medium">
+            Permanent archive of all concluded trips, mileage records, and handover logs.
+          </span>
+        </div>
+      )}
+
+      {/* Manifest Content */}
+      {loading ? (
+        <div className="py-20 text-center text-slate-500 text-xs">Loading tour schedule and manifest...</div>
+      ) : displayedTours.length === 0 ? (
+        <div className="py-16 text-center bg-white/40 rounded-3xl border border-white/50">
+          <EmptyState
+            title={`No ${activeTab} tours assigned`}
+            description={
+              activeTab === "active"
+                ? "You currently have no active tours in progress. Keep your status 'Available' to receive dispatch alerts."
+                : "No tours found in this category."
+            }
+          />
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {displayedTours.map((tour) => {
+            const expenses = tour.inTourExpenses || [];
+            const totalExp = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+            return (
+              <motion.div
+                key={tour._id}
+                layout
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white/70 backdrop-blur-md border border-white/60 rounded-3xl p-6 shadow-sm hover:shadow-md transition space-y-4"
+              >
+                {/* Header Row: Tour title, ID & Status Badge */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                  <div>
+                    <span className="text-[11px] font-bold uppercase text-teal-700 tracking-wider">
+                      Tour ID: {tour.tourId || tour._id.substring(tour._id.length - 8).toUpperCase()}
+                    </span>
+                    <h3 className="text-lg font-black text-slate-900 mt-0.5">{tour.packageName}</h3>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Status badge */}
+                    {tour.status === "completed" ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-black px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-xs">
+                        <CheckCircleOutlined className="text-emerald-600" />
+                        Journey Completed
+                      </span>
+                    ) : tour.status === "active_tour" ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-black px-3.5 py-1.5 rounded-full bg-teal-50 text-teal-800 border border-teal-300 shadow-xs">
+                        <span className="w-2 h-2 rounded-full bg-teal-500 animate-ping" />
+                        In-Progress Tour
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full capitalize bg-amber-50 text-amber-800 border border-amber-200">
+                        <CheckCircleOutlined />
+                        {tour.status.replace("_", " ")}
+                      </span>
+                    )}
+
+                    {/* Start Journey button for assigned/upcoming tour */}
+                    {tour.status !== "completed" && tour.status !== "active_tour" && (
+                      <button
+                        onClick={() => handleStartJourney(tour)}
+                        disabled={isStartingJourneyId === tour._id}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-xs transition disabled:opacity-50"
+                        title="Begin this tour journey"
+                      >
+                        <PlayCircleOutlined />
+                        <span>{isStartingJourneyId === tour._id ? "Starting..." : "Start Journey"}</span>
+                      </button>
+                    )}
+
+                    {/* End Journey button (for any active tour) */}
+                    {tour.status !== "completed" && (
+                      <button
+                        onClick={() => {
+                          setSelectedTourForEndJourney(tour);
+                          setEndJourneyNotes("");
+                          setEndJourneyOdometer("");
+                          setEndJourneyDropOff(
+                            tour.destinations && tour.destinations.length > 0
+                              ? tour.destinations[tour.destinations.length - 1]
+                              : ""
+                          );
+                          setEndJourneySuccessMsg("");
+                          setEndJourneyErrorMsg("");
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-xs hover:shadow transition"
+                        title="Conclude and end this journey"
+                      >
+                        <FlagOutlined />
+                        <span>End Journey</span>
+                      </button>
+                    )}
+
+                    {/* Expense Logger / Review */}
+                    <button
+                      onClick={() => {
+                        setSelectedTourForExpense(tour);
+                        setExpSuccessMsg("");
+                        setExpErrorMsg("");
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-xs transition"
+                    >
+                      <DollarOutlined />
+                      <span>{tour.status === "completed" ? "Review / Add Expense" : "Log Field Expense"}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Info Grid: Passenger, Dates, Vehicle */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  {/* Passenger */}
+                  <div className="bg-slate-50/70 p-3 rounded-2xl space-y-1">
+                    <span className="text-slate-400 block text-[11px] font-semibold">Primary Traveler</span>
+                    <p className="font-bold text-slate-800 text-sm">{tour.userName}</p>
+                    <p className="text-slate-600 flex items-center gap-1.5">
+                      <MailOutlined className="text-slate-400" /> {tour.userEmail}
+                    </p>
+                    {tour.userPhone && (
+                      <p className="text-slate-600 flex items-center gap-1.5">
+                        <PhoneOutlined className="text-slate-400" /> {tour.userPhone}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Date & Pax */}
+                  <div className="bg-slate-50/70 p-3 rounded-2xl space-y-1">
+                    <span className="text-slate-400 block text-[11px] font-semibold">Schedule & Party Size</span>
+                    <p className="font-bold text-slate-800 flex items-center gap-1.5">
+                      <CalendarOutlined className="text-teal-600" />
+                      {new Date(tour.preferredStartDate).toLocaleDateString("en-US", {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </p>
+                    <p className="text-slate-600 flex items-center gap-1.5">
+                      <TeamOutlined className="text-slate-400" />
+                      Party of <strong>{tour.numberOfTravelers} Guests</strong>
+                    </p>
+                  </div>
+
+                  {/* Vehicle & Assigned Crew */}
+                  <div className="bg-slate-50/70 p-3 rounded-2xl space-y-1">
+                    <span className="text-slate-400 block text-[11px] font-semibold">
+                      {crewProfile?.role === "tour_guide" ? "Assigned Chauffeur & Vehicle" : "Assigned Fleet & Guide"}
+                    </span>
+                    <p className="font-bold text-slate-800 flex items-center gap-1.5">
+                      <CarOutlined className="text-teal-600" />
+                      {tour.assignedVehicle?.model || crewProfile?.vehicleDetails?.model || "Toyota KDH Executive"}
+                    </p>
+                    <p className="text-slate-600 font-mono font-bold uppercase">
+                      Plate: {tour.assignedVehicle?.plateNumber || crewProfile?.vehicleDetails?.plateNumber || "WP-CAB-4421"}
+                    </p>
+                    {tour.driver?.name && crewProfile?.role === "tour_guide" && (
+                      <p className="text-slate-600 font-medium text-[11px]">
+                        Driver: <strong>{tour.driver.name}</strong> {tour.driver.phone && `(${tour.driver.phone})`}
+                      </p>
+                    )}
+                    {tour.tourGuide?.name && crewProfile?.role !== "tour_guide" && (
+                      <p className="text-slate-600 font-medium text-[11px]">
+                        Guide: <strong>{tour.tourGuide.name}</strong> {tour.tourGuide.phone && `(${tour.tourGuide.phone})`}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Completed Journey Summary Card (for tours in Completed History) */}
+                {tour.status === "completed" && (
+                  <div className="bg-gradient-to-r from-emerald-50/90 via-teal-50/60 to-slate-50 border border-emerald-200/80 rounded-2xl p-4 text-xs space-y-2.5 shadow-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-100/80 pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-black text-xs">
+                          ✓
+                        </span>
+                        <span className="font-extrabold text-slate-800 text-sm">Journey Safely Concluded</span>
+                      </div>
+                      {tour.completedAt && (
+                        <span className="text-slate-600 font-medium text-[11px] bg-white/90 px-3 py-1 rounded-lg border border-emerald-200 shadow-xs">
+                          Completed:{" "}
+                          <strong className="text-emerald-800">
+                            {new Date(tour.completedAt).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </strong>
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-0.5">
+                      {tour.endJourneyDropOffLocation && (
+                        <div className="bg-white/85 p-2.5 rounded-xl border border-emerald-100/70 shadow-xs">
+                          <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">
+                            Drop-Off Location
+                          </span>
+                          <p className="font-bold text-slate-800 mt-0.5 flex items-center gap-1">
+                            <EnvironmentOutlined className="text-emerald-600" />
+                            <span>{tour.endJourneyDropOffLocation}</span>
+                          </p>
+                        </div>
+                      )}
+                      {tour.endJourneyOdometer && (
+                        <div className="bg-white/85 p-2.5 rounded-xl border border-emerald-100/70 shadow-xs">
+                          <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">
+                            Ending Odometer
+                          </span>
+                          <p className="font-bold text-slate-800 mt-0.5 flex items-center gap-1">
+                            <DashboardOutlined className="text-teal-600" />
+                            <span>{Number(tour.endJourneyOdometer).toLocaleString()} km</span>
+                          </p>
+                        </div>
+                      )}
+                      <div className="bg-white/85 p-2.5 rounded-xl border border-emerald-100/70 shadow-xs">
+                        <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">
+                          In-Tour Expenses Settled
+                        </span>
+                        <p className="font-bold text-emerald-700 mt-0.5">
+                          ${totalExp.toFixed(2)} ({expenses.length} claims logged)
+                        </p>
+                      </div>
+                    </div>
+
+                    {tour.endJourneyNotes && (
+                      <div className="bg-white/90 p-3 rounded-xl border border-emerald-100/80 text-slate-700 shadow-xs">
+                        <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider mb-1">
+                          Driver Handover / Debrief Notes
+                        </span>
+                        <p className="font-medium text-slate-800 italic leading-relaxed">
+                          &ldquo;{tour.endJourneyNotes}&rdquo;
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Special Requests / Guest Notes */}
+                <GuestNotesCard
+                  rawNotes={tour.specialRequests}
+                  title="Special Requests / Guest Notes"
+                />
+
+                {/* Tour Guide Itinerary: Places to Visit & Cultural Briefings */}
+                <TourGuidePlacesList
+                  destinations={tour.destinations || []}
+                  primaryColor={primaryColor}
+                  isGuideRole={crewProfile?.role === "tour_guide" || (session?.user as any)?.role === "tour_guide"}
+                />
+
+                {/* Allocated Travel Itinerary, Route Map & Google Maps Navigation */}
+                <DriverTripMap
+                  tourId={tour._id}
+                  tourName={tour.packageName}
+                  destinations={tour.destinations || []}
+                  routePlan={tour.routePlan}
+                  primaryColor={primaryColor}
+                />
+
+                {/* In-Tour Expenses List */}
+                <div className="border-t border-slate-100 pt-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-xs font-bold text-slate-700">
+                      Logged Field Expenses ({expenses.length})
+                    </span>
+                    <span className="text-xs font-black text-slate-900">
+                      Total: ${totalExp.toFixed(2)}
+                    </span>
+                  </div>
+
+                  {expenses.length === 0 ? (
+                    <p className="text-xs text-slate-400 italic">No in-tour expenses logged yet for this trip.</p>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                      {expenses.map((exp: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs flex justify-between items-center"
+                        >
+                          <div>
+                            <span className="font-bold text-slate-800 block truncate max-w-[150px]">
+                              {exp.description}
+                            </span>
+                            <span className="text-[10px] text-slate-400 capitalize">{exp.category}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-black text-emerald-600 block">${Number(exp.amount).toFixed(2)}</span>
+                            {exp.receiptUrl && (
+                              <a
+                                href={exp.receiptUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[10px] text-teal-600 hover:underline"
+                              >
+                                View Receipt
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Field Expense Modal - Consistent Dashboard Design */}
+      {selectedTourForExpense && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-slate-100 space-y-4"
+          >
+            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Log In-Tour Field Expense</h3>
+                <p className="text-xs text-slate-500 truncate max-w-xs">{selectedTourForExpense.packageName}</p>
+              </div>
+              <button
+                onClick={() => setSelectedTourForExpense(null)}
+                className="text-slate-400 hover:text-slate-700 text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {expSuccessMsg && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-xl font-semibold flex items-center gap-1.5">
+                <CheckCircleOutlined />
+                <span>{expSuccessMsg}</span>
+              </div>
+            )}
+
+            {expErrorMsg && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl font-semibold">
+                {expErrorMsg}
+              </div>
+            )}
+
+            <form onSubmit={handleLogFieldExpense} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Expense Category</label>
+                <select
+                  value={expCategory}
+                  onChange={(e) => setExpCategory(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-teal-500"
+                >
+                  <option value="ticket">Attraction / Site Tickets</option>
+                  <option value="toll">Highway Toll / Parking Fees</option>
+                  <option value="fuel">Fuel / Gas</option>
+                  <option value="meal">Driver / Guide Meal Allowance</option>
+                  <option value="activity">Unplanned Excursion / Activity</option>
+                  <option value="repair">Emergency Maintenance / Repair</option>
+                  <option value="other">Other Operational Expense</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Description *</label>
+                <input
+                  type="text"
+                  value={expDesc}
+                  onChange={(e) => setExpDesc(e.target.value)}
+                  placeholder="e.g. Sigiriya Rock Fortress entrance for 2 guests"
+                  required
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-teal-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Amount (USD) *</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={expAmount || ""}
+                    onChange={(e) => setExpAmount(Number(e.target.value))}
+                    placeholder="0.00"
+                    required
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-4 py-2 text-xs text-slate-900 font-bold focus:outline-none focus:border-teal-500"
+                  />
+                </div>
+              </div>
+
+              {/* Receipt File Upload */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Receipt Photo (Smartphone Camera / Upload)
+                </label>
+                <div className="border border-dashed border-slate-300 rounded-2xl p-4 text-center bg-slate-50 hover:bg-slate-100/60 transition relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleReceiptFileUpload}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                  />
+                  <div className="space-y-1">
+                    <CameraOutlined className="text-xl text-teal-600" />
+                    <p className="text-xs font-medium text-slate-600">
+                      {isUploadingReceipt
+                        ? "Uploading photo..."
+                        : expReceipt
+                        ? "Receipt Attached ✓ (Click to change)"
+                        : "Take photo or choose receipt image"}
+                    </p>
+                    <p className="text-[10px] text-slate-400">JPG, PNG, or WEBP supported</p>
+                  </div>
+                </div>
+
+                {expReceipt && (
+                  <div className="mt-2 text-center">
+                    <a
+                      href={expReceipt}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-teal-600 font-semibold hover:underline inline-flex items-center gap-1"
+                    >
+                      <span>Preview Uploaded Receipt</span>
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedTourForExpense(null)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingExp}
+                  className="px-5 py-2 text-xs font-bold bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow transition disabled:opacity-50"
+                >
+                  {isSubmittingExp ? "Saving Expense..." : "Submit Field Expense"}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* End Journey Confirmation & Debrief Modal */}
+      {selectedTourForEndJourney && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl border border-slate-100 space-y-4"
+          >
+            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <span className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-lg shadow-xs">
+                  <FlagOutlined />
+                </span>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900">End Tour Journey</h3>
+                  <p className="text-xs text-slate-500 truncate max-w-xs">{selectedTourForEndJourney.packageName}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedTourForEndJourney(null)}
+                className="text-slate-400 hover:text-slate-700 text-sm font-bold p-1 rounded-lg hover:bg-slate-100 transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            {endJourneySuccessMsg && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-xl font-semibold flex items-center gap-1.5">
+                <CheckCircleOutlined />
+                <span>{endJourneySuccessMsg}</span>
+              </div>
+            )}
+
+            {endJourneyErrorMsg && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl font-semibold">
+                {endJourneyErrorMsg}
+              </div>
+            )}
+
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Primary Traveler:</span>
+                <span className="font-bold text-slate-800">
+                  {selectedTourForEndJourney.userName} ({selectedTourForEndJourney.numberOfTravelers} Guests)
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Logged Field Expenses:</span>
+                <span className="font-bold text-emerald-700">
+                  {(selectedTourForEndJourney.inTourExpenses || []).length} items ($
+                  {(selectedTourForEndJourney.inTourExpenses || []).reduce(
+                    (s, e) => s + (Number(e.amount) || 0),
+                    0
+                  ).toFixed(2)})
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 italic pt-1.5 border-t border-slate-200/80 leading-relaxed">
+                Ending this journey will mark the tour as <strong>Completed</strong>, update your duty status, and archive the record under <strong>Completed History</strong>.
+              </p>
+            </div>
+
+            <form onSubmit={handleEndJourney} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Drop-Off Location / Handover Place
+                </label>
+                <div className="relative">
+                  <EnvironmentOutlined className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+                  <input
+                    type="text"
+                    value={endJourneyDropOff}
+                    onChange={(e) => setEndJourneyDropOff(e.target.value)}
+                    placeholder="e.g. Bandaranaike International Airport (BIA) or Hotel"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-teal-500 font-medium"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Ending Vehicle Odometer (km) <span className="text-slate-400 font-normal">(optional)</span>
+                </label>
+                <div className="relative">
+                  <DashboardOutlined className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+                  <input
+                    type="number"
+                    value={endJourneyOdometer}
+                    onChange={(e) => setEndJourneyOdometer(e.target.value)}
+                    placeholder="e.g. 78420"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-teal-500 font-bold"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Driver Debrief / Final Handover Notes <span className="text-slate-400 font-normal">(optional)</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={endJourneyNotes}
+                  onChange={(e) => setEndJourneyNotes(e.target.value)}
+                  placeholder="e.g. Guests arrived on time for their flight. Luggage handed over safely. All destinations completed."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-teal-500 font-medium resize-none"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedTourForEndJourney(null)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isEndingJourney}
+                  className="px-5 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow transition disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  <FlagOutlined />
+                  <span>{isEndingJourney ? "Ending Journey..." : "Confirm & End Journey"}</span>
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+    </div>
+  );
+}

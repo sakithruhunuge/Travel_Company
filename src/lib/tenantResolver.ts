@@ -25,6 +25,7 @@ export interface ResolvedTenant {
     secondaryColor?: string;
     tagline?: string;
   };
+  partnerRegistrationMode?: "public" | "invite_only" | "disabled";
   isAdmin?: boolean;
 }
 
@@ -158,6 +159,7 @@ export async function resolveTenant(options: {
       isolation: (tenantDoc as any).isolation,
       plan: (tenantDoc as any).plan,
       branding: (tenantDoc as any).branding,
+      partnerRegistrationMode: (tenantDoc as any).partnerRegistrationMode || "invite_only",
     };
   }
 
@@ -169,6 +171,7 @@ export async function resolveTenant(options: {
     isolation: resolvedData.isolation,
     plan: resolvedData.plan,
     branding: resolvedData.branding,
+    partnerRegistrationMode: resolvedData.partnerRegistrationMode || "invite_only",
   };
 
   // Populate Cache

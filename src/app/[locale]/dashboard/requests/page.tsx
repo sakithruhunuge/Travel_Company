@@ -31,6 +31,7 @@ import QuotationBuilderModal from "@/components/dashboard/QuotationBuilderModal"
 import AgentQuickEstimatorModal from "@/components/dashboard/AgentQuickEstimatorModal";
 import TourLifecycleModal from "@/components/dashboard/TourLifecycleModal";
 import CrewScheduleTimeline from "@/components/dashboard/CrewScheduleTimeline";
+import GuestNotesCard from "@/components/dashboard/GuestNotesCard";
 
 interface AssignedPerson {
   name?: string;
@@ -98,8 +99,16 @@ const getPackageImage = (packageName: string): string => {
 };
 
 export default function TenantRequestsPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const userRole = (session?.user as any)?.role;
+
+  const isAuthorized = [
+    "tenant_admin",
+    "super_admin",
+    "admin",
+    "marketing_officer",
+    "travel_agent",
+  ].includes(userRole);
 
   const [requests, setRequests] = useState<RequestData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -174,10 +183,13 @@ export default function TenantRequestsPage() {
   const travelerNotes = parsedData?.notes;
 
   useEffect(() => {
-    if (userRole === "tenant_admin" || userRole === "super_admin" || userRole === "admin") {
+    if (status === "loading") return;
+    if (isAuthorized) {
       loadRequests();
+    } else {
+      setLoading(false);
     }
-  }, [userRole]);
+  }, [isAuthorized, status]);
 
   const loadRequests = async () => {
     setLoading(true);
@@ -521,6 +533,13 @@ export default function TenantRequestsPage() {
         <div className="py-24 text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-slate-900 mx-auto" />
           <p className="text-slate-450 text-xs font-bold mt-4">Loading active requests...</p>
+        </div>
+      ) : !isAuthorized ? (
+        <div className="py-12 bg-white/30 rounded-3xl border border-slate-200">
+          <EmptyState
+            title="Access Restricted"
+            description="You do not have permission to access the booking approvals inbox."
+          />
         </div>
       ) : error ? (
         <EmptyState title="Inbox Load Error" description={error} />
@@ -1002,24 +1021,14 @@ export default function TenantRequestsPage() {
                           </div>
                         </div>
 
-                        {selectedRequest.specialRequests && !selectedRequest.specialRequests.includes("### 📝 Traveler Special Requests") && (
-                          <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                            <span className="text-[9px] uppercase font-bold text-slate-400 block mb-1">Customer Notes</span>
-                            <p className="text-xs text-slate-700 font-medium leading-relaxed">
-                              {selectedRequest.specialRequests}
-                            </p>
+                        {selectedRequest.specialRequests && (
+                          <div className="mt-3">
+                            <GuestNotesCard
+                              rawNotes={selectedRequest.specialRequests}
+                              title="Special Requests / Guest Notes"
+                            />
                           </div>
                         )}
-                      </div>
-                    )}
-
-                    {/* Standard Notes showing up if they calculator details exist */}
-                    {selectedRequest.specialRequests?.includes("### 📝 Traveler Special Requests") && (
-                      <div className="flex flex-col gap-1 border-t border-slate-150 pt-4">
-                        <span className="text-slate-450 uppercase text-[10px] font-bold">Traveler Notes</span>
-                        <p className="text-slate-800 mt-1 leading-relaxed bg-slate-50 border border-slate-150 p-3.5 rounded-xl font-medium">
-                          {selectedRequest.specialRequests.split("### 📝 Traveler Special Requests")[1].trim() || "None"}
-                        </p>
                       </div>
                     )}
 

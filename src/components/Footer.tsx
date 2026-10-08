@@ -37,6 +37,13 @@ export default function Footer() {
             <li><Link href={`/${locale}/#destinations`} className="hover:text-amber-400 transition-colors">Destinations</Link></li>
             <li><Link href={`/${locale}/#packages`} className="hover:text-amber-400 transition-colors">Packages</Link></li>
             <li><Link href={`/${locale}/#why-choose-us`} className="hover:text-amber-400 transition-colors">Why Choose Us</Link></li>
+            {tenant.partnerRegistrationMode === "public" && (
+              <li>
+                <Link href={`/${locale}/join/crew`} className="text-teal-400 hover:text-teal-300 transition-colors font-semibold">
+                  Join as Driver / Guide
+                </Link>
+              </li>
+            )}
           </ul>
         </div>
 

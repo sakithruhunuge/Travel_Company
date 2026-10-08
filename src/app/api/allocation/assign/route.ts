@@ -50,6 +50,103 @@ export async function POST(request: Request) {
     if (assignedVehicle) booking.assignedVehicle = assignedVehicle;
     if (agencyNotes) booking.agencyNotes = agencyNotes;
 
+    // AUTOMATED FLEET & DRIVER COSTING: Calculate instantly based on stored master packages
+    try {
+      const vehicleCategory = assignedVehicle?.category || "Minivan";
+      const vehiclePackage =
+        (await db.VehiclePricingPackage.findOne({ vehicleCategory, isActive: true })) ||
+        (await db.VehiclePricingPackage.findOne({ isActive: true }));
+
+      const currencyConfig =
+        (await db.CurrencyExchange.findOne({ baseCurrency: "USD", targetCurrency: "LKR" })) || {
+          liveRate: 304.85,
+          peggedRate: 305.0,
+          usePegged: false,
+          forexBufferPercent: 2.5,
+        };
+
+      const durationDays = Number(booking.pricingInputs?.duration) || 5;
+      const estimatedKm =
+        Number(booking.pricingInputs?.totalRouteKm) || durationDays * 140; // Default ~140 km/day
+
+      if (vehiclePackage) {
+        const includedKm = durationDays * vehiclePackage.includedKmPerDay;
+        const excessKm = Math.max(0, estimatedKm - includedKm);
+        const baseVehicleCostLKR = durationDays * vehiclePackage.dailyRateLKR;
+        const excessKmCostLKR = excessKm * vehiclePackage.excessRatePerKmLKR;
+        const totalVehicleCostLKR = baseVehicleCostLKR + excessKmCostLKR;
+
+        const driverBataLKR = durationDays * (vehiclePackage.driverDailyBataLKR || 4000);
+
+        // Effective Forex multiplier with buffer protection
+        const rawRate = currencyConfig.usePegged
+          ? currencyConfig.peggedRate
+          : currencyConfig.liveRate || 304.85;
+        const bufferMultiplier = 1 - (currencyConfig.forexBufferPercent || 2.5) / 100;
+        const protectedExchangeRate = rawRate * bufferMultiplier;
+
+        const vehicleChargesUSD = Math.round(totalVehicleCostLKR / protectedExchangeRate);
+        const driverChargesUSD = Math.round(driverBataLKR / protectedExchangeRate);
+
+        // Auto-populate or update Proforma financial ledger
+        if (!booking.proforma) {
+          booking.proforma = {
+            invoiceNumber: `PRF-${Date.now().toString().slice(-6)}`,
+            issueDate: new Date(),
+            dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            hotelCharges: 0,
+            vehicleCharges: vehicleChargesUSD,
+            driverGuideCharges: driverChargesUSD,
+            excursionCharges: 0,
+            exchangeRate: rawRate,
+            forexBufferPercent: currencyConfig.forexBufferPercent || 2.5,
+            subtotal: vehicleChargesUSD + driverChargesUSD,
+            totalAmount: vehicleChargesUSD + driverChargesUSD,
+            advanceDepositDue: Math.round((vehicleChargesUSD + driverChargesUSD) * 0.3),
+            advancePaid: 0,
+            status: "issued",
+          };
+        } else {
+          booking.proforma.vehicleCharges = vehicleChargesUSD;
+          booking.proforma.driverGuideCharges = driverChargesUSD;
+          booking.proforma.exchangeRate = rawRate;
+          booking.proforma.forexBufferPercent = currencyConfig.forexBufferPercent || 2.5;
+
+          const updatedSubtotal =
+            (booking.proforma.hotelCharges || 0) +
+            vehicleChargesUSD +
+            driverChargesUSD +
+            (booking.proforma.excursionCharges || 0);
+
+          booking.proforma.subtotal = updatedSubtotal;
+          booking.proforma.totalAmount = updatedSubtotal;
+        }
+
+        // Save detailed cost audit in pricingInputs
+        booking.pricingInputs = {
+          ...(booking.pricingInputs || {}),
+          autoCalculatedFleetCost: {
+            durationDays,
+            estimatedKm,
+            includedKm,
+            excessKm,
+            baseVehicleCostLKR,
+            excessKmCostLKR,
+            totalVehicleCostLKR,
+            driverBataLKR,
+            totalFleetCostLKR: totalVehicleCostLKR + driverBataLKR,
+            vehicleChargesUSD,
+            driverChargesUSD,
+            appliedExchangeRate: rawRate,
+            appliedBufferPercent: currencyConfig.forexBufferPercent || 2.5,
+            calculatedAt: new Date(),
+          },
+        };
+      }
+    } catch (costErr) {
+      console.warn("Auto fleet costing calculation warning:", costErr);
+    }
+
     // Advance status to "allocated" if currently confirmed or pending
     if (["pending", "quoted", "confirmed"].includes(booking.status)) {
       booking.status = "allocated";
