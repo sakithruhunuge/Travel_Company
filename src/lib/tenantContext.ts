@@ -4,6 +4,9 @@ import User from "@/models/User";
 import TravelRequest from "@/models/TravelRequest";
 import Package from "@/models/Package";
 import DriverGuide from "@/models/DriverGuide";
+import Vendor from "@/models/Vendor";
+import Payable from "@/models/Payable";
+import Payment from "@/models/Payment";
 import SeasonRateTier from "@/models/SeasonRateTier";
 import CurrencyExchange from "@/models/CurrencyExchange";
 import HotelContractRate from "@/models/HotelContractRate";
@@ -97,6 +100,12 @@ export function tenantScope(tenantId: string | mongoose.Types.ObjectId) {
     TravelRequest: createScopedModel(TravelRequest, tId),
     Package: createScopedModel(Package, tId),
     DriverGuide: createScopedModel(DriverGuide, tId),
+    Vendor: createScopedModel(Vendor, tId),
+    Payable: createScopedModel(Payable, tId),
+    Payment: {
+      ...createScopedModel(Payment, tId),
+      aggregate: (pipeline: any[]) => Payment.aggregate([{ $match: { tenantId: tId } }, ...pipeline]),
+    },
     SeasonRateTier: createScopedModel(SeasonRateTier, tId),
     CurrencyExchange: createScopedModel(CurrencyExchange, tId),
     HotelContractRate: createScopedModel(HotelContractRate, tId),
