@@ -124,6 +124,7 @@ class DateRangeInput(BaseModel):
 class ItineraryRequestPayload(BaseModel):
     user_prompt: Optional[str] = Field(default=None, alias="prompt")
     prompt: Optional[str] = None
+    starting_location: Optional[str] = None
     destination: Optional[str] = None
     budget_tier: Optional[str] = None
     duration_days: Optional[int] = 3
@@ -158,6 +159,8 @@ if app is not None:
 
         # Consolidate user prompt
         user_prompt = payload.user_prompt or payload.prompt or ""
+        if payload.starting_location and payload.starting_location.lower() not in user_prompt.lower():
+            user_prompt = f"Trip starts in {payload.starting_location}. {user_prompt}"
 
         submission_dict = {
             "user_prompt": user_prompt,
@@ -205,28 +208,95 @@ if app is not None:
             fallback_dests = agent1_data.get("destinations") or [agent1_data.get("destination", "Colombo")]
             
             fb_by_dest = {}
+            user_b_tier = str(agent1_data.get("budget_tier", "Standard")).lower()
+            
             for d in fallback_dests:
+                d_lower = d.lower()
+                city_hotels = []
+                poi_name = f"Historic {d} Landmarks & Cultural Exploration"
+                poi_desc = f"Famous attraction and scenic destination in {d}."
+                poi_cats = ["Heritage", "Culture"]
+                
+                if "nuwara" in d_lower:
+                    city_hotels = [
+                        {"id": "heritance-tea-factory", "name": "Heritance Tea Factory Resort & Spa", "city": d, "star_rating": 5, "avg_nightly_usd": 145.0, "rating": 4.9, "price_tier": "5-Star Luxury", "description": "5-star luxury heritage resort converted from an authentic 19th-century tea factory."},
+                        {"id": "grand-hotel-nuwara-eliya", "name": "The Grand Hotel Nuwara Eliya & Heritage Colonial Estate", "city": d, "star_rating": 4, "avg_nightly_usd": 85.0, "rating": 4.8, "price_tier": "4-Star Heritage", "description": "Historic 4-star colonial heritage hotel set amidst award-winning manicured English gardens."},
+                        {"id": "araliya-green-hills", "name": "Araliya Green Hills Hotel", "city": d, "star_rating": 4, "avg_nightly_usd": 75.0, "rating": 4.7, "price_tier": "4-Star Premium", "description": "Modern 4-star hotel in the heart of town with heated pool and wellness spa."},
+                        {"id": "alpine-hotel-gregory", "name": "Alpine Hotel & Lake Gregory Inn", "city": d, "star_rating": 3, "avg_nightly_usd": 35.0, "rating": 4.5, "price_tier": "Budget / 3-Star", "description": "Charming budget lakeside hotel within walking distance of Lake Gregory and boat rentals."},
+                        {"id": "little-england-budget-cottages", "name": "Little England Cottages & Backpacker Hostel", "city": d, "star_rating": 3, "avg_nightly_usd": 24.0, "rating": 4.4, "price_tier": "Budget / 3-Star", "description": "Cozy budget mountain guesthouse offering backpacker rates and fireplace lounge."}
+                    ]
+                    poi_name = "Pedro Tea Estate & Lake Gregory Promenade"
+                    poi_desc = "Tour high-altitude Ceylon tea factory plantations and enjoy boat rides on scenic Lake Gregory."
+                    poi_cats = ["Tea Estate", "Scenery", "Lake"]
+                elif "kandy" in d_lower:
+                    city_hotels = [
+                        {"id": "golden-crown-kandy", "name": "The Golden Crown Hotel Kandy", "city": d, "star_rating": 5, "avg_nightly_usd": 130.0, "rating": 4.9, "price_tier": "5-Star Luxury", "description": "Lavish 5-star resort boasting infinity mountain pools and panoramic vistas."},
+                        {"id": "earls-regency-kandy", "name": "Earl's Regency Kandy Luxury Resort", "city": d, "star_rating": 5, "avg_nightly_usd": 110.0, "rating": 4.8, "price_tier": "5-Star Luxury", "description": "5-star hillside resort perched above the Mahaweli River with scenic gardens."},
+                        {"id": "grand-kandyan-hotel", "name": "The Grand Kandyan Hotel", "city": d, "star_rating": 4, "avg_nightly_usd": 70.0, "rating": 4.7, "price_tier": "4-Star Premium", "description": "Elegant 4-star city stay with rooftop views of Kandy Lake and temple access."},
+                        {"id": "thilanka-hotel-kandy", "name": "Hotel Thilanka Kandy Lakeview", "city": d, "star_rating": 4, "avg_nightly_usd": 55.0, "rating": 4.6, "price_tier": "4-Star Standard", "description": "Tranquil 4-star hotel overlooking nature sanctuary and lake."},
+                        {"id": "kandy-city-budget-inn", "name": "Kandy City Stay & Riverside Budget Inn", "city": d, "star_rating": 3, "avg_nightly_usd": 28.0, "rating": 4.5, "price_tier": "Budget / 3-Star", "description": "Clean, highly rated budget hotel offering Ceylon breakfast and easy city access."}
+                    ]
+                    poi_name = "Temple of the Sacred Tooth Relic & Royal Botanical Gardens"
+                    poi_cats = ["Culture", "Temple", "UNESCO"]
+                elif "ella" in d_lower:
+                    city_hotels = [
+                        {"id": "98-acres-resort-ella", "name": "98 Acres Resort & Spa Ella", "city": d, "star_rating": 5, "avg_nightly_usd": 160.0, "rating": 4.9, "price_tier": "5-Star Luxury", "description": "World-famous 5-star eco-luxury resort facing Ella Rock and Little Adam's Peak."},
+                        {"id": "ella-mountain-heaven", "name": "Ella Mountain Heaven Resort", "city": d, "star_rating": 4, "avg_nightly_usd": 75.0, "rating": 4.7, "price_tier": "4-Star Premium", "description": "Spectacular 4-star mountain lodge featuring cliffside balconies."},
+                        {"id": "zion-view-ella", "name": "Zion View Mountain Experience", "city": d, "star_rating": 4, "avg_nightly_usd": 60.0, "rating": 4.6, "price_tier": "4-Star Standard", "description": "Relaxing 4-star retreat with yoga decks and mountain vistas."},
+                        {"id": "ella-ecolodge", "name": "Ella Ecolodge & Nature Stay", "city": d, "star_rating": 3, "avg_nightly_usd": 32.0, "rating": 4.5, "price_tier": "Budget / 3-Star", "description": "Treehouse-style budget accommodation surrounded by flora and fauna."},
+                        {"id": "little-adams-hostel-ella", "name": "Little Adam's Backpacker Hostel", "city": d, "star_rating": 3, "avg_nightly_usd": 18.0, "rating": 4.4, "price_tier": "Budget / 3-Star", "description": "Welcoming budget hostel popular with hikers exploring Nine Arch Bridge."}
+                    ]
+                    poi_name = "Demodara Nine Arch Bridge & Little Adam's Peak"
+                    poi_cats = ["Nature", "Hike", "Scenery"]
+                elif "colombo" in d_lower:
+                    city_hotels = [
+                        {"id": "the-kingsbury-colombo", "name": "The Kingsbury Colombo & Ocean Suites", "city": d, "star_rating": 5, "avg_nightly_usd": 150.0, "rating": 4.9, "price_tier": "5-Star Luxury", "description": "Iconic 5-star luxury oceanfront hotel with rooftop sky bar."},
+                        {"id": "cinnamon-grand-colombo", "name": "Cinnamon Grand Colombo", "city": d, "star_rating": 5, "avg_nightly_usd": 135.0, "rating": 4.8, "price_tier": "5-Star Luxury", "description": "Grand 5-star city resort offering 14 restaurants and 2 outdoor pools."},
+                        {"id": "fairway-colombo", "name": "Fairway Colombo Fort", "city": d, "star_rating": 4, "avg_nightly_usd": 65.0, "rating": 4.7, "price_tier": "4-Star Premium", "description": "Trendy 4-star hotel in Colombo's historic Dutch Hospital precinct."},
+                        {"id": "cinnamon-red-colombo", "name": "Cinnamon Red Colombo Lean Luxury", "city": d, "star_rating": 3, "avg_nightly_usd": 48.0, "rating": 4.6, "price_tier": "Budget / 3-Star", "description": "Modern 3-star hotel with rooftop infinity pool and smart rooms."},
+                        {"id": "city-rest-fort-colombo", "name": "City Rest Fort Backpacker Stay", "city": d, "star_rating": 3, "avg_nightly_usd": 22.0, "rating": 4.4, "price_tier": "Budget / 3-Star", "description": "Budget hotel in Colombo Fort near the railway station."}
+                    ]
+                elif "galle" in d_lower:
+                    city_hotels = [
+                        {"id": "amangalla-galle-fort", "name": "Amangalla Historic Luxury Resort", "city": d, "star_rating": 5, "avg_nightly_usd": 210.0, "rating": 5.0, "price_tier": "5-Star Luxury", "description": "Exclusive 5-star sanctuary inside the UNESCO Galle Fort ramparts."},
+                        {"id": "le-grand-galle", "name": "Le Grand Galle by Asia Leisure", "city": d, "star_rating": 5, "avg_nightly_usd": 140.0, "rating": 4.8, "price_tier": "5-Star Luxury", "description": "5-star luxury seaside resort facing the Galle Fort."},
+                        {"id": "the-fort-printers-galle", "name": "The Fort Printers Heritage Hotel", "city": d, "star_rating": 4, "avg_nightly_usd": 85.0, "rating": 4.7, "price_tier": "4-Star Heritage", "description": "Restored 18th-century 4-star boutique mansion with courtyard pool."},
+                        {"id": "closenberg-hotel-galle", "name": "Closenberg Hotel & Bay View", "city": d, "star_rating": 3, "avg_nightly_usd": 42.0, "rating": 4.6, "price_tier": "Budget / 3-Star", "description": "Colonial peninsula stay with panoramic views of Galle Bay."},
+                        {"id": "galle-fort-budget-haven", "name": "Galle Fort Budget Haven", "city": d, "star_rating": 3, "avg_nightly_usd": 24.0, "rating": 4.3, "price_tier": "Budget / 3-Star", "description": "Affordable guesthouse near Galle Lighthouse."}
+                    ]
+                else:
+                    city_hotels = [
+                        {"id": f"{d_lower.replace(' ', '-')}-luxury-resort", "name": f"{d} Grand Luxury Resort & Spa", "city": d, "star_rating": 5, "avg_nightly_usd": 135.0, "rating": 4.9, "price_tier": "5-Star Luxury", "description": f"Premier 5-star luxury accommodation in {d}."},
+                        {"id": f"{d_lower.replace(' ', '-')}-heritage-hotel", "name": f"{d} Heritage Boutique Hotel", "city": d, "star_rating": 4, "avg_nightly_usd": 70.0, "rating": 4.8, "price_tier": "4-Star Premium", "description": f"Charming 4-star boutique hotel celebrating the heritage of {d}."},
+                        {"id": f"{d_lower.replace(' ', '-')}-city-inn", "name": f"{d} City Standard Hotel", "city": d, "star_rating": 4, "avg_nightly_usd": 55.0, "rating": 4.6, "price_tier": "4-Star Standard", "description": f"Comfortable 4-star stay with contemporary amenities."},
+                        {"id": f"{d_lower.replace(' ', '-')}-budget-stay", "name": f"{d} Central Budget Inn", "city": d, "star_rating": 3, "avg_nightly_usd": 30.0, "rating": 4.5, "price_tier": "Budget / 3-Star", "description": f"Cozy budget inn with authentic local breakfast."},
+                        {"id": f"{d_lower.replace(' ', '-')}-backpacker-lodge", "name": f"{d} Backpacker Lodge", "city": d, "star_rating": 3, "avg_nightly_usd": 20.0, "rating": 4.3, "price_tier": "Budget / 3-Star", "description": f"Affordable traveler lodge in {d}."}
+                    ]
+
+                # Filter city_hotels based on user budget / star preference
+                filtered_fb_hotels = list(city_hotels)
+                if user_b_tier in ["luxury", "5-star", "5 star"]:
+                    fives = [h for h in city_hotels if h.get("star_rating") == 5]
+                    # Fallback to 4-star if 5-star not available!
+                    filtered_fb_hotels = fives if len(fives) > 0 else [h for h in city_hotels if h.get("star_rating") == 4]
+                elif user_b_tier in ["budget", "3-star", "3 star"]:
+                    # Strictly no 5-star hotels for budget users
+                    filtered_fb_hotels = [h for h in city_hotels if h.get("star_rating", 3) <= 3 and "5-star" not in h.get("price_tier", "").lower()]
+                elif user_b_tier in ["standard", "4-star", "4 star"]:
+                    fours = [h for h in city_hotels if h.get("star_rating") == 4]
+                    filtered_fb_hotels = fours if len(fours) > 0 else city_hotels
+
                 fb_by_dest[d] = {
-                    "hotels": [
-                        {
-                            "id": f"{d.lower()}-resort",
-                            "name": f"{d} Grand Heritage Resort & Spa",
-                            "city": d,
-                            "avg_nightly_usd": 65.0,
-                            "rating": 4.8,
-                            "price_tier": agent1_data.get("budget_tier", "Standard"),
-                            "description": f"Top-rated luxury and boutique accommodation in {d}."
-                        }
-                    ],
+                    "hotels": filtered_fb_hotels if len(filtered_fb_hotels) >= 2 else city_hotels,
                     "poi": [
                         {
-                            "id": f"{d.lower()}-fort",
-                            "name": f"Historic {d} Fort & Cultural Landmarks",
+                            "id": f"{d_lower.replace(' ', '-')}-attraction",
+                            "name": poi_name,
                             "city": d,
                             "ticket_price_usd": 10.0,
                             "rating": 4.9,
-                            "categories": ["Heritage", "Culture"],
-                            "description": f"Famous attraction and cultural sanctuary in {d}."
+                            "categories": poi_cats,
+                            "description": poi_desc
                         }
                     ]
                 }

@@ -14,6 +14,7 @@ export interface ITenant extends Document {
   status: "active" | "suspended" | "inactive";
   isolation: "shared" | "dedicated";
   allowRegistration: boolean;
+  partnerRegistrationMode?: "public" | "invite_only" | "disabled";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -51,6 +52,12 @@ const TenantSchema: Schema = new Schema(
     allowRegistration: {
       type: Boolean,
       default: true,
+      required: true,
+    },
+    partnerRegistrationMode: {
+      type: String,
+      enum: ["public", "invite_only", "disabled"],
+      default: "invite_only",
       required: true,
     },
   },

@@ -25,6 +25,7 @@ export interface ResolvedTenant {
     secondaryColor?: string;
     tagline?: string;
   };
+  partnerRegistrationMode?: "public" | "invite_only" | "disabled";
   isAdmin?: boolean;
 }
 
@@ -62,7 +63,8 @@ export function parseTenantHostname(hostname: string): {
 
   // 2. Default Localhost Tenant
   if (host === "localhost" || host === "127.0.0.1") {
-    return { slug: "default-tenant", isAdmin: false };
+    const defaultSlug = process.env.DEFAULT_TENANT_SLUG || "ceylon";
+    return { slug: defaultSlug, isAdmin: false };
   }
 
   // 3. Tenant.localhost Check
@@ -157,6 +159,7 @@ export async function resolveTenant(options: {
       isolation: (tenantDoc as any).isolation,
       plan: (tenantDoc as any).plan,
       branding: (tenantDoc as any).branding,
+      partnerRegistrationMode: (tenantDoc as any).partnerRegistrationMode || "invite_only",
     };
   }
 
@@ -168,6 +171,7 @@ export async function resolveTenant(options: {
     isolation: resolvedData.isolation,
     plan: resolvedData.plan,
     branding: resolvedData.branding,
+    partnerRegistrationMode: resolvedData.partnerRegistrationMode || "invite_only",
   };
 
   // Populate Cache

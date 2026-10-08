@@ -8,6 +8,9 @@ import EmptyState from "@/components/dashboard/EmptyState";
 import SettingsCard from "@/components/dashboard/SettingsCard";
 import { useTenant } from "@/context/TenantBrandingContext";
 import { useLocale, useTranslations } from "next-intl";
+import { detectRequestedServices } from "@/lib/requestedServices";
+import MarketingOfficerDashboard from "@/components/dashboard/MarketingOfficerDashboard";
+import DriverDispatchDashboard from "@/components/dashboard/DriverDispatchDashboard";
 
 export default function DashboardHomePage() {
   const { data: session } = useSession();
@@ -72,7 +75,8 @@ export default function DashboardHomePage() {
   // -------------------------------------------------------------
   // TENANT ADMIN VIEW
   // -------------------------------------------------------------
-  if (userRole === "tenant_admin") {
+  const isAuthorizedAdmin = userRole === "tenant_admin" || userRole === "super_admin" || userRole === "admin";
+  if (isAuthorizedAdmin) {
     return (
       <div className="space-y-10 text-left">
         {/* Welcome Banner */}
@@ -92,6 +96,12 @@ export default function DashboardHomePage() {
                 Manage travel packages, review booking requests, update company branding, and analyze user statistics.
               </p>
               <div className="flex flex-wrap gap-4 pt-2">
+                <Link
+                  href={`/${locale}/dashboard/rates`}
+                  className="rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg hover:from-teal-500 hover:to-emerald-500 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center gap-2"
+                >
+                  <span>💱</span> Master Rates & Forex
+                </Link>
                 <Link
                   href={`/${locale}/dashboard/requests`}
                   className="rounded-xl bg-slate-900 px-6 py-3.5 text-sm font-bold text-white shadow-lg hover:bg-slate-800 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
@@ -150,22 +160,74 @@ export default function DashboardHomePage() {
               {recentRequests.length === 0 ? (
                 <div className="py-8 text-center text-slate-400 font-semibold">No recent bookings submitted.</div>
               ) : (
-                recentRequests.map((req) => (
-                  <div
-                    key={req._id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-white/30 border border-white/40 hover:bg-white/50 transition"
-                  >
-                    <div>
-                      <span className="text-[10px] font-black uppercase text-brand-secondary">
-                        {req.packageName}
-                      </span>
-                      <h4 className="font-extrabold text-slate-800 text-base mt-1">
-                        Request ID: {req._id.substring(req._id.length - 8).toUpperCase()}
-                      </h4>
-                      <p className="text-xs font-semibold text-slate-500 mt-1">
-                        Travelers: {req.numberOfTravelers} | Date: {new Date(req.preferredStartDate).toLocaleDateString()}
-                      </p>
-                    </div>
+                recentRequests.map((req) => {
+                  const services = detectRequestedServices(req);
+                  return (
+                    <div
+                      key={req._id}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-white/30 border border-white/40 hover:bg-white/50 transition"
+                    >
+                      <div>
+                        <span className="text-[10px] font-black uppercase text-brand-secondary">
+                          {req.packageName}
+                        </span>
+                        <h4 className="font-extrabold text-slate-800 text-base mt-1">
+                          Request ID: {req._id.substring(req._id.length - 8).toUpperCase()}
+                        </h4>
+                        <p className="text-xs font-semibold text-slate-500 mt-1">
+                          Travelers: {req.numberOfTravelers} | Date: {new Date(req.preferredStartDate).toLocaleDateString()}
+                        </p>
+
+                        {/* Staff Request Indicators */}
+                        {services.hasAnyServiceRequested && (
+                          <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                            {services.driverRequested && (
+                              <span
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                  services.driverAssigned
+                                    ? "bg-emerald-50 text-emerald-900 border border-emerald-300"
+                                    : "bg-amber-50 text-amber-900 border border-amber-300 shadow-sm"
+                                }`}
+                                title={services.driverReason}
+                              >
+                                <span>🚗</span>
+                                <span>Driver</span>
+                                {services.driverAssigned ? (
+                                  <span className="text-[8px] bg-emerald-600 text-white px-1 py-0.2 rounded font-black">
+                                    Assigned
+                                  </span>
+                                ) : (
+                                  <span className="text-[8px] bg-amber-500 text-white px-1 py-0.2 rounded font-black">
+                                    Needed
+                                  </span>
+                                )}
+                              </span>
+                            )}
+                            {services.guideRequested && (
+                              <span
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                  services.guideAssigned
+                                    ? "bg-emerald-50 text-emerald-900 border border-emerald-300"
+                                    : "bg-indigo-50 text-indigo-900 border border-indigo-300 shadow-sm"
+                                }`}
+                                title={services.guideReason}
+                              >
+                                <span>🧭</span>
+                                <span>Guide</span>
+                                {services.guideAssigned ? (
+                                  <span className="text-[8px] bg-emerald-600 text-white px-1 py-0.2 rounded font-black">
+                                    Assigned
+                                  </span>
+                                ) : (
+                                  <span className="text-[8px] bg-indigo-600 text-white px-1 py-0.2 rounded font-black">
+                                    Needed
+                                  </span>
+                                )}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
 
                     <div className="flex items-center gap-2 self-end sm:self-center">
                       <span
@@ -198,9 +260,10 @@ export default function DashboardHomePage() {
                       )}
                     </div>
                   </div>
-                ))
-              )}
-            </div>
+                );
+              })
+            )}
+          </div>
           </div>
 
           {/* Quick links settings card */}
@@ -236,6 +299,20 @@ export default function DashboardHomePage() {
         </section>
       </div>
     );
+  }
+
+  // -------------------------------------------------------------
+  // MARKETING OFFICER & TRAVEL AGENT VIEW
+  // -------------------------------------------------------------
+  if (userRole === "marketing_officer" || userRole === "travel_agent") {
+    return <MarketingOfficerDashboard />;
+  }
+
+  // -------------------------------------------------------------
+  // DRIVER & TOUR GUIDE VIEW (DISPATCH PORTAL)
+  // -------------------------------------------------------------
+  if (userRole === "driver" || userRole === "tour_guide") {
+    return <DriverDispatchDashboard />;
   }
 
   // -------------------------------------------------------------
