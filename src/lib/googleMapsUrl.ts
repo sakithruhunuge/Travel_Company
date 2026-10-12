@@ -93,3 +93,35 @@ export function generateGoogleMapsLegUrl(from: string | LocationPoint, to: strin
 
   return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
+
+/**
+ * Generates a direct Google Maps search URL for a specific hotel, attraction, or place of interest.
+ * Opens Google Maps centered on the place card with photos, reviews, directions, and hours.
+ *
+ * @param placeName Name of the hotel or attraction
+ * @param city City/destination in Sri Lanka
+ * @param coords Optional lat/lng coordinates if available
+ * @returns Direct Google Maps Universal Search URL
+ */
+export function generateGoogleMapsPlaceUrl(
+  placeName: string,
+  city?: string,
+  coords?: { lat?: number; lng?: number }
+): string {
+  if (coords?.lat !== undefined && coords?.lng !== undefined && !isNaN(coords.lat) && !isNaN(coords.lng)) {
+    const cleanName = (placeName || "").replace(/\s*\(.*?\)\s*/g, " ").trim();
+    const query = cleanName ? `${cleanName}, Sri Lanka` : `${coords.lat},${coords.lng}`;
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  }
+
+  const cleanName = (placeName || "").replace(/\s*\(.*?\)\s*/g, " ").trim();
+  const parts: string[] = [cleanName];
+  if (city && !cleanName.toLowerCase().includes(city.toLowerCase())) {
+    parts.push(city);
+  }
+  if (!cleanName.toLowerCase().includes("sri lanka")) {
+    parts.push("Sri Lanka");
+  }
+  const query = parts.filter(Boolean).join(", ");
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}

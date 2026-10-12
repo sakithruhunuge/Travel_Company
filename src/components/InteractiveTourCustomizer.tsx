@@ -35,6 +35,7 @@ import {
 
 import { useToast } from "@/context/ToastContext";
 import { resolvePoiPhoto } from "@/utils/aiPlacePhotos";
+import { generateGoogleMapsPlaceUrl } from "@/lib/googleMapsUrl";
 import {
   calculateTripPricing,
   PricingInputs,
@@ -68,6 +69,9 @@ export interface MapPlaceHotel {
   price_tier?: string;
   description?: string;
   primary_image?: string;
+  google_maps_url?: string;
+  lat?: number;
+  lng?: number;
 }
 
 export function getHotelStars(hotel: MapPlaceHotel): number {
@@ -125,6 +129,9 @@ export interface MapPlacePoi {
   primary_image?: string;
   street_view_url?: string;
   is_ai_generated?: boolean;
+  google_maps_url?: string;
+  lat?: number;
+  lng?: number;
 }
 
 export interface DestinationPlaces {
@@ -2760,16 +2767,28 @@ export default function InteractiveTourCustomizer() {
                                 const distFromCenter = Math.round((((String(hotel.id).charCodeAt(0) || 4) % 35) / 10 + 1.2) * 10) / 10;
                                 const starLevel = getHotelStars(hotel);
                                 const starTierName = starLevel === 5 ? "5-Star Luxury" : starLevel === 4 ? "4-Star Premium" : "Budget / 3-Star";
+                                const hotelMapUrl = hotel.google_maps_url || generateGoogleMapsPlaceUrl(hotel.name, city, { lat: hotel.lat, lng: hotel.lng });
 
                                 return (
                                   <motion.div key={hotel.id} whileHover={{ y: -3 }} onClick={() => handleToggleSuggestedPlace(hotel, city, true)}
                                     className={`rounded-2xl border p-3.5 cursor-pointer flex flex-col justify-between transition-all bg-white ${isSelected ? "border-[#FF8B50] shadow-[0_14px_34px_-14px_rgba(255,139,80,0.5)]" : "border-[#F0E7D8] hover:border-[#FFD9C4]"}`}>
                                     <div>
-                                      <div className="w-full h-28 rounded-xl overflow-hidden mb-2.5 bg-[#F6F1E6] border border-[#F0E7D8]/70 relative">
+                                      <div className="w-full h-28 rounded-xl overflow-hidden mb-2.5 bg-[#F6F1E6] border border-[#F0E7D8]/70 relative group">
                                         <img src={displayImg} alt={hotel.name} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" onError={(e) => { (e.target as HTMLImageElement).src = defaultCityImg; }} />
                                         <span className="absolute bottom-2 left-2 bg-slate-900/85 backdrop-blur-sm text-white text-[9px] font-black px-2 py-0.5 rounded-full border border-white/20">
                                           📍 ~{distFromCenter} km from {city} center
                                         </span>
+                                        <a
+                                          href={hotelMapUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          onClick={(e) => e.stopPropagation()}
+                                          title={`View ${hotel.name} on Google Maps`}
+                                          className="absolute top-2 right-2 bg-white/95 hover:bg-white text-slate-800 hover:text-[#EA4335] shadow-md backdrop-blur-md px-2.5 py-1 rounded-xl text-[10px] font-black flex items-center gap-1.5 transition border border-white/80 z-10 hover:shadow-lg group/map"
+                                        >
+                                          <EnvironmentOutlined className="text-[#EA4335] text-[11px]" />
+                                          <span>Map ↗</span>
+                                        </a>
                                       </div>
                                       <div className="flex items-start justify-between gap-2">
                                         <h5 className="text-xs font-extrabold text-[#44403C] leading-tight">{hotel.name}</h5>
@@ -2796,8 +2815,18 @@ export default function InteractiveTourCustomizer() {
 
                                       {hotel.description && <p className="text-[10px] text-[#8A8577] line-clamp-2 mt-1.5 font-medium">{hotel.description}</p>}
                                     </div>
-                                    <div className="mt-3 flex items-center justify-between border-t border-[#F3EBDE] pt-2.5">
-                                      <span className="text-[9px] font-black text-[#B5AC9A] uppercase tracking-wider">Real Scraped Rate</span>
+                                    <div className="mt-3 flex items-center justify-between border-t border-[#F3EBDE] pt-2.5 gap-2">
+                                      <a
+                                        href={hotelMapUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        title={`Open ${hotel.name} on Google Maps`}
+                                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] font-bold text-slate-700 bg-[#FDFBF7] hover:bg-red-50 hover:text-[#EA4335] border border-[#F0E7D8] hover:border-red-200 transition shrink-0"
+                                      >
+                                        <EnvironmentOutlined className="text-[#EA4335] text-[11px]" />
+                                        <span>Google Map ↗</span>
+                                      </a>
                                       <span className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition ${isSelected ? "bg-gradient-to-r from-[#FF8B50] to-[#FF6B2C] text-white shadow-md shadow-[#FF8B50]/30" : "bg-[#FFF6EF] text-[#E05A1A]"}`}>{isSelected ? t("selectedPlace") : t("selectPlace")}</span>
                                     </div>
                                   </motion.div>
@@ -2816,6 +2845,7 @@ export default function InteractiveTourCustomizer() {
                                 const isPoiImgFailed = failedPoiImages[String(poi.id)];
                                 const { photoUrl: displayImg, isAiGenerated, fallbackAiUrl } = resolvePoiPhoto(poi, city, isPoiImgFailed);
                                 const poiDistFromCenter = Math.round((((String(poi.id).charCodeAt(0) || 7) % 45) / 10 + 0.8) * 10) / 10;
+                                const poiMapUrl = poi.google_maps_url || generateGoogleMapsPlaceUrl(poi.name, city, { lat: poi.lat, lng: poi.lng });
                                 return (
                                   <motion.div key={poi.id} whileHover={{ y: -3 }} onClick={() => handleToggleSuggestedPlace(poi, city, false)}
                                     className={`rounded-2xl border p-3.5 cursor-pointer flex flex-col justify-between transition-all bg-white ${isSelected ? "border-[#25A5FE] shadow-[0_14px_34px_-14px_rgba(37,165,254,0.45)]" : "border-[#F0E7D8] hover:border-[#BDE3FE]"}`}>
@@ -2834,21 +2864,44 @@ export default function InteractiveTourCustomizer() {
                                         <span className="absolute bottom-2 left-2 bg-slate-900/85 backdrop-blur-sm text-white text-[9px] font-black px-2 py-0.5 rounded-full border border-white/20">
                                           📍 ~{poiDistFromCenter} km from {city} center
                                         </span>
+                                        <a
+                                          href={poiMapUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          onClick={(e) => e.stopPropagation()}
+                                          title={`View ${poi.name} on Google Maps`}
+                                          className="absolute top-2 right-2 bg-white/95 hover:bg-white text-slate-800 hover:text-[#EA4335] shadow-md backdrop-blur-md px-2.5 py-1 rounded-xl text-[10px] font-black flex items-center gap-1.5 transition border border-white/80 z-10 hover:shadow-lg group/map"
+                                        >
+                                          <EnvironmentOutlined className="text-[#EA4335] text-[11px]" />
+                                          <span>Map ↗</span>
+                                        </a>
                                       </div>
                                       <div className="flex items-start justify-between gap-2">
                                         <h5 className="text-xs font-extrabold text-[#44403C] leading-tight">{poi.name}</h5>
                                         <span className="text-[10px] font-black text-[#5C5648] bg-[#F0F8FF] px-1.5 py-0.5 rounded shrink-0">{poi.ticket_price_usd > 0 ? `$${poi.ticket_price_usd}` : "Free"}</span>
                                       </div>
-                                      <span className="text-[10px] text-amber-500 font-bold block mt-1"><StarFilled className="mr-1" />{poi.rating}/5.0</span>
+                                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                        <span className="text-[10px] text-amber-500 font-bold flex items-center"><StarFilled className="mr-1" />{poi.rating}/5.0</span>
+                                        {poi.street_view_url && (
+                                          <a href={poi.street_view_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-[10px] font-bold text-[#25A5FE] hover:text-[#0E7DD6] hover:underline">
+                                            Street View (Mapillary) ↗
+                                          </a>
+                                        )}
+                                      </div>
                                       {poi.description && <p className="text-[10px] text-[#8A8577] line-clamp-2 mt-1 font-medium">{poi.description}</p>}
-                                      {poi.street_view_url && (
-                                        <a href={poi.street_view_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-[10px] font-bold text-[#25A5FE] hover:text-[#0E7DD6] hover:underline mt-1">
-                                          View street view on Mapillary ↗
-                                        </a>
-                                      )}
                                     </div>
-                                    <div className="mt-3 flex items-center justify-between border-t border-[#F3EBDE] pt-2.5">
-                                      <span className="text-[9px] font-black text-[#B5AC9A] uppercase tracking-wider">Entry Ticket</span>
+                                    <div className="mt-3 flex items-center justify-between border-t border-[#F3EBDE] pt-2.5 gap-2">
+                                      <a
+                                        href={poiMapUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        title={`Open ${poi.name} on Google Maps`}
+                                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] font-bold text-slate-700 bg-[#FDFBF7] hover:bg-red-50 hover:text-[#EA4335] border border-[#F0E7D8] hover:border-red-200 transition shrink-0"
+                                      >
+                                        <EnvironmentOutlined className="text-[#EA4335] text-[11px]" />
+                                        <span>Google Map ↗</span>
+                                      </a>
                                       <span className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition ${isSelected ? "bg-[#25A5FE] text-white shadow-md shadow-[#25A5FE]/30" : "bg-[#F0F8FF] text-[#25A5FE]"}`}>{isSelected ? t("selectedPlace") : t("selectPlace")}</span>
                                     </div>
                                   </motion.div>

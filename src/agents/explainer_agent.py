@@ -3,6 +3,7 @@ import sys
 import json
 import logging
 import importlib
+import urllib.parse
 from typing import Dict, Any, List, Union
 
 # --------------------------------------------------------------------------
@@ -198,14 +199,18 @@ def extract_suggested_places_by_destination(agent2_data: Dict[str, Any]) -> Dict
                     # Handle srcset like "url1 1x, url2 2x" by splitting on comma first
                     primary_image = raw_url.split(",")[0].strip().split()[0]
 
+            hotel_name = h.get("name", "Boutique Hotel")
+            hotel_city = h.get("city", dest)
+            hotel_query = urllib.parse.quote(f"{hotel_name}, {hotel_city}, Sri Lanka")
             formatted_hotels.append({
                 "id": str(h.get("id") or h.get("_id") or h.get("name")),
-                "name": h.get("name", "Boutique Hotel"),
-                "city": h.get("city", dest),
+                "name": hotel_name,
+                "city": hotel_city,
                 "avg_nightly_usd": float(rate),
                 "rating": rating_val,
                 "price_tier": h.get("price_tier", budget),
                 "primary_image": primary_image,
+                "google_maps_url": f"https://www.google.com/maps/search/?api=1&query={hotel_query}",
                 "description": h.get("description", f"Recommended accommodation in {dest}.").replace("in Colombo", f"in {dest}").replace("in colombo", f"in {dest}") if dest.lower() != "colombo" else h.get("description", "Recommended accommodation in Colombo.")
             })
 
@@ -243,15 +248,19 @@ def extract_suggested_places_by_destination(agent2_data: Dict[str, Any]) -> Dict
                 primary_image = resolve_ai_poi_image(p.get("name", ""), dest, p.get("description", ""))
                 is_ai_generated = True
 
+            poi_name = p.get("name", "Cultural Landmark")
+            poi_city = p.get("city", dest)
+            poi_query = urllib.parse.quote(f"{poi_name}, {poi_city}, Sri Lanka")
             formatted_poi.append({
                 "id": str(p.get("id") or p.get("_id") or p.get("name")),
-                "name": p.get("name", "Cultural Landmark"),
-                "city": p.get("city", dest),
+                "name": poi_name,
+                "city": poi_city,
                 "ticket_price_usd": float(ticket),
                 "rating": p_rating_val,
                 "categories": p.get("categories", []),
                 "primary_image": primary_image,
                 "street_view_url": street_view_url,
+                "google_maps_url": f"https://www.google.com/maps/search/?api=1&query={poi_query}",
                 "description": p.get("description", "Attraction landmark in Sri Lanka."),
                 "is_ai_generated": is_ai_generated
             })

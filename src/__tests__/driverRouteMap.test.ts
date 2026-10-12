@@ -2,6 +2,7 @@ import assert from "node:assert";
 import {
   generateGoogleMapsRouteUrl,
   generateGoogleMapsLegUrl,
+  generateGoogleMapsPlaceUrl,
 } from "../lib/googleMapsUrl";
 import {
   buildDriverRoutePlan,
@@ -53,5 +54,17 @@ assert.strictEqual(routePlan.destinationStops.length, 4);
 assert.strictEqual(routePlan.segments.length, 3);
 assert.ok(routePlan.totalDistanceKm > 200, "Total distance should be calculated across all segments");
 console.log(`  ✓ Test 5 Passed: Route plan verified (${routePlan.totalDistanceKm} km, ~${routePlan.totalDriveTimeFormatted})`);
+
+// Test 6: Suggested Hotel Google Maps View URL
+const hotelMapUrl = generateGoogleMapsPlaceUrl("Heritance Tea Factory Resort & Spa", "Nuwara Eliya");
+assert.ok(hotelMapUrl.startsWith("https://www.google.com/maps/search/?api=1&query="), "Should have Google Maps Search API base");
+assert.ok(decodeURIComponent(hotelMapUrl).includes("Heritance Tea Factory Resort & Spa, Nuwara Eliya, Sri Lanka"), "Should include hotel name, city and Sri Lanka");
+console.log("  ✓ Test 6 Passed: Suggested Hotel direct Google Maps view URL generated");
+
+// Test 7: Suggested Attraction (POI) Google Maps View URL
+const poiMapUrl = generateGoogleMapsPlaceUrl("Nine Arch Bridge", "Ella");
+assert.ok(poiMapUrl.startsWith("https://www.google.com/maps/search/?api=1&query="), "Should have Google Maps Search API base");
+assert.ok(decodeURIComponent(poiMapUrl).includes("Nine Arch Bridge, Ella, Sri Lanka"), "Should include attraction name, city and Sri Lanka");
+console.log("  ✓ Test 7 Passed: Suggested Attraction direct Google Maps view URL generated");
 
 console.log("🎉 All Driver Route Map & Google Maps tests passed successfully!");
