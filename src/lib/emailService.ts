@@ -151,7 +151,7 @@ export async function sendTripBriefEmail(
   const routeHtml = routePlan && routePlan.destinationStops.length > 0 ? `
     <div style="background-color: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 15px; margin: 15px 0;">
       <h4 style="margin-top: 0; color: #166534; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px;">
-        📍 Places to Go & Predicted Distance
+        Route Itinerary & Predicted Distance
       </h4>
       <div style="margin-bottom: 10px;">
         <strong>Destinations (${routePlan.destinationStops.length} stops):</strong>

@@ -26,6 +26,7 @@ import {
   TagOutlined,
   CalculatorOutlined,
   CheckOutlined,
+  EnvironmentOutlined,
 } from "@ant-design/icons";
 
 interface MasterRateManagementViewProps {
@@ -662,8 +663,8 @@ export default function MasterRateManagementView({
                               </span>
                             )}
                           </div>
-                          <span className="text-[11px] font-medium text-slate-400 block mt-0.5">
-                            📍 {item.city}
+                          <span className="text-[11px] font-medium text-slate-400 flex items-center gap-1 mt-0.5">
+                            <EnvironmentOutlined className="text-slate-400 text-[10px]" /> {item.city}
                           </span>
                         </td>
                         <td className="py-4 px-4">

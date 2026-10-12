@@ -604,7 +604,7 @@ export default function TripBriefDocument({
 
               {/* Places They Have to Go (Ordered List) */}
               <Text style={styles.placesHeading}>
-                📍 Places The Driver Must Visit (Ordered Stops):
+                Key Route Destinations (Ordered Stops):
               </Text>
               <View style={styles.placesFlowContainer}>
                 {routePlan.destinationStops.map((stop, index) => (

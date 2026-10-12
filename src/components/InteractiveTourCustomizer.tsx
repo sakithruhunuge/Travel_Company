@@ -1766,6 +1766,511 @@ export default function InteractiveTourCustomizer() {
     );
   }
 
+  interface ParsedItinerarySegment {
+    timeSlot?: string;
+    visit?: string;
+    rating?: string;
+    ticketCost?: string;
+    details?: string;
+    rationale?: string;
+  }
+
+  const parseItinerarySegment = (rawText: string): ParsedItinerarySegment => {
+    const result: ParsedItinerarySegment = {};
+    let text = rawText.trim();
+
+    // 1. Time slot pattern e.g. "Morning (08:30 – 12:00):" or "🌅 Morning:"
+    const timeSlotMatch = text.match(/^(?:[🌅🌤️🍽️🌆]\s*)?(Morning|Midday(?:\s+Gastronomy|\s+Culinary)?|Afternoon|Evening|Golden\s+Hour(?:\s*&\s*Evening)?)(?:\s*\([^)]+\))?:?\s*/i);
+    if (timeSlotMatch && timeSlotMatch[0].length > 3) {
+      result.timeSlot = timeSlotMatch[0].replace(/:\s*$/, "").replace(/^[🌅🌤️🍽️🌆\s]+/, "").trim();
+      text = text.substring(timeSlotMatch[0].length).trim();
+    }
+
+    // 2. Extract Why This Was Chosen / XAI Decision Rationale
+    const whyMatch = text.match(/(?:💡\s*|🤖\s*)?(?:Why This Was Chosen|XAI Decision Rationale):\s*([\s\S]*)$/i);
+    if (whyMatch) {
+      result.rationale = whyMatch[1].trim();
+      text = text.replace(whyMatch[0], "").trim();
+    }
+
+    // 3. Extract Details / Overview
+    const detailsMatch = text.match(/(?:Details|Overview):\s*([\s\S]*?)(?=(?:Rating:|Ticket Cost:|Estimated Rate:|$))/i);
+    if (detailsMatch) {
+      result.details = detailsMatch[1].replace(/[·•\s]+$/, "").trim();
+      text = text.replace(detailsMatch[0], "").trim();
+    }
+
+    // 4. Extract Rating
+    const ratingMatch = text.match(/Rating:\s*(.*?)(?=(?:Ticket Cost:|Estimated Rate:|Details:|Overview:|$))/i);
+    if (ratingMatch) {
+      result.rating = ratingMatch[1].replace(/[·•\s]+$/, "").trim();
+      text = text.replace(ratingMatch[0], "").trim();
+    }
+
+    // 5. Extract Ticket Cost / Estimated Rate
+    const costMatch = text.match(/(?:Ticket Cost|Estimated Rate):\s*(.*?)(?=(?:Rating:|Details:|Overview:|$))/i);
+    if (costMatch) {
+      result.ticketCost = costMatch[1].replace(/[·•\s]+$/, "").trim();
+      text = text.replace(costMatch[0], "").trim();
+    }
+
+    // 6. Extract Visit
+    const visitMatch = text.match(/Visit:\s*(.*?)(?=(?:Rating:|Ticket Cost:|Estimated Rate:|Details:|Overview:|$))/i);
+    if (visitMatch) {
+      result.visit = visitMatch[1].replace(/[·•\s]+$/, "").trim();
+    } else if (text) {
+      const cleanLeftover = text.replace(/^[🌅🌤️🍽️🌆🏛️\s*•·-]+/, "").replace(/[·•\s]+$/, "").trim();
+      if (cleanLeftover && !result.details && !result.rationale) {
+        result.visit = cleanLeftover;
+      }
+    }
+
+    return result;
+  };
+
+  const renderSeparatedItineraryCards = (seg: ParsedItinerarySegment, nestedList?: React.ReactNode) => {
+    const cleanPlaceName = seg.visit
+      ? seg.visit.replace(/\(.*?\)/g, "").replace(/\*\*/g, "").replace(/^Visit:\s*/i, "").trim()
+      : "";
+    const placeMapUrl = cleanPlaceName ? generateGoogleMapsPlaceUrl(cleanPlaceName, "Sri Lanka") : "";
+
+    return (
+      <div className="my-2.5 space-y-2.5">
+        {/* 1. Dedicated Visit / Place Card */}
+        {seg.visit && (
+          <div className="flex items-center justify-between flex-wrap gap-2.5 p-3.5 rounded-2xl bg-gradient-to-r from-[#F0F8FF] via-white to-[#F0F8FF]/50 border border-[#25A5FE]/25 shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-[#25A5FE]/15 text-[#25A5FE] text-sm shrink-0">
+                <CompassOutlined />
+              </span>
+              <div>
+                {seg.timeSlot && (
+                  <span className="text-[9.5px] font-black uppercase tracking-wider text-[#0E7DD6] bg-[#25A5FE]/10 border border-[#25A5FE]/20 px-2 py-0.5 rounded-md inline-block mb-1">
+                    {seg.timeSlot}
+                  </span>
+                )}
+                <h4 className="text-[12.5px] font-black text-[#44403C] leading-snug m-0">
+                  {seg.visit.replace(/\*\*/g, "")}
+                </h4>
+              </div>
+            </div>
+            {placeMapUrl && (
+              <a
+                href={placeMapUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10.5px] font-bold text-slate-700 bg-white hover:bg-red-50 hover:text-[#EA4335] hover:border-red-200 border border-slate-200 transition shadow-2xs shrink-0"
+                title={`Explore ${cleanPlaceName} on Google Maps`}
+              >
+                <EnvironmentOutlined className="text-[#EA4335]" />
+                <span>Explore on Map ↗</span>
+              </a>
+            )}
+          </div>
+        )}
+
+        {/* 2. Distinct Rating & Admission Cost Tags */}
+        {(seg.rating || seg.ticketCost) && (
+          <div className="flex items-center gap-2 flex-wrap pl-1">
+            {seg.rating && (
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200/80 px-2.5 py-1 rounded-lg shadow-2xs">
+                <StarFilled className="text-amber-400 text-[10px]" />
+                <span className="text-[9px] font-black uppercase tracking-wider text-amber-700/80">Rating</span>
+                <span className="font-extrabold">{seg.rating.replace(/Rating:\s*/i, "").trim()}</span>
+              </span>
+            )}
+            {seg.ticketCost && (
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold bg-emerald-50 text-emerald-900 border border-emerald-200/80 px-2.5 py-1 rounded-lg shadow-2xs">
+                <span className="text-[9px] font-black uppercase tracking-wider text-emerald-700/80">Admission</span>
+                <span className="font-extrabold">{seg.ticketCost.replace(/^(Ticket Cost:|Estimated Rate:)\s*/i, "").trim()}</span>
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* 3. Rich Details & Experience Card */}
+        {seg.details && (
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-[#FFFDF9] via-[#FAF7F2] to-[#FFFDF9] border border-[#F0E6D8] shadow-2xs">
+            <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="flex items-center justify-center w-5 h-5 rounded-md bg-[#FF8B50]/15 text-[#E05A1A] text-[11px]">
+                  <CompassOutlined />
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-[0.16em] text-[#8C5832]">
+                  Details & Experience
+                </span>
+              </div>
+              <span className="text-[9px] font-bold text-[#8A8577] bg-[#EFE9DF]/80 border border-[#E2D8C9] px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                <span>✨</span> Immersive Sensory Highlights
+              </span>
+            </div>
+            <p className="m-0 text-[12.5px] leading-relaxed text-[#4A4438] font-normal pl-0.5">
+              {seg.details}
+            </p>
+          </div>
+        )}
+
+        {/* 4. Executive Multi-Factor AI Decision Rationale Card */}
+        {seg.rationale && (
+          <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#F8FAFC] via-[#F1F5F9]/80 to-white border border-slate-200/90 hover:border-indigo-300/80 shadow-2xs transition-all duration-200 p-4">
+            <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-gradient-to-b from-indigo-500 via-sky-500 to-emerald-400" />
+            <div className="flex items-center justify-between gap-2 mb-2.5 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="flex items-center justify-center w-5 h-5 rounded-md bg-indigo-50 border border-indigo-100 text-indigo-600 text-[11px]">
+                  <ThunderboltOutlined />
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-900 font-sans">
+                  AI Decision Rationale
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                  <CheckOutlined className="text-[8.5px]" /> Verified Fit
+                </span>
+                <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/80">
+                  ⚡ Smart Scheduling
+                </span>
+              </div>
+            </div>
+            <p className="text-[12.5px] leading-relaxed text-slate-800 font-medium m-0 pl-7">
+              {seg.rationale}
+            </p>
+          </div>
+        )}
+
+        {nestedList}
+      </div>
+    );
+  };
+
+  const renderOverallTripSummaryCard = () => {
+    const dests = inputs.destinations.length > 0 ? inputs.destinations : ["Colombo", "Kandy", "Galle"];
+    const duration = inputs.duration || 5;
+    const nights = Math.max(1, duration - 1);
+    const hotelClass = inputs.hotelClass || "standard";
+    const budgetLabel =
+      hotelClass === "luxury"
+        ? "5-Star Luxury"
+        : hotelClass === "budget"
+        ? "Budget / 3-Star"
+        : "Standard Comfort Tier";
+
+    // Compute nights per destination hub
+    const base = Math.floor(nights / dests.length);
+    const rem = nights % dests.length;
+    const hubNights = dests.map((city, idx) => ({
+      city,
+      nights: Math.max(1, base + (idx < rem ? 1 : 0)),
+    }));
+
+    // Estimate island-wide distance
+    const approxKm = Math.max(180, (dests.length - 1) * 95 + 120);
+    const avgDrivingHours = "2.0 – 3.5 hrs";
+
+    // City highlight tags
+    const cityHighlights: Record<string, string> = {
+      colombo: "Oceanfront Promenade & Colonial Architecture",
+      kandy: "UNESCO Sacred Tooth Relic & Royal Botanical Gardens",
+      galle: "17th-Century Dutch Fort & Lighthouse Ramparts",
+      "nuwara eliya": "Highland Tea Plantations & Misty Lake Gregory",
+      ella: "Nine Arch Stone Viaduct & Ella Gap Vistas",
+      sigiriya: "5th-Century Lion Rock Citadel & Royal Water Moats",
+      dambulla: "Ancient Golden Rock Cave Frescoes",
+      bentota: "Madu Ganga River Mangroves & Coastal Sanctuary",
+      yala: "Wild Leopard & Asian Elephant 4x4 Safari",
+      mirissa: "Coconut Tree Hill & Golden Ocean Bays",
+      anuradhapura: "2,500-Year Sacred Ancient City & White Stupas",
+      polonnaruwa: "Medieval Royal Citadel & Gal Vihara Rock Statues",
+    };
+
+    const getCityTag = (city: string) => {
+      const lower = city.toLowerCase();
+      for (const [k, v] of Object.entries(cityHighlights)) {
+        if (lower.includes(k) || k.includes(lower)) return v;
+      }
+      return "Cultural Landmark Discovery & Scenic Landscapes";
+    };
+
+    return (
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#FFFDF9] via-white to-[#F4F9FD] border border-[#ECDCC9] p-5 sm:p-7 mb-8 shadow-sm">
+        {/* Ambient background glows */}
+        <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-[#FF8B50]/10 blur-3xl pointer-events-none" />
+        <div className="absolute -left-16 -bottom-16 w-64 h-64 rounded-full bg-[#25A5FE]/10 blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 space-y-6">
+          {/* 1. Header Banner */}
+          <div className="flex items-start justify-between flex-wrap gap-3 pb-5 border-b border-[#F0E4D2]">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[#E05A1A] bg-[#FF8B50]/15 border border-[#FF8B50]/25 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5">
+                  <SafetyCertificateOutlined /> Certified Journey Blueprint
+                </span>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+                  <CheckOutlined className="text-[8.5px]" /> 100% Transparent Logistics
+                </span>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-sky-700 bg-sky-50 border border-sky-200 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+                  <CarOutlined className="text-[8.5px]" /> Direct Highway Flow
+                </span>
+              </div>
+              <h3 className="itc-serif text-lg sm:text-2xl font-bold tracking-tight text-[#44403C] m-0">
+                Overall Trip Summary & Master Journey Blueprint
+              </h3>
+              <p className="text-xs text-[#8A8577] font-medium m-0">
+                Executive island roadmap, driving pacing analysis, dedicated chauffeur mobility, and hospitality standards.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-black uppercase tracking-wider text-[#44403C] bg-white border border-[#E8DFD1] px-3.5 py-1.5 rounded-xl shadow-2xs">
+                {duration} Days · {nights} Nights
+              </span>
+            </div>
+          </div>
+
+          {/* 2. Visual Route Corridor Stepper */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-white/90 border border-[#EFE5D6] shadow-2xs">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <span className="text-[10.5px] font-black uppercase tracking-[0.16em] text-[#8C5832] flex items-center gap-1.5">
+                <EnvironmentOutlined className="text-[#FF8B50]" />
+                Master Route Corridor & Night Allocations
+              </span>
+              <span className="text-[9.5px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                Zero Backtracking Flow
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {hubNights.map((hub, idx) => (
+                <div
+                  key={hub.city}
+                  className="relative p-3.5 rounded-xl bg-gradient-to-br from-[#FAF7F2] to-white border border-[#EADBCC] hover:border-[#FF8B50]/50 transition group"
+                >
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <span className="w-6 h-6 rounded-lg bg-[#FF8B50] text-white font-black text-[11px] flex items-center justify-center shadow-xs">
+                      {idx + 1}
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#0E7DD6] bg-sky-50 border border-sky-100 px-2 py-0.5 rounded-md">
+                      {hub.nights} {hub.nights === 1 ? "Night" : "Nights"}
+                    </span>
+                  </div>
+                  <h4 className="text-[13.5px] font-black text-[#44403C] leading-tight m-0">
+                    {hub.city}
+                  </h4>
+                  <p className="text-[11px] text-[#8A8577] font-medium mt-1 mb-0 leading-normal line-clamp-1">
+                    {getCityTag(hub.city)}
+                  </p>
+                  {idx < hubNights.length - 1 && (
+                    <div className="hidden md:flex absolute -right-2.5 top-1/2 -translate-y-1/2 z-10 w-5 h-5 rounded-full bg-white border border-[#FF8B50] items-center justify-center text-[9px] text-[#FF8B50] font-black shadow-xs">
+                      →
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 3. Core Metrics Grid (4 Stat Cards) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="p-3.5 rounded-2xl bg-white border border-[#EFE5D6] shadow-2xs">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="w-7 h-7 rounded-lg bg-[#FF8B50]/15 text-[#E05A1A] flex items-center justify-center text-xs">
+                  <CalendarOutlined />
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#8A8577]">Duration</span>
+              </div>
+              <div className="text-base font-black text-[#44403C]">{duration} Days / {nights} Nights</div>
+              <div className="text-[10.5px] text-[#8A8577] font-medium mt-0.5">Evenly paced across {dests.length} hubs</div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-white border border-[#EFE5D6] shadow-2xs">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="w-7 h-7 rounded-lg bg-[#25A5FE]/15 text-[#0E7DD6] flex items-center justify-center text-xs">
+                  <CarOutlined />
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#8A8577]">Transit Pacing</span>
+              </div>
+              <div className="text-base font-black text-[#44403C]">~{approxKm} km Total</div>
+              <div className="text-[10.5px] text-[#8A8577] font-medium mt-0.5">~{avgDrivingHours} avg / transit leg</div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-white border border-[#EFE5D6] shadow-2xs">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="w-7 h-7 rounded-lg bg-amber-500/15 text-amber-700 flex items-center justify-center text-xs">
+                  <CrownOutlined />
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#8A8577]">Hospitality</span>
+              </div>
+              <div className="text-base font-black text-[#44403C]">{budgetLabel}</div>
+              <div className="text-[10.5px] text-[#8A8577] font-medium mt-0.5">Vetted 4.8★ stays · Breakfast incl.</div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-white border border-[#EFE5D6] shadow-2xs">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-700 flex items-center justify-center text-xs">
+                  <SafetyCertificateOutlined />
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#8A8577]">Mobility Class</span>
+              </div>
+              <div className="text-base font-black text-[#44403C]">Dedicated AC Vehicle</div>
+              <div className="text-[10.5px] text-[#8A8577] font-medium mt-0.5">English-speaking chauffeur-guide</div>
+            </div>
+          </div>
+
+          {/* 4. Thematic Journey Pillars */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-white/90 border border-[#EFE5D6] shadow-2xs space-y-3">
+            <span className="text-[10.5px] font-black uppercase tracking-[0.16em] text-[#8C5832] flex items-center gap-1.5">
+              <CompassOutlined className="text-[#FF8B50]" />
+              Thematic Ceylon Experience Pillars
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+              <div className="p-3 rounded-xl bg-[#FFFBF7] border border-[#F5EADF]">
+                <div className="text-xs font-black text-[#44403C] mb-1 flex items-center gap-1.5">
+                  <span>🏛️</span> Sacred Heritage
+                </div>
+                <p className="text-[11px] text-[#6E6759] m-0 leading-relaxed font-normal">
+                  UNESCO World Heritage temples, sacred relic drum ceremonies & royal ancient capitals.
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-[#F8FAF7] border border-[#E3ECE0]">
+                <div className="text-xs font-black text-[#44403C] mb-1 flex items-center gap-1.5">
+                  <span>🍃</span> Highland Tea & Mist
+                </div>
+                <p className="text-[11px] text-[#6E6759] m-0 leading-relaxed font-normal">
+                  Emerald Ceylon tea hills, alpine lake strolls, colonial viaducts & crisp mountain breezes.
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-[#F6FAFD] border border-[#E0ECF6]">
+                <div className="text-xs font-black text-[#44403C] mb-1 flex items-center gap-1.5">
+                  <span>🌊</span> Oceanside & Forts
+                </div>
+                <p className="text-[11px] text-[#6E6759] m-0 leading-relaxed font-normal">
+                  Living 17th-century seaside ramparts, lighthouse vistas, golden beaches & coastal cafes.
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-[#FCFAF5] border border-[#EFE8D6]">
+                <div className="text-xs font-black text-[#44403C] mb-1 flex items-center gap-1.5">
+                  <span>🐾</span> Wildlife & Preserves
+                </div>
+                <p className="text-[11px] text-[#6E6759] m-0 leading-relaxed font-normal">
+                  Ethical distance safari expeditions, Asian elephant encounters & tropical birdwatching.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 5. Daily Rhythm & Microclimate Timeline Breakdown */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-white/90 border border-[#EFE5D6] shadow-2xs space-y-3">
+            <span className="text-[10.5px] font-black uppercase tracking-[0.16em] text-[#8C5832] flex items-center gap-1.5">
+              <ThunderboltOutlined className="text-[#25A5FE]" />
+              Intelligent Daily Sightseeing Rhythm & Pacing
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-amber-50/60 to-white border border-amber-200/70">
+                <span className="text-[9.5px] font-black uppercase tracking-wider text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-md inline-block mb-1">
+                  08:30 – 12:00
+                </span>
+                <h5 className="text-[11.5px] font-black text-[#44403C] m-0 mb-1">🌅 Cool Morning Exploration</h5>
+                <p className="text-[11px] text-[#6E6759] m-0 leading-relaxed font-normal">
+                  High-exertion citadel climbs & sacred shrines timed for cool ambient morning microclimates.
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-gradient-to-br from-orange-50/60 to-white border border-orange-200/70">
+                <span className="text-[9.5px] font-black uppercase tracking-wider text-orange-800 bg-orange-100/80 px-2 py-0.5 rounded-md inline-block mb-1">
+                  12:30 – 14:00
+                </span>
+                <h5 className="text-[11.5px] font-black text-[#44403C] m-0 mb-1">🍽️ Authentic Ceylon Gastronomy</h5>
+                <p className="text-[11px] text-[#6E6759] m-0 leading-relaxed font-normal">
+                  Regional clay-pot heirloom curries, king coconut water & restful midday relaxation.
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-gradient-to-br from-sky-50/60 to-white border border-sky-200/70">
+                <span className="text-[9.5px] font-black uppercase tracking-wider text-sky-800 bg-sky-100/80 px-2 py-0.5 rounded-md inline-block mb-1">
+                  14:30 – 17:30
+                </span>
+                <h5 className="text-[11.5px] font-black text-[#44403C] m-0 mb-1">🌤️ Relaxed Afternoon Discovery</h5>
+                <p className="text-[11px] text-[#6E6759] m-0 leading-relaxed font-normal">
+                  Shaded botanical gardens, functional tea factories & sea-breeze cooled fortress walks.
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-gradient-to-br from-indigo-50/60 to-white border border-indigo-200/70">
+                <span className="text-[9.5px] font-black uppercase tracking-wider text-indigo-800 bg-indigo-100/80 px-2 py-0.5 rounded-md inline-block mb-1">
+                  18:00 – 20:30
+                </span>
+                <h5 className="text-[11.5px] font-black text-[#44403C] m-0 mb-1">🌆 Golden Hour & Evening Stroll</h5>
+                <p className="text-[11px] text-[#6E6759] m-0 leading-relaxed font-normal">
+                  Panoramic sunset ramparts, traditional cultural drum performances & starlit dining.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 6. All-Inclusive Inclusions & VIP Amenities Grid */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-50/50 via-white to-emerald-50/30 border border-emerald-200/80 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <span className="text-[10.5px] font-black uppercase tracking-[0.16em] text-emerald-900 flex items-center gap-1.5">
+                <SafetyCertificateOutlined className="text-emerald-600" />
+                Comprehensive Inclusions & Private Logistics Guarantee
+              </span>
+              <span className="text-[9.5px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-100/80 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                Zero Hidden Fees
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11.5px] font-medium text-slate-700">
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[9px] shrink-0">
+                  <CheckOutlined />
+                </span>
+                <span>Dedicated private air-conditioned vehicle for your entire trip</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[9px] shrink-0">
+                  <CheckOutlined />
+                </span>
+                <span>Licensed, English-speaking professional tourist chauffeur-guide</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[9px] shrink-0">
+                  <CheckOutlined />
+                </span>
+                <span>All expressway tolls, fuel, vehicle parking fees & driver allowances</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[9px] shrink-0">
+                  <CheckOutlined />
+                </span>
+                <span>Effortless door-to-door luggage handling & hotel lobby transfers</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[9px] shrink-0">
+                  <CheckOutlined />
+                </span>
+                <span>Vetted accommodations matching your comfort tier with daily breakfast</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[9px] shrink-0">
+                  <CheckOutlined />
+                </span>
+                <span>Flexible scenic roadside pauses for photography & king coconut water</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[9px] shrink-0">
+                  <CheckOutlined />
+                </span>
+                <span>24/7 dedicated local concierge and on-trip WhatsApp support</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[9px] shrink-0">
+                  <CheckOutlined />
+                </span>
+                <span>Verified fair-trade supplier pricing with 100% transparent contracting</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   /* ================= MAIN ================= */
   return (
     <div className="itc-root min-h-screen bg-[#FDFBF7] pb-24">
@@ -2131,13 +2636,13 @@ export default function InteractiveTourCustomizer() {
                               whileTap={{ scale: 0.95 }}
                               type="button"
                               onClick={() => setAiStartLocation(loc.name)}
-                              className={`px-3 py-1 text-[10px] font-bold rounded-full transition border ${
+                              className={`px-3 py-1 text-[10px] font-bold rounded-full transition border flex items-center gap-1 ${
                                 isActive
                                   ? "bg-gradient-to-r from-[#FF8B50] to-[#FF6B2C] text-white border-transparent shadow-sm shadow-[#FF8B50]/30"
                                   : "bg-white hover:bg-[#FFF1E9] border-[#F0E7D8] hover:border-[#FFD9C4] text-[#6E6759] hover:text-[#E05A1A]"
                               }`}
                             >
-                              📍 {loc.label}
+                              <EnvironmentOutlined className={isActive ? "text-white" : "text-[#FF8B50]"} /> {loc.label}
                             </motion.button>
                           );
                         })}
@@ -2292,7 +2797,7 @@ export default function InteractiveTourCustomizer() {
                                         : "bg-white text-[#5C5648] border-[#F0E7D8] hover:border-[#FFD9C4]"
                                     }`}
                                   >
-                                    <span>📍</span>
+                                    <EnvironmentOutlined className={isSelected ? "text-white" : "text-[#FF8B50]"} />
                                     <span>{destId}</span>
                                     {isLast && detectedDestinations.length > 1 && (
                                       <span className={`text-[8px] uppercase tracking-wider px-1.5 py-0.2 rounded-full ${isSelected ? "bg-white/30 text-white" : "bg-[#FF8B50]/15 text-[#E05A1A]"}`}>
@@ -2509,16 +3014,42 @@ export default function InteractiveTourCustomizer() {
           <AnimatePresence>
             {aiItinerary && (
               <motion.section initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }} className="itc-card">
-                <header className="itc-sec-head">
+                <header className="itc-sec-head flex-wrap gap-4">
                   <span className="itc-step-no">✦</span>
                   <div>
                     <h3 className="itc-sec-title">{t("aiItineraryReview")}</h3>
-                    <p className="itc-sec-hint">Tailored using Explainable AI (XAI) for Sri Lankan Eco-tourism</p>
+                    <p className="itc-sec-hint">Tailored using Explainable AI (XAI) for Sri Lankan Eco-tourism · Verified supplier rates & transparent reasoning</p>
                   </div>
-                  <RobotOutlined className="itc-sec-icon sky" />
+                  <div className="ml-auto flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (aiItinerary) {
+                          navigator.clipboard.writeText(aiItinerary);
+                          addToast("success", "Full itinerary copied to clipboard!");
+                        }
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl text-[11px] font-bold text-[#44403C] bg-white hover:bg-slate-50 border border-[#F0E7D8] hover:border-[#FF8B50] transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                      title="Copy full markdown itinerary to clipboard"
+                    >
+                      <span>📋</span>
+                      <span>Copy Itinerary</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => window.print()}
+                      className="px-3.5 py-1.5 rounded-xl text-[11px] font-bold text-[#44403C] bg-white hover:bg-slate-50 border border-[#F0E7D8] hover:border-[#25A5FE] transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                      title="Print or save as PDF"
+                    >
+                      <span>🖨️</span>
+                      <span>Print Summary</span>
+                    </button>
+                  </div>
                 </header>
 
                 <div className="itc-md text-[13px] text-[#6E6759] leading-relaxed">
+                  {renderOverallTripSummaryCard()}
+
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{
@@ -2526,106 +3057,373 @@ export default function InteractiveTourCustomizer() {
                         const text = getPlainText(children);
                         if (text.includes("🏝️") || text.includes("Ceylon") || text.includes("Sri Lanka")) {
                           return (
-                            <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#FFF3E9] via-[#FFF9F4] to-[#EAF6FF] border border-[#FFD9C4]/60 px-6 py-7 mb-6">
-                              <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-[#FF8B50]/20 blur-2xl" />
-                              <div className="absolute -left-8 -bottom-12 w-36 h-36 rounded-full bg-[#25A5FE]/15 blur-2xl" />
-                              <h2 className="itc-serif text-xl sm:text-2xl font-semibold tracking-tight flex items-center gap-2.5 mb-1.5 relative text-[#44403C]">{children}</h2>
-                              <p className="text-[11px] font-semibold flex items-center gap-1.5 relative text-[#8A8577]">
-                                <RobotOutlined className="text-[#25A5FE]" /> Tailored using Explainable AI (XAI) for Sri Lankan Eco-tourism
-                              </p>
-                            </div>
-                          );
-                        }
-                        if (text.includes("📍")) {
-                          const cleanText = text.replace(/^(📍\s*)?(Destination:\s*)?/i, "").trim();
-                          return (
-                            <div className="flex items-center gap-3 border-b border-[#F3EBDE] pb-3.5 mt-9 mb-4">
-                              <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#FF8B50]/10 text-[#FF8B50] text-base border border-[#FFD9C4]">📍</span>
-                              <div>
-                                <h3 className="text-[15px] font-black text-[#44403C] leading-tight m-0">{cleanText}</h3>
-                                <span className="text-[9px] font-black text-[#E05A1A] bg-[#FF8B50]/10 px-2 py-0.5 rounded tracking-wider uppercase">Route Destination</span>
+                            <div className="relative overflow-hidden rounded-[26px] bg-gradient-to-br from-[#FFF5EC] via-white to-[#F0F8FF] border border-[#FFD9C4] p-6 sm:p-8 mb-7 shadow-xs">
+                              <div className="absolute -right-12 -top-12 w-48 h-48 rounded-full bg-[#FF8B50]/15 blur-3xl pointer-events-none" />
+                              <div className="absolute -left-10 -bottom-12 w-44 h-44 rounded-full bg-[#25A5FE]/12 blur-3xl pointer-events-none" />
+                              <div className="relative z-10">
+                                <div className="flex items-center gap-2 flex-wrap mb-2.5">
+                                  <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[#E05A1A] bg-[#FF8B50]/15 border border-[#FF8B50]/25 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5">
+                                    <RobotOutlined /> AI Curated Master Plan
+                                  </span>
+                                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                                    ✓ 100% Explainable AI Verified
+                                  </span>
+                                  <span className="text-[10px] font-black uppercase tracking-wider text-sky-700 bg-sky-50 border border-sky-200 px-2.5 py-0.5 rounded-full">
+                                    🚗 Direct Highway Flow
+                                  </span>
+                                </div>
+                                <h2 className="itc-serif text-xl sm:text-2xl font-bold tracking-tight text-[#44403C] mb-2">{children}</h2>
+                                <p className="text-[11.5px] font-medium text-[#8A8577] m-0">
+                                  Custom-engineered route balancing heritage, biodiversity, highland scenic pacing, and verified supplier contracting.
+                                </p>
                               </div>
                             </div>
                           );
                         }
-                        return <h1 className="itc-serif text-lg font-semibold text-[#44403C] border-b border-[#F3EBDE] pb-1.5 mt-6 mb-3">{children}</h1>;
+                        if (text.includes("📍") || text.toLowerCase().includes("destination:")) {
+                          const cleanText = text.replace(/^(📍\s*)?(Destination:\s*)?/i, "").trim();
+                          const cityName = cleanText.split("(")[0].trim();
+                          const cityMapUrl = generateGoogleMapsPlaceUrl(cityName, "Sri Lanka");
+                          return (
+                            <div className="flex items-center justify-between flex-wrap gap-2.5 border-b border-[#F3EBDE] pb-3.5 mt-10 mb-4 bg-gradient-to-r from-[#FDFBF7] to-transparent p-3.5 rounded-2xl border-l-4 border-[#FF8B50]">
+                              <div className="flex items-center gap-3">
+                                <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF8B50] to-[#FF6B2C] text-white shadow-sm">
+                                  <EnvironmentOutlined className="text-white text-base" />
+                                </span>
+                                <div>
+                                  <h3 className="text-[15px] font-black text-[#44403C] leading-tight m-0">{cleanText}</h3>
+                                  <span className="text-[9.5px] font-black text-[#E05A1A] uppercase tracking-wider">Itinerary Stage</span>
+                                </div>
+                              </div>
+                              <a
+                                href={cityMapUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10.5px] font-bold text-slate-700 bg-white hover:bg-red-50 hover:text-[#EA4335] hover:border-red-200 border border-slate-200 transition shadow-2xs"
+                                title={`Explore ${cityName} on Google Maps`}
+                              >
+                                <EnvironmentOutlined className="text-[#EA4335]" />
+                                <span>Explore on Map ↗</span>
+                              </a>
+                            </div>
+                          );
+                        }
+                        return <h1 className="itc-serif text-lg font-semibold text-[#44403C] border-b border-[#F3EBDE] pb-2 mt-7 mb-3">{children}</h1>;
                       },
                       h2: ({ children }: { children?: React.ReactNode }) => {
                         const text = getPlainText(children);
-                        let icon: React.ReactNode = <CompassOutlined className="text-[#25A5FE]" />;
-                        if (text.includes("🏨")) icon = <span>🏨</span>;
-                        else if (text.includes("🗓️")) icon = <span>🗓️</span>;
-                        else if (text.includes("🚗")) icon = <span>🚗</span>;
+                        if (text.includes("📋") || text.includes("Overall Trip Summary") || text.includes("Master Journey Blueprint")) {
+                          return (
+                            <div className="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-[#FFF9F2] via-white to-[#F2F8FD] text-slate-800 shadow-sm border border-[#FFD9C4] mt-8 mb-6">
+                              <div className="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-[#F5E6D8]">
+                                <div className="flex items-center gap-3">
+                                  <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF8B50] to-[#E05A1A] text-white shadow-xs text-base">
+                                    📋
+                                  </span>
+                                  <div>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <h3 className="text-xs font-black uppercase tracking-[0.18em] text-[#44403C] m-0">
+                                        Overall Trip Summary & Master Journey Blueprint
+                                      </h3>
+                                      <span className="text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                                        <CheckOutlined className="text-[8.5px]" /> Complete Plan Verified
+                                      </span>
+                                    </div>
+                                    <span className="text-[11px] text-[#8A8577] font-medium">
+                                      Comprehensive island routing, pacing analysis, vehicle logistics, and journey inclusions
+                                    </span>
+                                  </div>
+                                </div>
+                                <span className="text-[9.5px] font-bold text-[#E05A1A] bg-[#FF8B50]/15 px-3 py-1 rounded-lg border border-[#FF8B50]/25">
+                                  Executive Blueprint
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        }
+                        if (text.includes("🧠") || text.includes("Explainable AI")) {
+                          return (
+                            <div className="relative overflow-hidden p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white shadow-sm border border-slate-700/60 flex items-center justify-between flex-wrap gap-3 mt-8 mb-5">
+                              <div className="flex items-center gap-3">
+                                <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 text-indigo-300">
+                                  <ThunderboltOutlined className="text-lg" />
+                                </span>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <h3 className="text-xs font-black uppercase tracking-[0.18em] text-white m-0">
+                                      Explainable AI (XAI) Decision Highlights
+                                    </h3>
+                                    <span className="text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-400/15 text-emerald-300 border border-emerald-400/30 flex items-center gap-1">
+                                      <CheckOutlined className="text-[8.5px]" /> Verified Fit
+                                    </span>
+                                  </div>
+                                  <span className="text-[11px] text-slate-300 font-medium">
+                                    Algorithmic reasoning behind route sequencing, pacing, and budget value
+                                  </span>
+                                </div>
+                              </div>
+                              <span className="text-[9.5px] font-bold text-slate-300 bg-white/10 px-3 py-1 rounded-lg border border-white/15">
+                                Full Transparency
+                              </span>
+                            </div>
+                          );
+                        }
+                        if (text.includes("🏨")) {
+                          return (
+                            <div className="flex items-center gap-2 mt-7 mb-3 pb-2 border-b border-[#F3EBDE]">
+                              <span className="w-7 h-7 rounded-lg bg-[#FF8B50]/15 text-[#FF8B50] flex items-center justify-center text-xs">🏨</span>
+                              <h3 className="text-[11.5px] font-black text-[#44403C] uppercase tracking-[0.18em] m-0">
+                                {text.replace(/^(🏨)\s*/, "").trim()}
+                              </h3>
+                            </div>
+                          );
+                        }
+                        if (text.includes("🗓️")) {
+                          return (
+                            <div className="flex items-center gap-2 mt-7 mb-3 pb-2 border-b border-[#F3EBDE]">
+                              <span className="w-7 h-7 rounded-lg bg-[#25A5FE]/15 text-[#25A5FE] flex items-center justify-center text-xs">🗓️</span>
+                              <h3 className="text-[11.5px] font-black text-[#44403C] uppercase tracking-[0.18em] m-0">
+                                {text.replace(/^(🗓️)\s*/, "").trim()}
+                              </h3>
+                            </div>
+                          );
+                        }
+                        if (text.includes("🚗")) {
+                          return (
+                            <div className="p-4 rounded-2xl bg-gradient-to-r from-sky-50 to-transparent border-l-4 border-[#25A5FE] flex items-center gap-3 mt-8 mb-4">
+                              <span className="text-xl">🚗</span>
+                              <div>
+                                <h3 className="text-xs font-black uppercase tracking-[0.16em] text-[#0E7DD6] m-0">
+                                  Travel & Transport Logistics
+                                </h3>
+                                <span className="text-[10px] text-sky-800 font-medium">Private air-conditioned vehicle, dedicated English-speaking chauffeur-guide & scenic routing</span>
+                              </div>
+                            </div>
+                          );
+                        }
+                        if (text.includes("🎒")) {
+                          return (
+                            <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-transparent border-l-4 border-emerald-500 flex items-center gap-3 mt-8 mb-4">
+                              <span className="text-xl">🎒</span>
+                              <div>
+                                <h3 className="text-xs font-black uppercase tracking-[0.16em] text-emerald-800 m-0">
+                                  Essential Travel Tips & Cultural Etiquette
+                                </h3>
+                                <span className="text-[10px] text-emerald-700 font-medium">Sacred temple attire protocols, photography etiquette, and local microclimate notes</span>
+                              </div>
+                            </div>
+                          );
+                        }
                         return (
-                          <h3 className="text-[11px] font-black text-[#8A8577] uppercase tracking-[0.18em] flex items-center gap-2 mt-7 mb-3 border-b border-[#F3EBDE] pb-2">
-                            {icon}<span>{text.replace(/^(🏨|🗓️|🚗)\s*/, "").trim()}</span>
+                          <h3 className="text-[11.5px] font-black text-[#8A8577] uppercase tracking-[0.18em] flex items-center gap-2 mt-7 mb-3 border-b border-[#F3EBDE] pb-2">
+                            <CompassOutlined className="text-[#25A5FE]" />
+                            <span>{text}</span>
                           </h3>
                         );
                       },
-                      h3: ({ children }: { children?: React.ReactNode }) => (
-                        <h4 className="text-xs font-black text-[#44403C] mt-5 mb-2 bg-gradient-to-r from-[#FFF3E9] to-transparent px-3 py-1.5 rounded-lg border-l-4 border-[#FF8B50]">{getPlainText(children)}</h4>
-                      ),
-                      h4: ({ children }: { children?: React.ReactNode }) => (
-                        <div className="text-xs font-black text-[#44403C] bg-[#F0F8FF] px-3 py-1.5 rounded-lg border border-[#25A5FE]/20 inline-flex items-center gap-1.5 mt-5 mb-2">
-                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#25A5FE]" />{getPlainText(children)}
-                        </div>
-                      ),
-                      li: ({ children, ...props }: { children?: React.ReactNode } & React.HTMLAttributes<HTMLLIElement>) => {
+                      h3: ({ children }: { children?: React.ReactNode }) => {
                         const text = getPlainText(children);
-                        if (text.includes("Why This Was Chosen:")) {
-                          const cleanText = text.replace(/^(💡\s*)?(Why This Was Chosen:\s*)?/i, "").trim();
+                        const isHotelItem = /^\d+\.\s+/.test(text);
+                        if (isHotelItem) {
+                          const cleanName = text.replace(/^\d+\.\s+/, "").replace(/\s*·.*$/, "").trim();
+                          const hotelMapUrl = generateGoogleMapsPlaceUrl(cleanName, "Sri Lanka");
                           return (
-                            <li className="list-none ml-0 my-2.5">
-                              <div className="p-3.5 bg-amber-50 border-l-4 border-amber-400 rounded-r-xl flex items-start gap-2.5">
-                                <span className="text-sm mt-0.5 select-none">💡</span>
-                                <div>
-                                  <span className="block text-[9px] font-black text-amber-600 uppercase tracking-wider mb-0.5">XAI Decision Rationale</span>
-                                  <p className="text-[11.5px] text-amber-800 font-semibold leading-relaxed m-0">{cleanText}</p>
+                            <div className="flex items-center justify-between flex-wrap gap-2 mt-5 mb-2.5 bg-gradient-to-r from-[#FFF3E9] to-transparent px-3.5 py-2 rounded-xl border-l-4 border-[#FF8B50]">
+                              <h4 className="text-xs font-black text-[#44403C] m-0 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#FF8B50]" />
+                                {text}
+                              </h4>
+                              <a
+                                href={hotelMapUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold text-slate-700 bg-white hover:bg-red-50 hover:text-[#EA4335] hover:border-red-200 border border-slate-200 transition shadow-2xs"
+                                title={`Open ${cleanName} in Google Maps`}
+                              >
+                                <EnvironmentOutlined className="text-[#EA4335]" />
+                                <span>Google Map ↗</span>
+                              </a>
+                            </div>
+                          );
+                        }
+                        return (
+                          <h4 className="text-xs font-black text-[#44403C] mt-5 mb-2 bg-gradient-to-r from-[#FFF3E9] to-transparent px-3 py-1.5 rounded-lg border-l-4 border-[#FF8B50]">
+                            {text}
+                          </h4>
+                        );
+                      },
+                      h4: ({ children }: { children?: React.ReactNode }) => {
+                        const text = getPlainText(children);
+                        return (
+                          <div className="w-full flex items-center justify-between flex-wrap gap-2 text-xs font-black text-[#44403C] bg-gradient-to-r from-[#F0F8FF] to-white px-3.5 py-2 rounded-xl border border-[#25A5FE]/25 mt-6 mb-3 shadow-2xs">
+                            <span className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-[#25A5FE] animate-pulse" />
+                              <span className="uppercase tracking-wide">{text}</span>
+                            </span>
+                            <span className="text-[9.5px] font-bold text-[#0E7DD6] bg-[#25A5FE]/10 px-2 py-0.5 rounded-md">
+                              Scheduled Stage
+                            </span>
+                          </div>
+                        );
+                      },
+                      blockquote: ({ children }: { children?: React.ReactNode }) => (
+                        <blockquote className="my-4 p-4 rounded-2xl bg-amber-50/80 border-l-4 border-amber-400 text-amber-900 text-xs font-semibold leading-relaxed shadow-2xs">
+                          {children}
+                        </blockquote>
+                      ),
+                      p: ({ children }: { children?: React.ReactNode }) => {
+                        const text = getPlainText(children).trim();
+                        const hasWhyOrXai = /(Why This Was Chosen|XAI Decision Rationale)\s*:/i.test(text);
+                        const hasVisit = /Visit\s*:/i.test(text);
+                        const hasRating = /Rating\s*:/i.test(text);
+                        const isCompound = (hasWhyOrXai && hasVisit) || (hasWhyOrXai && hasRating) || (hasVisit && hasRating);
+
+                        if (isCompound) {
+                          const seg = parseItinerarySegment(text);
+                          return renderSeparatedItineraryCards(seg);
+                        }
+                        if (hasWhyOrXai && !hasVisit && !hasRating) {
+                          const cleanRationale = text.replace(/^(?:💡\s*|🤖\s*)?(?:Why This Was Chosen|XAI Decision Rationale):\s*/i, "").trim();
+                          return renderSeparatedItineraryCards({ rationale: cleanRationale });
+                        }
+                        return <p className="my-2 leading-relaxed text-[#6E6759]">{children}</p>;
+                      },
+                      li: ({ children, ...props }: { children?: React.ReactNode } & React.HTMLAttributes<HTMLLIElement>) => {
+                        const directChildren: React.ReactNode[] = [];
+                        let nestedList: React.ReactNode = null;
+
+                        React.Children.forEach(children, (child) => {
+                          if (React.isValidElement(child) && (child.type === "ul" || child.type === "ol")) {
+                            nestedList = child;
+                          } else {
+                            directChildren.push(child);
+                          }
+                        });
+
+                        const directText = getPlainText(directChildren).trim();
+                        const hasWhyOrXai = /(Why This Was Chosen|XAI Decision Rationale)\s*:/i.test(directText);
+                        const hasVisit = /Visit\s*:/i.test(directText);
+                        const hasRating = /Rating\s*:/i.test(directText);
+                        const isCompound = (hasWhyOrXai && hasVisit) || (hasWhyOrXai && hasRating) || (hasVisit && hasRating);
+
+                        if (isCompound) {
+                          const seg = parseItinerarySegment(directText);
+                          return (
+                            <li className="list-none ml-0 my-3">
+                              {renderSeparatedItineraryCards(seg, nestedList)}
+                            </li>
+                          );
+                        }
+
+                        if (hasWhyOrXai) {
+                          const cleanRationale = directText.replace(/^(?:💡\s*|🤖\s*)?(?:Why This Was Chosen|XAI Decision Rationale):\s*/i, "").trim();
+                          return (
+                            <li className="list-none ml-0 my-3">
+                              {renderSeparatedItineraryCards({ rationale: cleanRationale }, nestedList)}
+                            </li>
+                          );
+                        }
+
+                        if (hasVisit || directText.startsWith("Visit:")) {
+                          const cleanVisit = directText.replace(/^Visit:\s*/i, "").trim();
+                          return (
+                            <li className="list-none ml-0 my-2">
+                              {renderSeparatedItineraryCards({ visit: cleanVisit }, nestedList)}
+                            </li>
+                          );
+                        }
+
+                        if (hasRating || directText.startsWith("Rating:")) {
+                          const cleanRating = directText.replace(/^Rating:\s*/i, "").trim();
+                          return (
+                            <li className="list-none ml-0 my-1">
+                              {renderSeparatedItineraryCards({ rating: cleanRating }, nestedList)}
+                            </li>
+                          );
+                        }
+
+                        if (directText.startsWith("Estimated Rate:") || directText.startsWith("Ticket Cost:")) {
+                          const cleanCost = directText.replace(/^(Estimated Rate:|Ticket Cost:)\s*/i, "").trim();
+                          return (
+                            <li className="list-none ml-0 my-1">
+                              {renderSeparatedItineraryCards({ ticketCost: cleanCost }, nestedList)}
+                            </li>
+                          );
+                        }
+
+                        if (directText.startsWith("Overview:") || directText.startsWith("Details:") || /^(?:Overview|Details)\s*:/i.test(directText)) {
+                          const cleanDetails = directText.replace(/^(Overview:|Details:)\s*/i, "").trim();
+                          return (
+                            <li className="list-none ml-0 my-1.5">
+                              {renderSeparatedItineraryCards({ details: cleanDetails }, nestedList)}
+                            </li>
+                          );
+                        }
+
+                        if (
+                          directText.includes("Morning") ||
+                          directText.includes("Midday") ||
+                          directText.includes("Afternoon") ||
+                          directText.includes("Evening") ||
+                          directText.includes("Golden Hour")
+                        ) {
+                          const seg = parseItinerarySegment(directText);
+                          if (seg.visit) {
+                            return (
+                              <li className="list-none ml-0 mt-4 mb-2">
+                                {renderSeparatedItineraryCards(seg, nestedList)}
+                              </li>
+                            );
+                          }
+                          const cleanTitle = directText.replace(/^[🌅🌤️🍽️🌆\s]+/, "").replace(/\*\*/g, "").trim();
+                          return (
+                            <li className="list-none ml-0 mt-4 mb-2">
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between flex-wrap gap-2 p-3 rounded-xl bg-gradient-to-r from-slate-100/90 via-white to-slate-50 border border-slate-200/90 text-slate-800 font-bold text-xs shadow-2xs">
+                                  <span className="uppercase tracking-wider text-[11px] font-extrabold text-[#44403C]">
+                                    {cleanTitle}
+                                  </span>
                                 </div>
+                                {nestedList}
                               </div>
                             </li>
                           );
                         }
-                        if (text.startsWith("Rating:")) {
+
+                        const featureEmojiMatch = directText.match(/^([🗺️⏱️🚗🏛️🚙🏨💰🌿⛅🎒📸☕💵])\s*(.*)/);
+                        if (featureEmojiMatch && !hasVisit && !hasRating && !hasWhyOrXai) {
+                          const emoji = featureEmojiMatch[1];
                           return (
-                            <li className="list-none ml-0 my-1 flex items-center gap-1.5 text-xs text-[#6E6759] font-semibold">
-                              <span className="text-[9px] font-bold text-[#B5AC9A] uppercase tracking-wider">Rating</span>
-                              <span className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded text-amber-600 border border-amber-100">
-                                <StarFilled className="text-amber-400 text-[10px]" />{text.replace("Rating:", "").trim()}
-                              </span>
+                            <li className="list-none ml-0 my-2.5">
+                              <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white border border-[#EFE8DC] shadow-2xs hover:border-[#FF8B50]/40 transition">
+                                <span className="text-base shrink-0 mt-0.5 p-1.5 rounded-lg bg-[#FAF6F0] leading-none">
+                                  {emoji}
+                                </span>
+                                <div className="text-[12.5px] leading-relaxed text-[#5C5648] flex-1">
+                                  {children}
+                                </div>
+                              </div>
+                              {nestedList}
                             </li>
                           );
                         }
-                        if (text.startsWith("Estimated Rate:")) {
-                          return (
-                            <li className="list-none ml-0 my-1 flex items-center gap-1.5 text-xs text-[#6E6759] font-semibold">
-                              <span className="text-[9px] font-bold text-[#B5AC9A] uppercase tracking-wider">Est. Cost</span>
-                              <span className="bg-emerald-50 border border-emerald-100 text-emerald-600 px-2 py-0.5 rounded font-bold">{text.replace("Estimated Rate:", "").trim()}</span>
-                            </li>
-                          );
-                        }
-                        if (text.startsWith("Overview:") || text.startsWith("Details:")) {
-                          const cleanText = text.replace(/^(Overview:|Details:)/, "").trim();
-                          return (
-                            <li className="list-none ml-0 my-1.5 text-xs text-[#6E6759] font-medium leading-relaxed">
-                              <span className="text-[9px] font-bold text-[#B5AC9A] uppercase tracking-wider block mb-0.5">{text.startsWith("Overview:") ? "Overview & Features" : "Description"}</span>
-                              <p className="bg-[#FDFBF7] p-2.5 rounded-lg border border-[#F3EBDE] text-[#6E6759] font-medium m-0">{cleanText}</p>
-                            </li>
-                          );
-                        }
-                        if (text.startsWith("Visit:")) {
-                          return (
-                            <li className="list-none ml-0 mt-4 mb-2 text-sm font-black text-[#44403C] flex items-center gap-2">
-                              <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-emerald-50 text-emerald-500 text-xs border border-emerald-100 select-none">🌴</span>
-                              <span>{text.replace("Visit:", "").trim()}</span>
-                            </li>
-                          );
-                        }
-                        return <li className="ml-4 list-disc text-[#6E6759] my-0.5" {...props}>{children}</li>;
+
+                        return (
+                          <li className="ml-4 list-disc text-[#6E6759] my-1 leading-relaxed" {...props}>
+                            {children}
+                          </li>
+                        );
                       },
                     }}
                   >
-                    {aiItinerary}
+                    {aiItinerary
+                      ? aiItinerary
+                          .replace(
+                            /## 📋 Overall Trip Summary[\s\S]*?(?=\n## 🧠|\n---|\n# Destination|$)/i,
+                            ""
+                          )
+                          .trim()
+                      : ""}
                   </ReactMarkdown>
                 </div>
               </motion.section>
@@ -2775,8 +3573,8 @@ export default function InteractiveTourCustomizer() {
                                     <div>
                                       <div className="w-full h-28 rounded-xl overflow-hidden mb-2.5 bg-[#F6F1E6] border border-[#F0E7D8]/70 relative group">
                                         <img src={displayImg} alt={hotel.name} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" onError={(e) => { (e.target as HTMLImageElement).src = defaultCityImg; }} />
-                                        <span className="absolute bottom-2 left-2 bg-slate-900/85 backdrop-blur-sm text-white text-[9px] font-black px-2 py-0.5 rounded-full border border-white/20">
-                                          📍 ~{distFromCenter} km from {city} center
+                                        <span className="absolute bottom-2 left-2 bg-slate-900/85 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-full border border-white/20 flex items-center gap-1">
+                                          <EnvironmentOutlined className="text-[#FF8B50] text-[9.5px]" /> ~{distFromCenter} km from {city} center
                                         </span>
                                         <a
                                           href={hotelMapUrl}
@@ -2861,8 +3659,8 @@ export default function InteractiveTourCustomizer() {
                                             setFailedPoiImages((prev) => ({ ...prev, [String(poi.id)]: true }));
                                           }}
                                         />
-                                        <span className="absolute bottom-2 left-2 bg-slate-900/85 backdrop-blur-sm text-white text-[9px] font-black px-2 py-0.5 rounded-full border border-white/20">
-                                          📍 ~{poiDistFromCenter} km from {city} center
+                                        <span className="absolute bottom-2 left-2 bg-slate-900/85 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-full border border-white/20 flex items-center gap-1">
+                                          <EnvironmentOutlined className="text-[#25A5FE] text-[9.5px]" /> ~{poiDistFromCenter} km from {city} center
                                         </span>
                                         <a
                                           href={poiMapUrl}
@@ -3040,8 +3838,8 @@ export default function InteractiveTourCustomizer() {
                 </span>
                 {activeLegs.length > 0 && (
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[11px] font-black text-[#E05A1A] bg-[#FFF1E9] border border-[#FFD9C4] px-3 py-1 rounded-full shadow-sm">
-                      📍 {t("totalRouteDistance", { distance: displayTotalKm })}
+                    <span className="text-[11px] font-black text-[#E05A1A] bg-[#FFF1E9] border border-[#FFD9C4] px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5">
+                      <EnvironmentOutlined className="text-[#E05A1A]" /> {t("totalRouteDistance", { distance: displayTotalKm })}
                     </span>
                     <span className="text-[11px] font-black text-[#0E7DD6] bg-[#EFF7FF] border border-[#BDE3FE] px-3 py-1 rounded-full shadow-sm">
                       ⏱️ {t("estDrivingTime", { time: displayTotalDriveLabel })}

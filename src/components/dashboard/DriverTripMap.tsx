@@ -10,6 +10,7 @@ import {
   CheckCircleOutlined,
   FullscreenOutlined,
   FullscreenExitOutlined,
+  EnvironmentOutlined,
 } from "@ant-design/icons";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -271,7 +272,7 @@ export default function DriverTripMap({
       const popup = L.popup({ className: "dtm-popup", maxWidth: 260 }).setContent(`
         <div style="font-family: 'Inter', sans-serif; padding: 4px; min-width: 180px;">
           <div style="font-size: 10px; font-weight: 800; color: ${primaryColor}; text-transform: uppercase; letter-spacing: 0.08em;">
-            ${isStart ? "🚩 Origin / Pickup" : isEnd ? "🏁 Final Destination" : `📍 Stop ${idx + 1}`}
+            ${isStart ? "🚩 Origin / Pickup" : isEnd ? "🏁 Final Destination" : `Stop ${idx + 1}`}
           </div>
           <div style="font-size: 14px; font-weight: 900; color: #0F172A; margin-top: 2px;">
             ${loc.name}
@@ -419,7 +420,7 @@ export default function DriverTripMap({
             }}
           >
             <span className="font-semibold text-slate-700 flex items-center gap-1">
-              📍 <strong style={{ color: primaryColor }} className="font-black">{totalKm} km</strong>
+              <EnvironmentOutlined style={{ color: primaryColor }} /> <strong style={{ color: primaryColor }} className="font-black">{totalKm} km</strong>
             </span>
             <span className="text-slate-300">•</span>
             <span className="font-semibold text-slate-700 flex items-center gap-1">
