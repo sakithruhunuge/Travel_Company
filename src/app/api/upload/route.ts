@@ -3,25 +3,12 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import fs from "fs/promises";
 import path from "path";
+import crypto from "crypto";
 
-// Note: Local storage strategy is designed for local development.
-// In production, this upload route should be replaced/extended to stream uploads to a cloud
-// object storage provider (such as Cloudflare R2, AWS S3, or Cloudinary).
 export async function POST(request: Request) {
   try {
-    // 1. Authenticate user
-    let session;
-    if (process.env.TEST_BYPASS_AUTH === "true") {
-      if (request.headers.get("x-test-unauthorized") === "true") {
-        session = null;
-      } else {
-        session = {
-          user: { name: "Test Admin", email: "admin@ceylon.com", role: "tenant_admin", tenantId: "6a505fc356877edee50d3f6c" }
-        };
-      }
-    } else {
-      session = await getServerSession(authOptions);
-    }
+    // 1. Authenticate user strictly - no bypasses permitted
+    const session = await getServerSession(authOptions);
 
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -63,11 +50,15 @@ export async function POST(request: Request) {
       );
     }
 
-    // 4. Save file to public/uploads
-    const ext = path.extname(file.name) || ".png";
-    // Sanitize extension to avoid potential security risks
-    const safeExt = allowedMimeTypes.includes(file.type) ? ext : ".png";
-    const filename = `logo-${tenantId}-${Date.now()}${safeExt}`;
+    // 4. Save file with cryptographically random unguessable UUID filename (mitigates timestamp enumeration)
+    const rawExt = path.extname(file.name).toLowerCase() || ".png";
+    const safeExt = [".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"].includes(rawExt)
+      ? rawExt
+      : ".png";
+    
+    // Generate secure randomized hash to prevent enumeration attacks
+    const randomToken = crypto.randomUUID();
+    const filename = `asset-${tenantId}-${randomToken}${safeExt}`;
     
     const uploadDir = path.join(process.cwd(), "public", "uploads");
     
