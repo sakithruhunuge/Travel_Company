@@ -15,6 +15,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const userRole = sessionUser.role;
+    const isAuthorized = [
+      "tenant_admin",
+      "marketing_officer",
+      "travel_agent",
+      "driver",
+      "tour_guide",
+      "super_admin",
+    ].includes(userRole);
+    if (!isAuthorized) {
+      return NextResponse.json(
+        { error: "Access Denied: Only assigned tour personnel or staff can log expenses" },
+        { status: 403 }
+      );
+    }
+
     const tenantId = await resolveTenantId(sessionUser);
     if (!tenantId) {
       return NextResponse.json({ error: "Tenant context missing" }, { status: 400 });

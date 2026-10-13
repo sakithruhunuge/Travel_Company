@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { dbConnect } from "@/lib/mongodb";
 import { tenantScope } from "@/lib/tenantContext";
+import mongoose from "mongoose";
 import { updateRequestPricing, parseRequestPricing, parseSpecifications } from "@/lib/pricingParser";
 import Tenant from "@/models/Tenant";
 import TravelRequest from "@/models/TravelRequest";
@@ -27,7 +28,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
     const tenantId = sessionUser.tenantId;
     const userRole = sessionUser.role;
 
-    const isAdmin = userRole === "tenant_admin" || userRole === "super_admin" || userRole === "admin";
+    const isSuperAdmin = userRole === "super_admin";
+    const isAdmin = userRole === "tenant_admin" || isSuperAdmin || userRole === "admin";
 
     if (!userId) {
       return NextResponse.json({ error: "Missing user identity" }, { status: 400 });
@@ -38,6 +40,10 @@ export async function GET(request: Request, { params }: { params: { id: string }
     }
 
     const query: Record<string, any> = { _id: params.id };
+    // Enforce tenant scoping unless platform SuperAdmin
+    if (!isSuperAdmin && tenantId) {
+      query.tenantId = new mongoose.Types.ObjectId(tenantId);
+    }
     if (!isAdmin) {
       query.userId = userId;
     }
@@ -66,7 +72,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const userRole = sessionUser.role;
     const tenantId = sessionUser.tenantId;
 
-    const isAdmin = userRole === "tenant_admin" || userRole === "super_admin" || userRole === "admin";
+    const isSuperAdmin = userRole === "super_admin";
+    const isAdmin = userRole === "tenant_admin" || isSuperAdmin || userRole === "admin";
 
     // Guard: Only Tenant / Super Admin is authorized to modify travel requests
     if (!isAdmin) {
@@ -91,8 +98,13 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ error: "Invalid status value" }, { status: 400 });
     }
 
+    // Tenant filter: ensure tenant admins can only modify their own tenant's requests
+    const tenantFilter: Record<string, any> = !isSuperAdmin && tenantId
+      ? { tenantId: new mongoose.Types.ObjectId(tenantId) }
+      : {};
+
     // Fetch existing request to update its pricing notes
-    const existingRequest = await TravelRequest.findOne({ _id: params.id });
+    const existingRequest = await TravelRequest.findOne({ _id: params.id, ...tenantFilter });
     if (!existingRequest) {
       return NextResponse.json({ error: "Request not found" }, { status: 404 });
     }
@@ -127,7 +139,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 
     const updatedRequest = (await TravelRequest.findOneAndUpdate(
-      { _id: params.id },
+      { _id: params.id, ...tenantFilter },
       updateFields,
       { new: true }
     )) as any;
