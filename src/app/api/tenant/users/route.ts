@@ -206,16 +206,6 @@ export async function DELETE(request: Request) {
 
     const sessionUser = session.user as any;
     const userRole = sessionUser.role;
-    const tenantId = await resolveTenantId(sessionUser);
-
-    if (userRole !== "tenant_admin" && userRole !== "super_admin") {
-      return NextResponse.json({ error: "Access Denied: Tenant Admin role required" }, { status: 403 });
-    }
-
-    if (!tenantId) {
-      return NextResponse.json({ error: "Tenant context is required" }, { status: 400 });
-    }
-
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
@@ -223,19 +213,67 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400 });
     }
 
-    if (id === sessionUser.id) {
-      return NextResponse.json({ error: "Cannot delete your own admin account" }, { status: 400 });
+    // Allow self-deletion for customers OR admin deletion of sub-accounts
+    const isSelfDeletion = id === sessionUser.id && sessionUser.role === "customer";
+    const isAdminDeletion = (userRole === "tenant_admin" || userRole === "super_admin") && id !== sessionUser.id;
+
+    if (!isSelfDeletion && !isAdminDeletion) {
+      return NextResponse.json(
+        { error: "Access Denied: Insufficient permissions to delete this account" },
+        { status: 403 }
+      );
+    }
+
+    const tenantId = await resolveTenantId(sessionUser);
+    if (!tenantId) {
+      return NextResponse.json({ error: "Tenant context is required" }, { status: 400 });
     }
 
     await dbConnect();
     const db = tenantScope(tenantId);
 
+    // 1. Fetch user prior to deletion for cascading anonymization
+    const userToScrub = await db.User.findOne({ _id: id });
+    if (!userToScrub) {
+      return NextResponse.json({ error: "User not found or already deleted" }, { status: 404 });
+    }
+
+    // 2. Cascade anonymization to TravelRequest collection (GDPR Art. 17 / Sri Lanka PDPA Sec. 13)
+    await db.TravelRequest.updateMany(
+      { $or: [{ userId: userToScrub._id }, { userEmail: userToScrub.email }] },
+      {
+        $set: {
+          userName: "[Anonymized Data Subject]",
+          userEmail: "erased@privacy-compliance.local",
+          specialRequests: "[Personal preferences and medical/dietary notes redacted per erasure request]",
+        },
+      }
+    );
+
+    // 3. Scrub DriverGuide record if user was a partner
+    await db.DriverGuide.updateMany(
+      { $or: [{ userId: userToScrub._id }, { email: userToScrub.email }] },
+      {
+        $set: {
+          name: "[Anonymized Partner]",
+          email: "erased-partner@privacy-compliance.local",
+          phone: "+00 000 000 0000",
+          notes: "[Redacted]",
+          documents: {},
+        },
+      }
+    );
+
+    // 4. Delete the User record
     const deleted = await db.User.deleteOne({ _id: id });
     if (!deleted.deletedCount) {
       return NextResponse.json({ error: "User not found or already deleted" }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, message: "User deleted successfully" });
+    return NextResponse.json({
+      success: true,
+      message: "User account and all associated personal identifiers erased successfully in compliance with data privacy standards",
+    });
   } catch (error: any) {
     console.error("Failed to delete tenant user:", error);
     return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
