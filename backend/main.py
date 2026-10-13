@@ -102,13 +102,17 @@ if FastAPI is not None:
         description="Exposes 3-Agent Travel Itinerary Generation Pipeline over REST HTTP"
     )
 
-    # Enable CORS for Next.js app
+    # Enable CORS for Next.js app with specific allowed origins
     if CORSMiddleware is not None:
+        allowed_origins = os.environ.get(
+            "ALLOWED_ORIGINS",
+            "http://localhost:3000,http://127.0.0.1:3000,https://ceylon.travelcompany.com"
+        ).split(",")
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=["*"],
+            allow_origins=[o.strip() for o in allowed_origins if o.strip()],
             allow_credentials=True,
-            allow_methods=["*"],
+            allow_methods=["GET", "POST", "OPTIONS"],
             allow_headers=["*"],
         )
 else:
@@ -173,7 +177,7 @@ if app is not None:
             "user_id": payload.user_id,
         }
 
-        logger.info(f"Received itinerary generation request: dest='{payload.destination}', prompt='{user_prompt}'")
+        logger.info(f"Received itinerary generation request: dest='{payload.destination}', prompt_len={len(user_prompt)}")
 
         # Step 1: Execute Agent 1 (Intake & Triage)
         try:

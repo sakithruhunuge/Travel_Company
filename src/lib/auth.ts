@@ -103,29 +103,17 @@ export const authOptions: NextAuthOptions = {
 
         // 1. Resolve SuperAdmin context if authenticated under the Admin portal
         if (tenant.isAdmin) {
-          if (process.env.NODE_ENV === "development") {
-            const adminCount = await SuperAdmin.countDocuments();
-            if (adminCount === 0) {
-              const salt = await bcrypt.genSalt(10);
-              const hashedPassword = await bcrypt.hash("superadminpassword", salt);
-              await SuperAdmin.create({
-                name: "System Super Admin",
-                email: "admin@travelcompany.com",
-                password: hashedPassword,
-              });
-            }
-          }
           const superAdmin = await SuperAdmin.findOne({
             email: credentials.email.toLowerCase().trim(),
           });
 
           if (!superAdmin) {
-            throw new Error("No super administrator found with this email");
+            throw new Error("Invalid email or password");
           }
 
           const isValidPassword = await bcrypt.compare(credentials.password, superAdmin.password || "");
           if (!isValidPassword) {
-            throw new Error("Invalid password");
+            throw new Error("Invalid email or password");
           }
 
           return {
@@ -146,7 +134,7 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user) {
-          throw new Error("No user found with this email under this portal");
+          throw new Error("Invalid email or password");
         }
 
         if (user.provider !== "credentials" || !user.password) {
@@ -163,7 +151,7 @@ export const authOptions: NextAuthOptions = {
 
         const isValidPassword = await bcrypt.compare(credentials.password, user.password);
         if (!isValidPassword) {
-          throw new Error("Invalid password");
+          throw new Error("Invalid email or password");
         }
 
         return {
