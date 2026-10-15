@@ -370,6 +370,7 @@ def extract_budget_tier(text: str, fallback: Optional[str] = None) -> str:
 def extract_duration_days(text: str, fallback: Optional[Any] = None) -> int:
     """
     Extracts integer duration_days, strictly clamped between 1 and 30 days.
+    Supports digits with hyphens (e.g., 4-day, 4 days) and word-based numbers (e.g., four days).
     """
     if fallback is not None:
         try:
@@ -380,7 +381,7 @@ def extract_duration_days(text: str, fallback: Optional[Any] = None) -> int:
             pass
 
     if text and isinstance(text, str):
-        match = re.search(r"\b(\d+)\s*(?:day|days|night|nights)\b", text, re.I)
+        match = re.search(r"\b(\d+)\s*[-\s]*\s*(?:day|days|night|nights)\b", text, re.I)
         if match:
             try:
                 val = int(match.group(1))
@@ -388,6 +389,14 @@ def extract_duration_days(text: str, fallback: Optional[Any] = None) -> int:
                     return min(30, max(1, val))
             except ValueError:
                 pass
+
+        word_nums = {
+            "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7,
+            "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14
+        }
+        for word, num in word_nums.items():
+            if re.search(r"\b" + word + r"\s*[-\s]*\s*(?:day|days|night|nights)\b", text, re.I):
+                return num
 
     return 3
 
