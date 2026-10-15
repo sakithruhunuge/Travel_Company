@@ -123,7 +123,7 @@ except Exception:
                 if os.path.exists("/.dockerenv"):
                     uri = uri.replace("localhost", "mongodb").replace("127.0.0.1", "mongodb")
                 try:
-                    self.client = MongoClient(uri, serverSelectionTimeoutMS=5000)
+                    self.client = MongoClient(uri, serverSelectionTimeoutMS=1000)
                     self.client.admin.command('ping')
                     self.db = self.client.get_database()
                 except Exception as conn_err:
@@ -1115,8 +1115,51 @@ def search_travel_database(
     mongo = MongoDBClient()
 
     if mongo.db is None:
-        logger.error("Database connection unavailable for search query.")
-        return json.dumps({"error": "Database connection unavailable", "hotels": [], "poi": []}, indent=2)
+        logger.warning(f"Database connection unavailable; activating curated fallback catalog for '{destination}'...")
+        dest_key = destination.strip().lower() if destination else ""
+        tier_lower = budget_tier.strip().lower() if budget_tier else None
+
+        city_fb_hotels = []
+        for key, fb_hotels in DESTINATION_FALLBACK_HOTELS.items():
+            if key in dest_key or dest_key in key:
+                city_fb_hotels = fb_hotels
+                break
+        if not city_fb_hotels and "colombo" in DESTINATION_FALLBACK_HOTELS:
+            city_fb_hotels = DESTINATION_FALLBACK_HOTELS["colombo"]
+
+        # Filter fallback hotels according to budget policy
+        if tier_lower in ["luxury", "5-star", "5 star"]:
+            matching_hotels = [h for h in city_fb_hotels if h.get("star_rating") == 5]
+            if not matching_hotels:
+                matching_hotels = [h for h in city_fb_hotels if h.get("star_rating") == 4]
+        elif tier_lower in ["budget", "3-star", "3 star"]:
+            matching_hotels = [h for h in city_fb_hotels if h.get("star_rating", 3) <= 3 and "5-star" not in h.get("price_tier", "").lower()]
+        elif tier_lower in ["standard", "4-star", "4 star"]:
+            matching_hotels = [h for h in city_fb_hotels if h.get("star_rating") == 4]
+            if not matching_hotels:
+                matching_hotels = city_fb_hotels
+        else:
+            matching_hotels = city_fb_hotels
+
+        city_fb_pois = []
+        for key, fb_items in DESTINATION_FALLBACK_POIS.items():
+            if key in dest_key or dest_key in key:
+                city_fb_pois.extend(fb_items)
+        if not city_fb_pois and "colombo" in DESTINATION_FALLBACK_POIS:
+            city_fb_pois.extend(DESTINATION_FALLBACK_POIS["colombo"])
+
+        result_payload = {
+            "destination": destination,
+            "budget_tier": budget_tier,
+            "vibe_query": vibe_query,
+            "total_hotels_matched": len(matching_hotels[:limit]),
+            "total_poi_matched": len(city_fb_pois[:limit]),
+            "hotels": matching_hotels[:limit],
+            "poi": city_fb_pois[:limit],
+            "fallback_active": True
+        }
+        return json.dumps(result_payload, indent=2, default=str)
+
 
     model = get_model()
     
