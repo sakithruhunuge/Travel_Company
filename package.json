@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "test:security": "python scripts/test_security_audit.py",
-    "test:privacy": "python scripts/test_privacy_audit.py"
+    "test:privacy": "python scripts/test_privacy_audit.py",
+    "test:responsible-ai": "python scripts/test_responsible_ai_audit.py",
+    "test:all": "python scripts/test_security_audit.py && python scripts/test_privacy_audit.py && python scripts/test_responsible_ai_audit.py"
   },
   "dependencies": {
     "@ant-design/icons": "^6.3.2",
