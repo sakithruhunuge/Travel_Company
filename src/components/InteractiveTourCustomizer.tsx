@@ -3414,6 +3414,39 @@ export default function InteractiveTourCustomizer() {
                           </li>
                         );
                       },
+                      img: ({ src, alt }: { src?: string; alt?: string }) => {
+                        // Whitelist trusted image sources only (internal / Google / Unsplash / Mapillary)
+                        const isSafeSrc =
+                          src?.startsWith("/") ||
+                          src?.startsWith("https://images.unsplash.com") ||
+                          src?.startsWith("https://lh3.googleusercontent.com") ||
+                          src?.startsWith("https://images.mapillary.com");
+                        if (!isSafeSrc) {
+                          return null; // Suppress unauthorized external tracking beacons / exfiltration images
+                        }
+                        return <img src={src} alt={alt || "Itinerary photo"} className="rounded-xl max-h-64 object-cover my-2" loading="lazy" />;
+                      },
+                      a: ({ href, children }: { href?: string; children?: React.ReactNode }) => {
+                        // Whitelist Google Maps search links and relative routes only
+                        const isSafeHref =
+                          href?.startsWith("https://www.google.com/maps") ||
+                          href?.startsWith("https://maps.google.com") ||
+                          href?.startsWith("/");
+                        if (!isSafeHref) {
+                          // Render as safe text, avoid arbitrary external navigation
+                          return <span className="font-semibold text-[#44403C] underline underline-offset-2">{children}</span>;
+                        }
+                        return (
+                          <a
+                            href={href}
+                            target="_blank"
+                            rel="noopener noreferrer nofollow"
+                            className="text-[#25A5FE] hover:text-[#0E7DD6] font-semibold underline underline-offset-2 transition"
+                          >
+                            {children}
+                          </a>
+                        );
+                      },
                     }}
                   >
                     {aiItinerary
