@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:security": "python scripts/test_security_audit.py"
   },
   "dependencies": {
     "@ant-design/icons": "^6.3.2",
