@@ -80,8 +80,17 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     const sessionUser = session?.user as any;
-    const tenantId = await resolveTenantId(sessionUser);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Unauthorized: Sign in required" }, { status: 401 });
+    }
 
+    const isStaff = ["tenant_admin", "marketing_officer", "travel_agent", "super_admin"].includes(sessionUser.role);
+    const isCrew = ["driver", "tour_guide"].includes(sessionUser.role);
+    if (!isStaff && !isCrew) {
+      return NextResponse.json({ error: "Access Denied: Staff or Crew role required" }, { status: 403 });
+    }
+
+    const tenantId = await resolveTenantId(sessionUser);
     if (!tenantId) {
       return NextResponse.json({ error: "Tenant context missing" }, { status: 400 });
     }
@@ -89,14 +98,21 @@ export async function GET() {
     await dbConnect();
     const db = tenantScope(tenantId);
 
-    let crew = await db.DriverGuide.find({}).lean();
-
-    // Auto-seed if empty for this tenant
-    if (!crew || crew.length === 0) {
-      const seeded: any = await db.DriverGuide.create(DEFAULT_CREW);
-      crew = Array.isArray(seeded)
-        ? seeded.map((doc: any) => (doc.toObject ? doc.toObject() : doc))
-        : [seeded];
+    let crew;
+    if (isStaff) {
+      crew = await db.DriverGuide.find({}).lean();
+      // Auto-seed if empty for this tenant
+      if (!crew || crew.length === 0) {
+        const seeded: any = await db.DriverGuide.create(DEFAULT_CREW);
+        crew = Array.isArray(seeded)
+          ? seeded.map((doc: any) => (doc.toObject ? doc.toObject() : doc))
+          : [seeded];
+      }
+    } else {
+      // Crew members can only see their own profile
+      crew = await db.DriverGuide.find({
+        $or: [{ userId: sessionUser.id }, { email: sessionUser.email }],
+      }).lean();
     }
 
     return NextResponse.json({
@@ -114,8 +130,16 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     const sessionUser = session?.user as any;
-    const tenantId = await resolveTenantId(sessionUser);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Unauthorized: Sign in required" }, { status: 401 });
+    }
 
+    const isStaff = ["tenant_admin", "marketing_officer", "travel_agent", "super_admin"].includes(sessionUser.role);
+    if (!isStaff) {
+      return NextResponse.json({ error: "Access Denied: Staff privileges required to add crew" }, { status: 403 });
+    }
+
+    const tenantId = await resolveTenantId(sessionUser);
     if (!tenantId) {
       return NextResponse.json({ error: "Tenant context missing" }, { status: 400 });
     }
@@ -141,8 +165,17 @@ export async function PATCH(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     const sessionUser = session?.user as any;
-    const tenantId = await resolveTenantId(sessionUser);
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Unauthorized: Sign in required" }, { status: 401 });
+    }
 
+    const isStaff = ["tenant_admin", "marketing_officer", "travel_agent", "super_admin"].includes(sessionUser.role);
+    const isCrew = ["driver", "tour_guide"].includes(sessionUser.role);
+    if (!isStaff && !isCrew) {
+      return NextResponse.json({ error: "Access Denied" }, { status: 403 });
+    }
+
+    const tenantId = await resolveTenantId(sessionUser);
     if (!tenantId) {
       return NextResponse.json({ error: "Tenant context missing" }, { status: 400 });
     }
@@ -154,10 +187,11 @@ export async function PATCH(request: Request) {
     const { id, status, phone, notes } = body;
 
     let targetFilter: any = {};
-    if (id) {
-      targetFilter._id = id;
-    } else if (sessionUser?.id) {
+    if (!isStaff) {
+      // Crew can only update their own status
       targetFilter.$or = [{ userId: sessionUser.id }, { email: sessionUser.email }];
+    } else if (id) {
+      targetFilter._id = id;
     } else {
       return NextResponse.json({ error: "Identification required" }, { status: 400 });
     }
@@ -167,13 +201,17 @@ export async function PATCH(request: Request) {
       updateFields.status = status;
     }
     if (phone) updateFields.phone = phone.trim();
-    if (notes !== undefined) updateFields.notes = notes;
+    if (notes !== undefined && isStaff) updateFields.notes = notes; // Only staff can write internal notes
 
     const updated = await db.DriverGuide.findOneAndUpdate(
       targetFilter,
       { $set: updateFields },
       { new: true }
     );
+
+    if (!updated) {
+      return NextResponse.json({ error: "Crew member not found or unauthorized" }, { status: 404 });
+    }
 
     return NextResponse.json({
       success: true,

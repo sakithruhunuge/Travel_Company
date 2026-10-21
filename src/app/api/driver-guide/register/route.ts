@@ -82,22 +82,14 @@ export async function POST(request: Request) {
     // 2. Tenant Scoping
     const db = tenantScope(tenant.id!);
 
-    // Check if user already exists
+    // Check if user or crew profile already exists
     const existingUser = await db.User.findOne({ email: formattedEmail });
-    if (existingUser) {
-      return NextResponse.json(
-        { error: "An account with this email address already exists. Please log in or use another email." },
-        { status: 409 }
-      );
-    }
-
-    // Check if driver/guide record already exists with email or license
     const existingCrew = await db.DriverGuide.findOne({
       $or: [{ email: formattedEmail }, { licenseNumber: licenseNumber.trim() }],
     });
-    if (existingCrew) {
+    if (existingUser || existingCrew) {
       return NextResponse.json(
-        { error: "A crew profile with this email or license number is already registered." },
+        { error: "Unable to complete registration with the provided details. If you already have an account, please sign in or contact partner support." },
         { status: 409 }
       );
     }
