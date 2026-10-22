@@ -39,16 +39,27 @@ export async function POST(request: Request) {
         const db = tenantScope(tenantId);
         booking = await db.TravelRequest.findOne({ _id: bookingId });
       } catch (err) {
-        console.warn("[EndJourney] Scoped lookup fallback:", err);
+        console.warn("[EndJourney] Scoped lookup error:", err);
       }
     }
 
     if (!booking) {
-      booking = await TravelRequest.findById(bookingId);
+      return NextResponse.json({ error: "Tour record not found" }, { status: 404 });
     }
 
-    if (!booking) {
-      return NextResponse.json({ error: "Tour record not found" }, { status: 404 });
+    // Authorization: User must be the assigned driver/guide OR tenant staff
+    const isStaff = ["tenant_admin", "marketing_officer", "travel_agent", "super_admin"].includes(sessionUser.role);
+    const isAssignedCrew =
+      (booking.driver?.email && booking.driver.email.toLowerCase() === (sessionUser.email || "").toLowerCase()) ||
+      (booking.tourGuide?.email && booking.tourGuide.email.toLowerCase() === (sessionUser.email || "").toLowerCase()) ||
+      (booking.driver?.name && booking.driver.name.toLowerCase() === (sessionUser.name || "").toLowerCase()) ||
+      (booking.tourGuide?.name && booking.tourGuide.name.toLowerCase() === (sessionUser.name || "").toLowerCase());
+
+    if (!isStaff && !isAssignedCrew) {
+      return NextResponse.json(
+        { error: "Access Denied: You are not the assigned driver or authorized staff for this tour" },
+        { status: 403 }
+      );
     }
 
     // Mark status as completed and record ending metadata
@@ -97,7 +108,9 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       message: "Journey successfully ended and saved in history.",
-      tour: booking,
+      tourId: booking.tourId || booking._id,
+      status: booking.status,
+      completedAt: booking.completedAt,
     });
   } catch (error: any) {
     console.error("End journey API error:", error);
