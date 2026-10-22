@@ -58,13 +58,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON request payload" }, { status: 400 });
   }
 
-  // Validate request field boundaries
+function scrubPiiFromPrompt(input: string): string {
+  if (!input || typeof input !== "string") return input;
+  let text = input;
+  // Redact email addresses
+  text = text.replace(/[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+/g, "[REDACTED_EMAIL]");
+  // Redact phone numbers (+94... or international formatted numbers)
+  text = text.replace(/(?:\+\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}/g, "[REDACTED_PHONE]");
+  // Redact Sri Lankan NIC or passport style patterns
+  text = text.replace(/\b\d{9}[vVxX]\b|\b\d{12}\b|\b[A-Z]\d{7,8}\b/g, "[REDACTED_ID]");
+  return text;
+}
+
+  // Validate request field boundaries and scrub unnecessary PII
   if (body && typeof body === "object") {
-    if (typeof body.prompt === "string" && body.prompt.length > 2000) {
-      body.prompt = body.prompt.slice(0, 2000);
+    if (typeof body.prompt === "string") {
+      const trimmed = body.prompt.length > 2000 ? body.prompt.slice(0, 2000) : body.prompt;
+      body.prompt = scrubPiiFromPrompt(trimmed);
     }
-    if (typeof body.user_prompt === "string" && body.user_prompt.length > 2000) {
-      body.user_prompt = body.user_prompt.slice(0, 2000);
+    if (typeof body.user_prompt === "string") {
+      const trimmed = body.user_prompt.length > 2000 ? body.user_prompt.slice(0, 2000) : body.user_prompt;
+      body.user_prompt = scrubPiiFromPrompt(trimmed);
     }
     if (body.duration_days) {
       const dur = Number(body.duration_days);

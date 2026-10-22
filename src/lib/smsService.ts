@@ -44,10 +44,16 @@ export async function sendSMS({ to, body }: SendSMSParams): Promise<{ success: b
     }
   }
 
+function maskPhoneNumber(phone: string): string {
+  if (!phone || phone.length < 6) return "***";
+  const clean = phone.trim();
+  return clean.slice(0, 4) + " *** " + clean.slice(-2);
+}
+
   // Graceful Fallback for Dev / Missing Twilio Credentials
   console.log("--------------------------------------------------");
-  console.log(`📱 [SMSService Mock] Direct SMS to: ${to}`);
-  console.log(`Message: ${body}`);
+  console.log(`📱 [SMSService Mock] Direct SMS to: ${maskPhoneNumber(to)}`);
+  console.log(`Message: [SMS Notification Body Dispatched]`);
   console.log("--------------------------------------------------");
   return { success: true, messageId: `mock-sms-${Date.now()}`, mock: true };
 }

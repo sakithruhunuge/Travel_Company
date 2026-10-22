@@ -196,12 +196,11 @@ ${jsonBlock}`;
     );
   } catch (error) {
     console.error("Database or API route error:", error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
       {
         success: false,
         error: "Internal Server Error",
-        details: errorMessage,
+        message: "An unexpected error occurred while processing your travel request. Please try again later.",
       },
       { status: 500 }
     );
