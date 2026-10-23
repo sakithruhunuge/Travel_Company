@@ -863,7 +863,7 @@ def generate_explainable_itinerary(agent2_output: Union[Dict[str, Any], str]) ->
                 "prompt": prompt_content,
                 "stream": False
             },
-            timeout=3
+            timeout=1
         )
         if resp.status_code == 200:
             res_json = resp.json()
