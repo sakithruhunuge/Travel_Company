@@ -43,6 +43,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Tour booking not found" }, { status: 404 });
     }
 
+    // Ownership & Authorization verification
+    const isOwner =
+      (sessionUser.id && booking.userId && sessionUser.id.toString() === booking.userId.toString()) ||
+      (sessionUser.email && booking.userEmail && sessionUser.email.toLowerCase() === booking.userEmail.toLowerCase());
+    const isStaff = ["tenant_admin", "marketing_officer", "travel_agent", "super_admin"].includes(sessionUser.role);
+
+    if (!isOwner && !isStaff) {
+      return NextResponse.json(
+        { error: "Access Denied: You do not have permission to confirm this booking" },
+        { status: 403 }
+      );
+    }
+
     // If already has tourId, don't re-generate
     const tourId = booking.tourId || generateTourId();
 
