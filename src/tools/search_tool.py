@@ -1258,7 +1258,7 @@ def search_travel_database(
         source_id = doc.get("source_id", "")
         doc_id = str(doc.get("_id", ""))
         
-        # Boost selected place IDs (checking both source_id and MongoDB _id string)
+        # Boost selected place IDs with +1.0 additive score (checking both source_id and MongoDB _id string)
         boost = 1.0 if (source_id in selected_ids_set or doc_id in selected_ids_set) else 0.0
         total_score = sim + boost
 
@@ -1385,7 +1385,7 @@ def search_travel_database(
         source_id = doc.get("source_id", "")
         doc_id = str(doc.get("_id", ""))
 
-        # Boost selected place IDs (checking both source_id and MongoDB _id string)
+        # Boost selected place IDs with +1.0 additive score (checking both source_id and MongoDB _id string)
         boost = 1.0 if (source_id in selected_ids_set or doc_id in selected_ids_set) else 0.0
         total_score = sim + boost
 
