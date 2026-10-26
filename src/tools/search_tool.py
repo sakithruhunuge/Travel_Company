@@ -194,6 +194,7 @@ REGION_ALIASES = {
 def is_city_match(doc: dict, target_dest: str) -> bool:
     """
     Strict location matcher preventing cross-city leakage while accounting for regional sub-town aliases.
+    Ensures zero cross-city document pollution by evaluating canonical cities, districts, and REGION_ALIASES.
     """
     if not target_dest:
         return True
