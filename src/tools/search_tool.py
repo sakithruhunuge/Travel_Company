@@ -1195,7 +1195,7 @@ def search_travel_database(
             {"avg_nightly": {"$lt": 50.0}},
             {"star_rating": {"$lte": 3}}
         ]
-        # Strictly exclude luxury or 5-star hotels when user suggests budget
+        # Strictly exclude luxury or 5-star hotels when user suggests budget to prevent socioeconomic price creep
         hotel_query["price_tier"] = {"$not": {"$regex": "luxury|5-star", "$options": "i"}}
     elif tier_lower in ["luxury", "5-star", "5 star"]:
         hotel_query["$or"] = [
