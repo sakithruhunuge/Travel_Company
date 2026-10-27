@@ -65,6 +65,33 @@ except Exception:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
     logger = logging.getLogger("explainer_agent")
 
+try:
+    intake_mod = importlib.import_module("src.agents.intake_agent")
+    PROMPT_INJECTION_PATTERNS = getattr(intake_mod, "PROMPT_INJECTION_PATTERNS", [])
+except Exception:
+    PROMPT_INJECTION_PATTERNS = []
+
+def sanitize_document_text(text: str, dest: str = "") -> str:
+    """
+    Sanitizes retrieved hotel/POI document descriptions to eliminate indirect prompt
+    injections, XML/HTML injection tags, and malicious instruction payloads.
+    """
+    if not text or not isinstance(text, str):
+        return ""
+    desc = text
+    desc = re.sub(r"<!--.*?-->", "", desc, flags=re.DOTALL)
+    desc = re.sub(r"<script.*?>.*?</script>", "", desc, flags=re.DOTALL | re.I)
+    desc = re.sub(r"<style.*?>.*?</style>", "", desc, flags=re.DOTALL | re.I)
+    desc = re.sub(r"<(instruction|system|prompt|admin|untrusted_context)[^>]*>.*?</\1>", "", desc, flags=re.DOTALL | re.I)
+    desc = re.sub(r"<\/?(untrusted_context|system|prompt|instruction|context|admin)[^>]*>", "", desc, flags=re.I)
+    desc = re.sub(r"\[(instruction|system|prompt|admin|override).*?\]", "", desc, flags=re.I)
+    if PROMPT_INJECTION_PATTERNS:
+        for pat in PROMPT_INJECTION_PATTERNS:
+            desc = re.sub(pat, "", desc, flags=re.I)
+    if dest and dest.lower() != "colombo":
+        desc = desc.replace("in Colombo", f"in {dest}").replace("in colombo", f"in {dest}")
+    return re.sub(r"\s+", " ", desc).strip()
+
 SYSTEM_PROMPT_AGENT_3 = """You are Agent 3: The Premier Ceylon Travel Expert & Explainable AI (XAI) Itinerary Architect.
 Your mission is to craft an exceptionally detailed, understandable, user-friendly, attractive, and professional Sri Lanka travel itinerary.
 
