@@ -285,7 +285,7 @@ def extract_suggested_places_by_destination(agent2_data: Dict[str, Any]) -> Dict
                 "price_tier": h.get("price_tier", budget),
                 "primary_image": primary_image,
                 "google_maps_url": f"https://www.google.com/maps/search/?api=1&query={hotel_query}",
-                "description": h.get("description", f"Recommended accommodation in {dest}.").replace("in Colombo", f"in {dest}").replace("in colombo", f"in {dest}") if dest.lower() != "colombo" else h.get("description", "Recommended accommodation in Colombo.")
+                "description": sanitize_document_text(h.get("description", f"Recommended accommodation in {dest}."), dest=dest)
             })
 
         formatted_poi = []
