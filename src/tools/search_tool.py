@@ -128,6 +128,11 @@ except Exception:
                     self.db = self.client.get_database()
                 except Exception as conn_err:
                     logger.error(f"MongoDBClient connection failed to URI: {uri}. Error: {conn_err}")
+                    if hasattr(self, 'client') and self.client:
+                        try:
+                            self.client.close()
+                        except Exception:
+                            pass
                     self.client = None
                     self.db = None
             def close(self):
@@ -194,7 +199,6 @@ REGION_ALIASES = {
 def is_city_match(doc: dict, target_dest: str) -> bool:
     """
     Strict location matcher preventing cross-city leakage while accounting for regional sub-town aliases.
-    Ensures zero cross-city document pollution by evaluating canonical cities, districts, and REGION_ALIASES.
     """
     if not target_dest:
         return True
@@ -1116,6 +1120,7 @@ def search_travel_database(
     mongo = MongoDBClient()
 
     if mongo.db is None:
+        mongo.close()
         logger.warning(f"Database connection unavailable; activating curated fallback catalog for '{destination}'...")
         dest_key = destination.strip().lower() if destination else ""
         tier_lower = budget_tier.strip().lower() if budget_tier else None
@@ -1195,7 +1200,7 @@ def search_travel_database(
             {"avg_nightly": {"$lt": 50.0}},
             {"star_rating": {"$lte": 3}}
         ]
-        # Strictly exclude luxury or 5-star hotels when user suggests budget to prevent socioeconomic price creep
+        # Strictly exclude luxury or 5-star hotels when user suggests budget
         hotel_query["price_tier"] = {"$not": {"$regex": "luxury|5-star", "$options": "i"}}
     elif tier_lower in ["luxury", "5-star", "5 star"]:
         hotel_query["$or"] = [
@@ -1258,7 +1263,7 @@ def search_travel_database(
         source_id = doc.get("source_id", "")
         doc_id = str(doc.get("_id", ""))
         
-        # Boost selected place IDs with +1.0 additive score (checking both source_id and MongoDB _id string)
+        # Boost selected place IDs (checking both source_id and MongoDB _id string)
         boost = 1.0 if (source_id in selected_ids_set or doc_id in selected_ids_set) else 0.0
         total_score = sim + boost
 
@@ -1385,7 +1390,7 @@ def search_travel_database(
         source_id = doc.get("source_id", "")
         doc_id = str(doc.get("_id", ""))
 
-        # Boost selected place IDs with +1.0 additive score (checking both source_id and MongoDB _id string)
+        # Boost selected place IDs (checking both source_id and MongoDB _id string)
         boost = 1.0 if (source_id in selected_ids_set or doc_id in selected_ids_set) else 0.0
         total_score = sim + boost
 
