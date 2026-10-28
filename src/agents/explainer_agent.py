@@ -79,17 +79,22 @@ def sanitize_document_text(text: str, dest: str = "") -> str:
     if not text or not isinstance(text, str):
         return ""
     desc = text
+    # Strip HTML comments, script tags, style tags, and instruction wrappers
     desc = re.sub(r"<!--.*?-->", "", desc, flags=re.DOTALL)
     desc = re.sub(r"<script.*?>.*?</script>", "", desc, flags=re.DOTALL | re.I)
     desc = re.sub(r"<style.*?>.*?</style>", "", desc, flags=re.DOTALL | re.I)
     desc = re.sub(r"<(instruction|system|prompt|admin|untrusted_context)[^>]*>.*?</\1>", "", desc, flags=re.DOTALL | re.I)
     desc = re.sub(r"<\/?(untrusted_context|system|prompt|instruction|context|admin)[^>]*>", "", desc, flags=re.I)
     desc = re.sub(r"\[(instruction|system|prompt|admin|override).*?\]", "", desc, flags=re.I)
+
+    # Strip indirect prompt injection phrases
     if PROMPT_INJECTION_PATTERNS:
         for pat in PROMPT_INJECTION_PATTERNS:
             desc = re.sub(pat, "", desc, flags=re.I)
+
     if dest and dest.lower() != "colombo":
         desc = desc.replace("in Colombo", f"in {dest}").replace("in colombo", f"in {dest}")
+
     return re.sub(r"\s+", " ", desc).strip()
 
 SYSTEM_PROMPT_AGENT_3 = """You are Agent 3: The Premier Ceylon Travel Expert & Explainable AI (XAI) Itinerary Architect.
@@ -841,25 +846,21 @@ def generate_explainable_itinerary(agent2_output: Union[Dict[str, Any], str]) ->
                 # Clean and correct hotels description
                 for h in city_data.get("hotels", []):
                     if isinstance(h, dict) and h.get("description"):
-                        desc = str(h["description"])
-                        # Strip any HTML comments, XML tags, or prompt injection instructions
-                        desc = re.sub(r"<!--.*?-->", "", desc, flags=re.DOTALL)
-                        desc = re.sub(r"\[INSTRUCTION.*?\]", "", desc, flags=re.I)
-                        desc = re.sub(r"<\/?(system|prompt|instruction|context|admin)>", "", desc, flags=re.I)
-                        if dest.lower() != "colombo":
-                            desc = desc.replace("in Colombo", f"in {dest}").replace("in colombo", f"in {dest}")
-                        h["description"] = desc.strip()
+                        h["description"] = sanitize_document_text(str(h["description"]), dest=dest)
                 # Clean and correct POIs description
                 for p in city_data.get("poi", []):
                     if isinstance(p, dict) and p.get("description"):
-                        desc = str(p["description"])
-                        # Strip any HTML comments, XML tags, or prompt injection instructions
-                        desc = re.sub(r"<!--.*?-->", "", desc, flags=re.DOTALL)
-                        desc = re.sub(r"\[INSTRUCTION.*?\]", "", desc, flags=re.I)
-                        desc = re.sub(r"<\/?(system|prompt|instruction|context|admin)>", "", desc, flags=re.I)
-                        if dest.lower() != "colombo":
-                            desc = desc.replace("in Colombo", f"in {dest}").replace("in colombo", f"in {dest}")
-                        p["description"] = desc.strip()
+                        p["description"] = sanitize_document_text(str(p["description"]), dest=dest)
+
+    # Also clean flat search_results if present
+    flat_results = payload.get("search_results", {})
+    if isinstance(flat_results, dict):
+        for h in flat_results.get("hotels", []):
+            if isinstance(h, dict) and h.get("description"):
+                h["description"] = sanitize_document_text(str(h["description"]), dest=h.get("city", ""))
+        for p in flat_results.get("poi", []):
+            if isinstance(p, dict) and p.get("description"):
+                p["description"] = sanitize_document_text(str(p["description"]), dest=p.get("city", ""))
 
     # Assemble structured suggested places payload for frontend
     suggested_places = extract_suggested_places_by_destination(payload)
