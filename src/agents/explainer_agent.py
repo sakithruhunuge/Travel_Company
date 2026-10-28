@@ -674,9 +674,7 @@ def generate_deterministic_markdown_itinerary(agent2_data: Dict[str, Any]) -> st
                 h_name = h.get("name", f"{dest} Boutique Resort")
                 h_rating = h.get("rating", 4.8)
                 h_price = h.get("avg_nightly_usd") or h.get("avg_nightly") or (120 if budget == "Luxury" else 35 if budget == "Budget" else 65)
-                h_desc = h.get("description", f"Comfortable accommodation located in {dest}.")
-                if dest.lower() != "colombo":
-                    h_desc = h_desc.replace("in Colombo", f"in {dest}").replace("in colombo", f"in {dest}")
+                h_desc = sanitize_document_text(h.get("description", f"Comfortable accommodation located in {dest}."), dest=dest)
 
                 sim = h.get("similarity_score")
                 sim_str = f" · Match Score: {int(sim*100)}%" if sim else ""
