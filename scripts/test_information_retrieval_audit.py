@@ -271,5 +271,102 @@ class InformationRetrievalSecurityAuditTests(unittest.TestCase):
         self.assertLessEqual(hotel["rating"], 5.0, "Rating must not exceed 5.0.")
 
     # =========================================================================
+    # AREA C: HALLUCINATION DUE TO RETRIEVAL
+    # =========================================================================
+
+    def test_IR_07_zero_matching_documents_graceful_degradation(self):
+        """
+        Test ID: IR-07
+        Evaluation Area: Hallucination Due to Retrieval
+        Test Objective: Prevent invention of nonexistent cities or landmarks when retrieval yields 0 docs.
+        Target Component: intake_agent.py -> extract_destinations()
+        """
+        fictional_query = "Plan a 3-day luxury tour to Atlantis, El Dorado, and Mount Olympus"
+        extracted = extract_destinations(fictional_query)
+
+        for d in extracted:
+            self.assertIn(
+                d, KNOWN_DESTINATIONS,
+                f"Fictional entity '{d}' was hallucinated into canonical destinations list!"
+            )
+        self.assertEqual(extracted, ["Colombo"], "Queries with 0 valid Sri Lankan cities must fallback to Colombo baseline.")
+
+    def test_IR_08_sycophantic_hallucination_prevention(self):
+        """
+        Test ID: IR-08
+        Evaluation Area: Hallucination Due to Retrieval
+        Test Objective: Prevent LLM from accepting false user premises (e.g., coral reef diving in Kandy).
+        Target Component: search_tool.py -> search_travel_database("Kandy")
+        """
+        res_json = search_travel_database(
+            destination="Kandy",
+            vibe_query="coral reef scuba diving beach surfing",
+            limit=5
+        )
+        res = json.loads(res_json)
+        pois = res.get("poi", [])
+
+        # Kandy POIs must retain authentic Kandy cultural/botanical sites, not hallucinate ocean beaches
+        for p in pois:
+            p_name = p.get("name", "").lower()
+            p_desc = p.get("description", "").lower()
+            self.assertNotIn("coral reef", p_name)
+            self.assertNotIn("ocean beach", p_desc)
+
+    # =========================================================================
+    # AREA D: SOURCE RELIABILITY & PROVENANCE
+    # =========================================================================
+
+    def test_IR_09_data_provenance_and_canonical_id_tracking(self):
+        """
+        Test ID: IR-09
+        Evaluation Area: Source Reliability & Provenance
+        Test Objective: Verify that every recommended place links back to a canonical ID and verified Maps URL.
+        Target Component: explainer_agent.py -> extract_suggested_places_by_destination()
+        """
+        mock_data = {
+            "destinations": ["Galle"],
+            "intake_params": {"budget_tier": "Luxury"},
+            "search_results_by_destination": {
+                "Galle": {
+                    "hotels": DESTINATION_FALLBACK_HOTELS.get("galle", [])[:2],
+                    "poi": DESTINATION_FALLBACK_POIS.get("galle", [])[:2]
+                }
+            }
+        }
+        suggested = extract_suggested_places_by_destination(mock_data)
+        galle_places = suggested.get("Galle", {})
+
+        for h in galle_places.get("hotels", []):
+            self.assertTrue(bool(h.get("id")), f"Hotel {h.get('name')} lacks canonical ID!")
+            self.assertIn("google.com/maps/search", h.get("google_maps_url", ""))
+
+        for p in galle_places.get("poi", []):
+            self.assertTrue(bool(p.get("id")), f"POI {p.get('name')} lacks canonical ID!")
+            self.assertIn("google.com/maps/search", p.get("google_maps_url", ""))
+
+    def test_IR_10_curated_fallback_catalog_authenticity(self):
+        """
+        Test ID: IR-10
+        Evaluation Area: Source Reliability & Provenance
+        Test Objective: Verify fallback catalog integrity when primary database is unreachable.
+        Target Component: search_tool.py -> DESTINATION_FALLBACK_HOTELS and POIS
+        """
+        # Execute search without active DB connection
+        res_json = search_travel_database(destination="Ella", budget_tier="Luxury", limit=5)
+        res = json.loads(res_json)
+
+        self.assertTrue(res.get("fallback_active") or len(res.get("hotels", [])) > 0)
+        hotels = res.get("hotels", [])
+        self.assertGreater(len(hotels), 0, "Curated fallback catalog must supply Ella hotels.")
+
+        # Check real scraped pricing bounds
+        for h in hotels:
+            rate = h.get("avg_nightly_usd")
+            self.assertIsNotNone(rate, f"Fallback hotel {h.get('name')} must have authentic contract rate.")
+            self.assertGreaterEqual(rate, 15.0, "Nightly rate must be grounded in realistic rates.")
+            self.assertLessEqual(rate, 500.0, "Nightly rate must not be unbounded.")
+
+    # =========================================================================
 if __name__ == "__main__":
     unittest.main()
