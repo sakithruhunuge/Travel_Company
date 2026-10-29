@@ -368,5 +368,82 @@ class InformationRetrievalSecurityAuditTests(unittest.TestCase):
             self.assertLessEqual(rate, 500.0, "Nightly rate must not be unbounded.")
 
     # =========================================================================
+    # AREA E: AUTHENTICATION SECURITY
+    # =========================================================================
+
+    def test_IR_11_unauthenticated_rate_retrieval_rejection(self):
+        """
+        Test ID: IR-11
+        Evaluation Area: Authentication Security
+        Test Objective: Verify that administrative rate retrieval rejects unauthenticated requests (HTTP 401).
+        Target Component: src/app/api/admin/rates/route.ts
+        """
+        route_path = os.path.join(PROJECT_ROOT, "src", "app", "api", "admin", "rates", "route.ts")
+        self.assertTrue(os.path.exists(route_path), f"Route file {route_path} must exist.")
+
+        with open(route_path, "r", encoding="utf-8") as f:
+            code = f.read()
+
+        # Static Code Analysis of Security Controls
+        self.assertIn("getServerSession(authOptions)", code, "Endpoint must call getServerSession.")
+        self.assertIn("status: 401", code, "Unauthenticated calls must return 401.")
+        self.assertIn('error: "Unauthorized"', code, "Unauthorized error payload must be returned.")
+
+    def test_IR_12_session_token_validation_and_scraper_defense(self):
+        """
+        Test ID: IR-12
+        Evaluation Area: Authentication Security
+        Test Objective: Verify that user itinerary retrieval requires valid session authentication.
+        Target Component: src/app/api/my-requests/route.ts
+        """
+        route_path = os.path.join(PROJECT_ROOT, "src", "app", "api", "my-requests", "route.ts")
+        self.assertTrue(os.path.exists(route_path))
+
+        with open(route_path, "r", encoding="utf-8") as f:
+            code = f.read()
+
+        self.assertIn("getServerSession(authOptions)", code)
+        self.assertIn("status: 401", code)
+        self.assertIn("Authentication required", code)
+
+    # =========================================================================
+    # AREA F: AUTHORIZATION (BOLA / BFLA / TENANT SCOPING)
+    # =========================================================================
+
+    def test_IR_13_bola_idor_and_tenant_scoping_in_travel_requests(self):
+        """
+        Test ID: IR-13
+        Evaluation Area: Authorization (BOLA / Tenant Scoping)
+        Test Objective: Verify that travel request queries enforce tenant and user ID scoping.
+        Target Component: src/app/api/travel-requests/[id]/route.ts
+        """
+        route_path = os.path.join(PROJECT_ROOT, "src", "app", "api", "travel-requests", "[id]", "route.ts")
+        self.assertTrue(os.path.exists(route_path))
+
+        with open(route_path, "r", encoding="utf-8") as f:
+            code = f.read()
+
+        # Ensure query strictly scopes to tenantId and userId
+        self.assertIn("query.tenantId = new mongoose.Types.ObjectId(tenantId)", code)
+        self.assertIn("query.userId = userId", code)
+        self.assertIn("status: 404", code, "Disallowed IDOR lookups must return 404 Not Found.")
+
+    def test_IR_14_bfla_role_hierarchy_rate_management(self):
+        """
+        Test ID: IR-14
+        Evaluation Area: Authorization (BFLA)
+        Test Objective: Verify that rate management APIs enforce role-based access control (403 Forbidden).
+        Target Component: src/app/api/admin/rates/route.ts & travel-requests/[id]/route.ts
+        """
+        route_path = os.path.join(PROJECT_ROOT, "src", "app", "api", "admin", "rates", "route.ts")
+        with open(route_path, "r", encoding="utf-8") as f:
+            code = f.read()
+
+        self.assertIn("allowedRoles", code)
+        self.assertIn("tenant_admin", code)
+        self.assertIn("super_admin", code)
+        self.assertIn("status: 403", code, "Unauthorized roles must receive 403 Forbidden.")
+
+    # =========================================================================
 if __name__ == "__main__":
     unittest.main()
