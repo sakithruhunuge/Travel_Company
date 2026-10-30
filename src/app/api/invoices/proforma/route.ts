@@ -9,6 +9,11 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import Tenant from "@/models/Tenant";
 import { sendEmail } from "@/lib/emailService";
 import { sendGuestProformaSMS } from "@/lib/smsService";
+import Stripe from "stripe";
+import path from "path";
+import { sriLankaImages } from "@/constants/sriLankaImages";
+import { parseSpecifications } from "@/lib/pricingParser";
+import Package from "@/models/Package";
 
 export const runtime = "nodejs";
 
@@ -91,10 +96,170 @@ export async function POST(request: Request) {
     booking.status = "proforma_issued";
     await booking.save();
 
+    // ── Auto-generate / update Payables from Proforma cost components ──────
+    // Each category maps to a generic Vendor (find-or-create) and an idempotent
+    // Payable upsert keyed on (tenantId, tourId, description) so re-issuing the
+    // proforma never creates duplicate payable rows.
+    try {
+      const costItems: { label: string; vendorType: "hotel" | "transport" | "other"; amount: number }[] = [
+        { label: "Hotel Accommodation",    vendorType: "hotel",     amount: hCost },
+        { label: "Vehicle & Transport",    vendorType: "transport", amount: vCost },
+        { label: "Driver / Guide Service", vendorType: "other",     amount: dgCost },
+        { label: "Excursions & Entrance",  vendorType: "other",     amount: eCost },
+      ];
+
+      for (const item of costItems) {
+        if (item.amount <= 0) continue; // skip zero-cost lines
+
+        // 1. Find-or-create a generic Vendor for this category
+        const vendorName = `${item.label} (Generic)`;
+        let vendor = await db.Vendor.findOne({ name: vendorName, type: item.vendorType });
+        if (!vendor) {
+          vendor = (await db.Vendor.create({
+            name: vendorName,
+            type: item.vendorType,
+          })) as any;
+        }
+        if (!vendor) continue; // safety guard
+
+        // 2. Upsert the Payable — idempotent on (tourId + description)
+        //    If one already exists we update amounts; if not we create it.
+        const existingPayable = await db.Payable.findOne({
+          tourId: booking._id,
+          description: item.label,
+        });
+
+        if (existingPayable) {
+          // Re-issued proforma — refresh the cost figures
+          await db.Payable.updateOne(
+            { tourId: booking._id, description: item.label },
+            {
+              $set: {
+                amountTotal: item.amount,
+                // Keep balanceDue = amountTotal − amountPaid so partial payments are preserved
+                balanceDue: Math.max(0, item.amount - (existingPayable.amountPaid || 0)),
+                vendorId: vendor._id,
+              },
+            }
+          );
+        } else {
+          await db.Payable.create({
+            vendorId: vendor._id,
+            tourId: booking._id,
+            description: item.label,
+            amountTotal: item.amount,
+            amountPaid: 0,
+            balanceDue: item.amount,
+            status: "pending",
+          });
+        }
+      }
+    } catch (payableErr) {
+      // Non-fatal — log but don't abort the proforma response
+      console.error("[Proforma] Failed to sync payables:", payableErr);
+    }
+    // ── End Payable sync ────────────────────────────────────────────────────
+
     // Tenant info
     const tenantDoc = await Tenant.findById(tenantId).lean() as any;
     const tenantName = tenantDoc?.name || "Travel Company";
     const primaryColor = tenantDoc?.branding?.primaryColor || "#0B7C8A";
+
+    // 1. Stripe Checkout Integration
+    let checkoutUrl = "";
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error("[Stripe API] Missing STRIPE_SECRET_KEY in environment variables. Cannot generate checkoutUrl.");
+    } else if (advanceDepositDue <= 0) {
+      console.warn("[Stripe API] Advance deposit is 0 or negative. Skipping session creation.");
+    } else {
+      try {
+        console.log(`[Stripe API] Attempting to create checkout session for deposit: $${advanceDepositDue.toFixed(2)}`);
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2024-06-20" as any });
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ["card"],
+          line_items: [
+            {
+              price_data: {
+                currency: "usd",
+                product_data: {
+                  name: "Advance Deposit for Tour Booking",
+                  description: `Tour ID: ${booking.tourId || booking._id}`,
+                },
+                unit_amount: Math.round(advanceDepositDue * 100),
+              },
+              quantity: 1,
+            },
+          ],
+          mode: "payment",
+          success_url: "http://localhost:3000/success",
+          cancel_url: "http://localhost:3000/cancel",
+        });
+        checkoutUrl = session.url || "";
+        console.log(`[Stripe API] Successfully created checkout session: ${checkoutUrl}`);
+      } catch (err) {
+        console.error("[Stripe API] Stripe session creation failed! Error:", err);
+      }
+
+    }
+
+    // 2. Destination Images fetching
+    const protocol = request.headers.get("x-forwarded-proto") || "http";
+    const host = request.headers.get("host") || "localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${protocol}://${host}`;
+
+    const specs = parseSpecifications(booking.specialRequests || "");
+    let rawDestinations: string[] | string = specs.destinations || "";
+
+    if (!rawDestinations && booking.pricingInputs?.destinations) {
+      rawDestinations = booking.pricingInputs.destinations;
+    }
+
+    if ((!rawDestinations || (Array.isArray(rawDestinations) && rawDestinations.length === 0)) && booking.packageId) {
+      try {
+        let pkg = await Package.findById(booking.packageId).lean() as any;
+        if (!pkg) {
+          pkg = await Package.findOne({ slug: booking.packageId }).lean() as any;
+        }
+        if (pkg?.destinations && pkg.destinations.length > 0) {
+          rawDestinations = pkg.destinations;
+        }
+      } catch (err) {
+        console.warn("Could not fetch package destinations:", err);
+      }
+    }
+
+    let destinationImages: { title: string; imagePath: string }[] = [];
+    if (rawDestinations) {
+      let destArray = Array.isArray(rawDestinations) ? rawDestinations : rawDestinations.split(",").map(d => d.trim());
+
+      // Match with sriLankaImages
+      for (const dest of destArray) {
+        const found = sriLankaImages.destinations.find((d) =>
+          d.title.toLowerCase().includes(dest.toLowerCase()) ||
+          dest.toLowerCase().includes(d.title.toLowerCase())
+        );
+        if (found && !destinationImages.some(img => img.title === found.title)) {
+          const imgUrl = found.imageUrl.startsWith("/") ? found.imageUrl : `/${found.imageUrl}`;
+          destinationImages.push({
+            title: found.title,
+            imagePath: `${baseUrl}${imgUrl}`,
+          });
+        }
+      }
+    }
+
+    // Fallback if no images found
+    if (destinationImages.length === 0) {
+      destinationImages = sriLankaImages.destinations.slice(0, 3).map(img => {
+        const imgUrl = img.imageUrl.startsWith("/") ? img.imageUrl : `/${img.imageUrl}`;
+        return {
+          title: img.title,
+          imagePath: `${baseUrl}${imgUrl}`,
+        };
+      });
+    }
+    // Limit to max 3 images to fit nicely on the PDF
+    destinationImages = destinationImages.slice(0, 3);
 
     const pdfProps = {
       invoiceNumber,
@@ -122,6 +287,8 @@ export async function POST(request: Request) {
       advancePaid: proformaData.advancePaid,
       currency: "USD",
       paymentStatus: proformaData.advancePaid >= advanceDepositDue ? "PAID" : "DEPOSIT_PENDING",
+      checkoutUrl,
+      destinationImages,
     };
 
     if (downloadPdf) {
@@ -180,6 +347,8 @@ export async function POST(request: Request) {
       proforma: proformaData,
       tourId: booking.tourId,
       status: booking.status,
+      checkoutUrl,
+      destinationImages,
       message: "Proforma Invoice successfully generated",
     });
   } catch (error: any) {

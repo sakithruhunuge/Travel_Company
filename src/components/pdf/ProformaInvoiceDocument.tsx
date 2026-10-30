@@ -1,5 +1,5 @@
 import React from "react";
-import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, Text, View, StyleSheet, Image, Link } from "@react-pdf/renderer";
 
 export interface ProformaInvoiceProps {
   invoiceNumber: string;
@@ -30,6 +30,8 @@ export interface ProformaInvoiceProps {
   advancePaid: number;
   currency?: string;
   paymentStatus?: string;
+  checkoutUrl?: string;
+  destinationImages?: { title: string; imagePath: string }[];
 }
 
 export default function ProformaInvoiceDocument({
@@ -61,6 +63,8 @@ export default function ProformaInvoiceDocument({
   advancePaid,
   currency = "USD",
   paymentStatus = "UNPAID",
+  checkoutUrl,
+  destinationImages = [],
 }: ProformaInvoiceProps) {
   const styles = StyleSheet.create({
     page: {
@@ -188,8 +192,9 @@ export default function ProformaInvoiceDocument({
     colTotal: { flex: 1.5, textAlign: "right" },
     totalSection: {
       flexDirection: "row",
-      justifyContent: "flex-end",
-      marginTop: 2,
+      justifyContent: "space-between",
+      alignItems: "flex-end",
+      marginTop: 10,
       marginBottom: 14,
     },
     totalBox: {
@@ -230,6 +235,51 @@ export default function ProformaInvoiceDocument({
       borderRadius: 6,
       padding: 8,
       marginBottom: 12,
+    },
+    paymentButton: {
+      backgroundColor: "#059669",
+      color: "#ffffff",
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 6,
+      textAlign: "center",
+      textDecoration: "none",
+      fontFamily: "Helvetica-Bold",
+      fontSize: 10,
+      marginBottom: 4,
+    },
+    destinationsSection: {
+      marginTop: 10,
+      borderTopWidth: 1,
+      borderTopColor: "#e2e8f0",
+      paddingTop: 12,
+    },
+    destinationsTitle: {
+      fontSize: 10,
+      fontFamily: "Helvetica-Bold",
+      color: primaryColor,
+      marginBottom: 8,
+    },
+    imageGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 10,
+    },
+    imageWrapper: {
+      width: "30%", // 3 per row approx
+      marginBottom: 8,
+    },
+    destinationImage: {
+      width: "100%",
+      height: 60,
+      borderRadius: 4,
+      objectFit: "cover",
+    },
+    imageTitle: {
+      fontSize: 7,
+      color: "#64748b",
+      textAlign: "center",
+      marginTop: 3,
     },
     footer: {
       borderTopWidth: 1,
@@ -371,8 +421,17 @@ export default function ProformaInvoiceDocument({
           )}
         </View>
 
-        {/* Financial Summary */}
+        {/* Financial Summary & Payment Button (Side-by-Side) */}
         <View style={styles.totalSection}>
+          <View style={{ flex: 1, paddingRight: 30, paddingBottom: 6 }}>
+            {/* Payment Link on the left */}
+            {paymentStatus !== "PAID" && checkoutUrl && (
+              <Link src={checkoutUrl} style={styles.paymentButton}>
+                Click Here to Pay Now
+              </Link>
+            )}
+          </View>
+          
           <View style={styles.totalBox}>
             <View style={styles.totalRow}>
               <Text style={styles.infoLabel}>Estimated Subtotal:</Text>
@@ -414,6 +473,21 @@ export default function ProformaInvoiceDocument({
             This Proforma Invoice represents the closest binding estimation to actual tour costs. Payment of the advance deposit guarantees vehicle and hotel reservations. Any mid-tour additions or reductions will be reconciled upon tour wrap-up on the final Actual Invoice.
           </Text>
         </View>
+
+        {/* Destination Images */}
+        {destinationImages && destinationImages.length > 0 && (
+          <View style={styles.destinationsSection}>
+            <Text style={styles.destinationsTitle}>Your Custom Tailor-Made Tour Destinations</Text>
+            <View style={styles.imageGrid}>
+              {destinationImages.map((dest, idx) => (
+                <View key={idx} style={styles.imageWrapper}>
+                  <Image src={dest.imagePath} style={styles.destinationImage} />
+                  <Text style={styles.imageTitle}>{dest.title}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Footer */}
         <View style={styles.footer}>
