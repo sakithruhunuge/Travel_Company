@@ -90,7 +90,8 @@ function createScopedModel<T extends mongoose.Document>(
 /**
  * Creates a tenant-scoped database context object.
  * Returns pre-scoped wrappers around User, TravelRequest, Package, DriverGuide,
- * SeasonRateTier, CurrencyExchange, HotelContractRate, VehiclePricingPackage, and AttractionRate.
+ * Vendor, Payable, Payment, SeasonRateTier, CurrencyExchange, HotelContractRate,
+ * VehiclePricingPackage, and AttractionRate.
  */
 export function tenantScope(tenantId: string | mongoose.Types.ObjectId) {
   const tId = typeof tenantId === "string" ? new mongoose.Types.ObjectId(tenantId) : tenantId;
