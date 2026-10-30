@@ -15,6 +15,9 @@ export async function GET(request: Request) {
     }
 
     const tenantId = await resolveTenantId(sessionUser);
+    if (!tenantId) {
+      return NextResponse.json({ error: "Tenant context missing" }, { status: 400 });
+    }
     await dbConnect();
     const db = tenantScope(tenantId);
 

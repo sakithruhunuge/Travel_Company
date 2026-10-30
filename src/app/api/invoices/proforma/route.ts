@@ -96,6 +96,70 @@ export async function POST(request: Request) {
     booking.status = "proforma_issued";
     await booking.save();
 
+    // ── Auto-generate / update Payables from Proforma cost components ──────
+    // Each category maps to a generic Vendor (find-or-create) and an idempotent
+    // Payable upsert keyed on (tenantId, tourId, description) so re-issuing the
+    // proforma never creates duplicate payable rows.
+    try {
+      const costItems: { label: string; vendorType: "hotel" | "transport" | "other"; amount: number }[] = [
+        { label: "Hotel Accommodation",    vendorType: "hotel",     amount: hCost },
+        { label: "Vehicle & Transport",    vendorType: "transport", amount: vCost },
+        { label: "Driver / Guide Service", vendorType: "other",     amount: dgCost },
+        { label: "Excursions & Entrance",  vendorType: "other",     amount: eCost },
+      ];
+
+      for (const item of costItems) {
+        if (item.amount <= 0) continue; // skip zero-cost lines
+
+        // 1. Find-or-create a generic Vendor for this category
+        const vendorName = `${item.label} (Generic)`;
+        let vendor = await db.Vendor.findOne({ name: vendorName, type: item.vendorType });
+        if (!vendor) {
+          vendor = (await db.Vendor.create({
+            name: vendorName,
+            type: item.vendorType,
+          })) as any;
+        }
+        if (!vendor) continue; // safety guard
+
+        // 2. Upsert the Payable — idempotent on (tourId + description)
+        //    If one already exists we update amounts; if not we create it.
+        const existingPayable = await db.Payable.findOne({
+          tourId: booking._id,
+          description: item.label,
+        });
+
+        if (existingPayable) {
+          // Re-issued proforma — refresh the cost figures
+          await db.Payable.updateOne(
+            { tourId: booking._id, description: item.label },
+            {
+              $set: {
+                amountTotal: item.amount,
+                // Keep balanceDue = amountTotal − amountPaid so partial payments are preserved
+                balanceDue: Math.max(0, item.amount - (existingPayable.amountPaid || 0)),
+                vendorId: vendor._id,
+              },
+            }
+          );
+        } else {
+          await db.Payable.create({
+            vendorId: vendor._id,
+            tourId: booking._id,
+            description: item.label,
+            amountTotal: item.amount,
+            amountPaid: 0,
+            balanceDue: item.amount,
+            status: "pending",
+          });
+        }
+      }
+    } catch (payableErr) {
+      // Non-fatal — log but don't abort the proforma response
+      console.error("[Proforma] Failed to sync payables:", payableErr);
+    }
+    // ── End Payable sync ────────────────────────────────────────────────────
+
     // Tenant info
     const tenantDoc = await Tenant.findById(tenantId).lean() as any;
     const tenantName = tenantDoc?.name || "Travel Company";
