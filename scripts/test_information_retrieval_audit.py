@@ -445,5 +445,72 @@ class InformationRetrievalSecurityAuditTests(unittest.TestCase):
         self.assertIn("status: 403", code, "Unauthorized roles must receive 403 Forbidden.")
 
     # =========================================================================
+    # AREA G: API SECURITY
+    # =========================================================================
+
+    def test_IR_15_query_injection_and_schema_validation(self):
+        """
+        Test ID: IR-15
+        Evaluation Area: API Security
+        Test Objective: Verify resilience against NoSQL injection, SQL syntax, and regex metacharacters.
+        Target Component: search_tool.py & intake_agent.py
+        """
+        # 1. Regex metacharacter injection in destination query
+        malicious_dest = "Kandy.*"
+        res_json = search_travel_database(destination=malicious_dest, budget_tier="Standard", limit=3)
+        res = json.loads(res_json)
+        self.assertIn("hotels", res)
+
+        # 2. SQL injection metacharacters in budget tier
+        injected_budget = "Budget' OR '1'='1; --"
+        sanitized_tier = extract_budget_tier("Kandy trip", fallback=injected_budget)
+        self.assertIn(sanitized_tier, ["Budget", "Standard", "Luxury"])
+
+        # 3. Direct intake parser injection test
+        intake_res = parse_intake_submission({
+            "user_prompt": "Kandy tour; DROP TABLE hotels; --",
+            "budget_tier": "Standard"
+        })
+        parsed = json.loads(intake_res)
+        self.assertIn("error", parsed, "SQL injection statement must be blocked by intake security shield.")
+
+    # =========================================================================
+    # AREA H: COMMUNICATION PROTOCOL SECURITY
+    # =========================================================================
+
+    def test_IR_16_cors_origin_policy_and_transport_security(self):
+        """
+        Test ID: IR-16
+        Evaluation Area: Communication Protocol Security
+        Test Objective: Verify that credentialed endpoints forbid wildcard CORS origins ('*').
+        Target Component: backend/main.py
+        """
+        backend_path = os.path.join(PROJECT_ROOT, "backend", "main.py")
+        self.assertTrue(os.path.exists(backend_path))
+
+        with open(backend_path, "r", encoding="utf-8") as f:
+            code = f.read()
+
+        self.assertIn("CORSMiddleware", code)
+        self.assertIn("allow_credentials=True", code)
+        
+        # Verify allow_origins is NOT hardcoded to "*"
+        self.assertNotIn('allow_origins=["*"]', code, "CRITICAL: Wildcard CORS on credentialed endpoint is forbidden!")
+        self.assertIn("ALLOWED_ORIGINS", code, "CORS origins must be dynamically configured with trusted domain list.")
+
+
 if __name__ == "__main__":
-    unittest.main()
+    print("=" * 80)
+    print("RUNNING INFORMATION RETRIEVAL AND SECURITY ASSESSMENT TEST SUITE (IR-01 TO IR-16)")
+    print("=" * 80)
+    suite = unittest.TestLoader().loadTestsFromTestCase(InformationRetrievalSecurityAuditTests)
+    result = unittest.TextTestRunner(verbosity=2).run(suite)
+    
+    print("=" * 80)
+    if result.wasSuccessful():
+        print("RESULT: ALL 16 INFORMATION RETRIEVAL TEST CASES PASSED CLEANLY (100% SUCCESS RATE)")
+    else:
+        print(f"RESULT: FAILED ({len(result.failures)} failures, {len(result.errors)} errors)")
+    print("=" * 80)
+    sys.exit(0 if result.wasSuccessful() else 1)
+
